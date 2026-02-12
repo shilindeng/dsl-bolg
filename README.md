@@ -1,53 +1,53 @@
-# Cyberpunk Personal Blog (DSL Edition)
+# 赛博朋克个人博客 (DSL Edition)
 
 > "Wake up, User..."
 
-A high-performance, cyberpunk-themed personal blog built with React, Vite, and Node.js. Designed for the Vibe Coding era.
+专为 Vibe Coding 时代打造的高性能、赛博朋克主题个人博客系统。基于 React, Vite 和 Node.js 构建。
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/system-ONLINE-green.svg)
 
-## ⚡ Features
+## ⚡ 核心特性
 
-### 🎨 Cyberpunk Aesthetic
-- **Immersive UI**: CRT scanlines, glitch effects, neon glows, and glassmorphism.
-- **Dynamic Animations**: Matrix rain background, scroll reveals, typewriter text.
-- **Sound Effects (SFX)**: High-tech UI sounds for hover, click, and system events (Web Audio API).
+### 🎨 赛博朋克美学 (Cyberpunk Aesthetic)
+- **沉浸式 UI**: CRT 扫描线、Glitch 故障艺术、霓虹光晕、毛玻璃质感。
+- **动态交互**: 黑客帝国代码雨背景、滚动解密动画、打字机效果。
+- **高科技音效 (SFX)**: 集成 Web Audio API，提供悬停、点击及系统启动音效。
 
-### 🛠️ Tech Stack
-- **Frontend**: React 18, TypeScript, Vite
-- **Styling**: Vanilla CSS (Variables & Grid), Bento Grid Layout
-- **Backend**: Node.js, Express, Prisma (SQLite)
-- **Localization**: Full Chinese Support (EN fallback for tech terms)
+### 🛠️ 技术栈
+- **前端 (Frontend)**: React 18, TypeScript, Vite
+- **样式 (Styling)**: 原生 CSS (变量系统 & Grid 布局), Bento Grid 非对称设计
+- **后端 (Backend)**: Node.js, Express, Prisma (SQLite)
+- **本地化**: 全站支持中文显示 (技术术语保留英文以维持极客感)
 
-### 🧩 Components
-- **Terminal Navbar**: Command-line style navigation.
-- **Holographic Toasts**: Custom notification system replacing browser alerts.
-- **Markdown Editor**: Integrated block editor for writing posts.
+### 🧩 组件系统
+- **终端导航栏**: 命令行风格导航，带有动态输入光标。
+- **全息通知 (Toasts)**: 自定义 Cyberpunk 风格通知系统，替代原生 Alert。
+- **沉浸式编辑器**: 集成 Markdown 块级编辑器，支持实时预览。
 
-## 🚀 Getting Started
+## 🚀 快速开始
 
-### Prerequisites
+### 环境要求
 - Node.js > 18
 - NPM
 
-### Installation
+### 安装步骤
 
-1. **Clone & Install**
+1. **克隆与安装**
    ```bash
    git clone <repo-url>
    cd dsl-blog
    
-   # Install Client
+   # 安装前端依赖
    cd client
    npm install
    
-   # Install Server
+   # 安装后端依赖
    cd ../server
    npm install
    ```
 
-2. **Initialize Database**
+2. **初始化数据库**
    ```bash
    cd server
    npm run db:generate
@@ -55,30 +55,30 @@ A high-performance, cyberpunk-themed personal blog built with React, Vite, and N
    npm run db:seed
    ```
 
-3. **Run Development Mode**
+3. **启动开发模式**
    ```bash
-   # Terminal 1 (Server)
+   # 终端 1 (后端服务)
    cd server
    npm run dev
    
-   # Terminal 2 (Client)
+   # 终端 2 (前端页面)
    cd client
    npm run dev
    ```
 
-## 📂 Project Structure
+## 📂 项目结构
 
 ```
 /dsl-blog
-  ├── client/          # React Frontend
-  │   ├── src/components/  # UI Components (CRT, Glitch, etc.)
-  │   ├── src/hooks/       # Custom Hooks (useSound, useToast)
+  ├── client/          # React 前端
+  │   ├── src/components/  # UI 组件 (CRT, Glitch 等)
+  │   ├── src/hooks/       # 自定义 Hooks (useSound, useToast)
   │   └── ...
-  └── server/          # Express Backend
-      ├── prisma/          # Database Schema & Seed
+  └── server/          # Express 后端
+      ├── prisma/          # 数据库架构 & 种子数据
       └── ...
 ```
 
-## 📝 License
+## 📝 开源协议
 
 MIT
