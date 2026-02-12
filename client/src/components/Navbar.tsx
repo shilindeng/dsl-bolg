@@ -1,13 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useState, useEffect } from 'react';
+import GlitchText from './GlitchText';
 
 const navLinks = [
-    { path: '/', label: '首页', icon: '🏠' },
-    { path: '/blog', label: '博客', icon: '📝' },
-    { path: '/projects', label: '项目', icon: '🛠️' },
-    { path: '/editor', label: '写文章', icon: '✍️' },
-    { path: '/about', label: '关于', icon: '👤' },
+    { path: '/', label: '首页', icon: '~/' },
+    { path: '/blog', label: '博客', icon: 'grep' },
+    { path: '/projects', label: '项目', icon: './' },
+    { path: '/editor', label: '编辑', icon: 'vi' },
+    { path: '/about', label: '关于', icon: 'man' },
 ];
 
 export default function Navbar() {
@@ -26,7 +27,7 @@ export default function Navbar() {
     }, [location]);
 
     return (
-        <nav className="navbar glass" style={{
+        <nav className="navbar" style={{
             position: 'fixed',
             top: 0,
             left: 0,
@@ -37,94 +38,128 @@ export default function Navbar() {
             justifyContent: 'space-between',
             padding: '0 var(--space-xl)',
             zIndex: 1000,
-            borderRadius: 0,
-            borderBottom: scrolled ? '1px solid var(--border-glass)' : '1px solid transparent',
-            backdropFilter: scrolled ? 'blur(20px)' : 'blur(10px)',
-            transition: 'all var(--transition-base)',
+            background: scrolled ? 'rgba(5, 5, 16, 0.95)' : 'transparent',
+            backdropFilter: scrolled ? 'blur(10px)' : 'none',
+            borderBottom: '1px solid var(--border-dim)',
+            transition: 'all 0.3s ease',
+            fontFamily: 'var(--font-mono)',
         }}>
+            {/* Top Glow Line */}
+            <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '1px',
+                background: 'linear-gradient(90deg, transparent, var(--accent-cyan), transparent)',
+                opacity: 0.5,
+            }} />
+
             <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', textDecoration: 'none' }}>
-                <span style={{ fontSize: '1.5rem' }}>⚡</span>
-                <span className="gradient-text" style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>DSL Blog</span>
+                <span className="blinking-cursor" style={{ color: 'var(--accent-pink)', fontSize: '1.2rem' }}>&gt;_</span>
+                <GlitchText
+                    text="DSL_BLOG"
+                    style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-primary)' }}
+                />
             </Link>
 
-            {/* 桌面端导航 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }} className="nav-links-desktop">
-                {navLinks.map(link => (
-                    <Link
-                        key={link.path}
-                        to={link.path}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--space-xs)',
-                            padding: 'var(--space-sm) var(--space-md)',
-                            borderRadius: 'var(--radius-sm)',
-                            fontSize: '0.9rem',
-                            fontWeight: 500,
-                            color: location.pathname === link.path ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                            background: location.pathname === link.path ? 'var(--bg-glass)' : 'transparent',
-                            transition: 'all var(--transition-fast)',
-                            textDecoration: 'none',
-                        }}
-                    >
-                        <span>{link.icon}</span>
-                        <span>{link.label}</span>
-                    </Link>
-                ))}
-                <ThemeToggle />
-            </div>
-
-            {/* 移动端菜单按钮 */}
-            <button
-                className="mobile-menu-btn"
-                onClick={() => setMobileOpen(!mobileOpen)}
-                style={{
-                    display: 'none',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-primary)',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                }}
-            >
-                {mobileOpen ? '✕' : '☰'}
-            </button>
-
-            {/* 移动端导航 */}
-            {mobileOpen && (
-                <div className="glass mobile-nav" style={{
-                    position: 'absolute',
-                    top: 'var(--navbar-height)',
-                    left: 0,
-                    right: 0,
-                    padding: 'var(--space-lg)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-sm)',
-                    borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
-                    animation: 'fadeIn 0.2s ease',
-                }}>
-                    {navLinks.map(link => (
+            {/* Desktop Nav */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} className="nav-links-desktop">
+                {navLinks.map(link => {
+                    const isActive = location.pathname === link.path;
+                    return (
                         <Link
                             key={link.path}
                             to={link.path}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 'var(--space-sm)',
-                                padding: 'var(--space-md)',
-                                borderRadius: 'var(--radius-sm)',
-                                fontSize: '1rem',
-                                color: location.pathname === link.path ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                                background: location.pathname === link.path ? 'var(--bg-glass)' : 'transparent',
+                                gap: '8px',
+                                padding: '8px 16px',
+                                color: isActive ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                                background: isActive ? 'var(--accent-cyan)' : 'transparent',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
                                 textDecoration: 'none',
+                                position: 'relative',
+                                clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%, 0 20%)',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={e => {
+                                if (!isActive) {
+                                    e.currentTarget.style.color = 'var(--accent-cyan)';
+                                    e.currentTarget.style.textShadow = 'var(--glow-cyan)';
+                                }
+                            }}
+                            onMouseLeave={e => {
+                                if (!isActive) {
+                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                    e.currentTarget.style.textShadow = 'none';
+                                }
                             }}
                         >
-                            <span>{link.icon}</span>
+                            <span style={{ opacity: 0.5, fontSize: '0.8em' }}>{link.icon}</span>
                             <span>{link.label}</span>
                         </Link>
+                    );
+                })}
+                <div style={{ marginLeft: 'var(--space-md)' }}>
+                    <ThemeToggle />
+                </div>
+            </div>
+
+            {/* Mobile Button */}
+            <button
+                className="mobile-menu-btn"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                style={{
+                    display: 'none',
+                    background: 'none',
+                    border: '1px solid var(--accent-cyan)',
+                    color: 'var(--accent-cyan)',
+                    padding: '8px',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-mono)',
+                }}
+            >
+                {mobileOpen ? '[ CLOSE ]' : '[ MENU ]'}
+            </button>
+
+            {/* Mobile Nav */}
+            {mobileOpen && (
+                <div style={{
+                    position: 'absolute',
+                    top: 'var(--navbar-height)',
+                    left: 0,
+                    right: 0,
+                    background: 'var(--bg-primary)',
+                    borderBottom: '1px solid var(--border-bright)',
+                    padding: 'var(--space-lg)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    animation: 'scanline 0.3s ease-out forwards',
+                }}>
+                    {navLinks.map((link, i) => (
+                        <Link
+                            key={link.path}
+                            to={link.path}
+                            style={{
+                                display: 'block',
+                                padding: '12px',
+                                borderLeft: location.pathname === link.path ? '2px solid var(--accent-pink)' : '2px solid transparent',
+                                color: location.pathname === link.path ? 'var(--accent-pink)' : 'var(--text-primary)',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                fontFamily: 'var(--font-mono)',
+                                animation: `fade-in-up 0.3s ease forwards ${i * 0.05}s`,
+                                opacity: 0,
+                            }}
+                        >
+                            <span style={{ color: 'var(--accent-cyan)', marginRight: '10px' }}>&gt;</span>
+                            {link.icon} {link.label}
+                        </Link>
                     ))}
-                    <div style={{ padding: 'var(--space-sm)' }}>
+                    <div style={{ marginTop: 'var(--space-md)' }}>
                         <ThemeToggle />
                     </div>
                 </div>

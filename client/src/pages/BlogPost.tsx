@@ -1,108 +1,162 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
+import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { fetchPost, type Post } from '../api/client';
+import ReadingProgress from '../components/ReadingProgress';
+import GlitchText from '../components/GlitchText';
+import 'highlight.js/styles/atom-one-dark.css'; // Ensure we have a dark theme for code
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
 
     useEffect(() => {
-        if (!slug) return;
-        setLoading(true);
-        fetchPost(slug)
-            .then(setPost)
-            .catch(() => setError('文章未找到'))
-            .finally(() => setLoading(false));
+        if (slug) {
+            fetchPost(slug)
+                .then(setPost)
+                .catch(console.error)
+                .finally(() => setLoading(false));
+        }
     }, [slug]);
 
     if (loading) return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', textAlign: 'center' }}>
-            <div style={{ fontSize: '2rem' }} className="animate-float">⏳</div>
-            <p style={{ color: 'var(--text-muted)', marginTop: 'var(--space-md)' }}>加载中...</p>
+        <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <div className="animate-spin" style={{
+                width: '40px', height: '40px', border: '2px solid var(--accent-cyan)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '20px'
+            }} />
+            <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>正在解密...</div>
         </div>
     );
 
-    if (error || !post) return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', textAlign: 'center' }}>
-            <div style={{ fontSize: '3rem', marginBottom: 'var(--space-md)' }}>😔</div>
-            <h2 style={{ marginBottom: 'var(--space-md)' }}>{error || '文章未找到'}</h2>
-            <Link to="/blog" className="btn btn-primary">← 返回博客</Link>
+    if (!post) return (
+        <div className="container" style={{ padding: 'var(--space-3xl) 0', textAlign: 'center' }}>
+            <h1 style={{ color: 'var(--accent-pink)', fontSize: '4rem' }}>404</h1>
+            <p style={{ fontFamily: 'var(--font-mono)' }}>文件损坏或丢失</p>
+            <Link to="/blog" className="btn" style={{ marginTop: 'var(--space-lg)' }}>&lt; 返回</Link>
         </div>
     );
-
-    const date = new Date(post.createdAt).toLocaleDateString('zh-CN', {
-        year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    const readingTime = Math.max(1, Math.ceil(post.content.length / 500));
 
     return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
-            {/* 返回按钮 */}
-            <Link to="/blog" className="animate-fade-in" style={{
-                opacity: 0,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 'var(--space-sm)',
-                color: 'var(--text-muted)',
-                marginBottom: 'var(--space-2xl)',
-                fontSize: '0.9rem',
-            }}>
-                ← 返回博客
-            </Link>
+        <div style={{ position: 'relative' }}>
+            <ReadingProgress />
 
-            {/* 文章头部 */}
-            <header className="animate-fade-in-up" style={{ opacity: 0, marginBottom: 'var(--space-2xl)' }}>
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', marginBottom: 'var(--space-md)' }}>
-                    {post.tags.map(tag => (
-                        <span key={tag.id} className="tag">{tag.name}</span>
-                    ))}
-                </div>
-                <h1 style={{
-                    fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
-                    fontWeight: 800,
-                    lineHeight: 1.3,
-                    letterSpacing: '-0.02em',
-                    marginBottom: 'var(--space-md)',
-                }}>{post.title}</h1>
-                <div style={{
-                    display: 'flex',
+            <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)', maxWidth: '900px' }}>
+                <Link to="/blog" style={{
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 'var(--space-lg)',
+                    gap: '8px',
                     color: 'var(--text-muted)',
-                    fontSize: '0.85rem',
+                    marginBottom: 'var(--space-xl)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.9rem'
                 }}>
-                    <span>📅 {date}</span>
-                    <span>⏱️ 约 {readingTime} 分钟阅读</span>
-                </div>
-            </header>
+                    &lt; cd .. (返回)
+                </Link>
 
-            {/* 文章内容 */}
-            <article className="glass-card animate-fade-in-up delay-1" style={{
-                opacity: 0,
-                padding: 'var(--space-2xl)',
-                maxWidth: '800px',
-            }}>
-                <div className="markdown-body">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{post.content}</ReactMarkdown>
-                </div>
-            </article>
+                <article className="animate-fade-in-up">
+                    <header style={{ marginBottom: 'var(--space-2xl)', borderBottom: '1px solid var(--border-dim)', paddingBottom: 'var(--space-lg)' }}>
+                        <div style={{
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--accent-cyan)',
+                            marginBottom: 'var(--space-sm)',
+                            display: 'flex',
+                            gap: 'var(--space-md)',
+                            fontSize: '0.9rem'
+                        }}>
+                            <span>
+                                日期: {new Date(post.createdAt).toISOString().split('T')[0]}
+                            </span>
+                            <span>// 日志_ID: {post.id}</span>
+                        </div>
 
-            {/* 底部导航 */}
-            <div className="animate-fade-in-up delay-2" style={{
-                opacity: 0,
-                marginTop: 'var(--space-2xl)',
-                padding: 'var(--space-xl)',
-                borderTop: '1px solid var(--border-glass)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-            }}>
-                <Link to="/blog" className="btn btn-ghost">← 返回博客列表</Link>
+                        <h1 style={{
+                            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+                            color: 'var(--text-primary)',
+                            marginBottom: 'var(--space-md)',
+                            lineHeight: 1.2
+                        }}>
+                            <GlitchText text={post.title} as="span" />
+                        </h1>
+
+                        <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+                            {post.tags.map(tag => (
+                                <span key={tag.id} className="tag">{tag.name}</span>
+                            ))}
+                        </div>
+                    </header>
+
+                    <div className="markdown-body">
+                        <Markdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeHighlight]}
+                            components={{
+                                code(props) {
+                                    const { children, className, node, ...rest } = props
+                                    const match = /language-(\w+)/.exec(className || '')
+                                    // Custom code block styling if we wanted to intercept it, but CSS usually handles it well
+                                    return match ? (
+                                        <div style={{ position: 'relative', marginTop: '1.5em', marginBottom: '1.5em' }}>
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '-24px',
+                                                left: '0',
+                                                background: 'var(--bg-tertiary)',
+                                                border: '1px solid var(--border-dim)',
+                                                borderBottom: 'none',
+                                                padding: '2px 10px',
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-muted)',
+                                                fontFamily: 'var(--font-mono)',
+                                                borderTopLeftRadius: '4px',
+                                                borderTopRightRadius: '4px',
+                                                textTransform: 'uppercase'
+                                            }}>
+                                                {match[1]}
+                                            </div>
+                                            <code {...rest} className={className}>
+                                                {children}
+                                            </code>
+                                        </div>
+                                    ) : (
+                                        <code {...rest} className={className} style={{ color: 'var(--accent-pink)', background: 'rgba(255,0,85,0.1)', padding: '2px 4px', borderRadius: '3px' }}>
+                                            {children}
+                                        </code>
+                                    )
+                                },
+                                img: ({ node, ...props }) => (
+                                    <div style={{ border: '1px solid var(--border-dim)', padding: '5px', background: 'var(--bg-secondary)', margin: '2rem 0' }}>
+                                        <img {...props} style={{ maxWidth: '100%', height: 'auto', display: 'block' }} />
+                                    </div>
+                                ),
+                                blockquote: ({ node, ...props }) => (
+                                    <blockquote style={{
+                                        borderLeft: '4px solid var(--accent-purple)',
+                                        background: 'rgba(189, 0, 255, 0.05)',
+                                        padding: '1rem',
+                                        margin: '1.5rem 0',
+                                        color: 'var(--text-secondary)'
+                                    }} {...props} />
+                                )
+                            }}
+                        >
+                            {post.content}
+                        </Markdown>
+                    </div>
+
+                    <div style={{
+                        marginTop: 'var(--space-3xl)',
+                        paddingTop: 'var(--space-lg)',
+                        borderTop: '1px solid var(--border-dim)',
+                        textAlign: 'center',
+                        color: 'var(--text-muted)',
+                        fontFamily: 'var(--font-mono)'
+                    }}>
+                        *** 传输结束 ***
+                    </div>
+                </article>
             </div>
         </div>
     );

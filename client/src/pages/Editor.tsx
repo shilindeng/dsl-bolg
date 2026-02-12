@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { fetchPost, createPost, updatePost, uploadImage, fetchTags, type Tag } from '../api/client';
+import { useToast } from '../hooks/useToast';
 
 export default function Editor() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
+    const { showToast } = useToast();
 
     const [id, setId] = useState<number | null>(null);
     const [title, setTitle] = useState('');
@@ -36,7 +38,7 @@ export default function Editor() {
                     setPublished(post.published);
                     setTags(post.tags.map(t => t.name).join(', '));
                 })
-                .catch(() => alert('文章未找到'))
+                .catch(() => showToast('文章未找到', 'error'))
                 .finally(() => setLoading(false));
         }
     }, [slug]);
@@ -48,8 +50,9 @@ export default function Editor() {
             const { url } = await uploadImage(e.target.files[0]);
             const imageMarkdown = `\n![image](${url})\n`;
             setContent(prev => prev + imageMarkdown);
+            showToast('图片上传成功', 'success');
         } catch (error) {
-            alert('图片上传失败');
+            showToast('图片上传失败', 'error');
         } finally {
             setUploading(false);
         }
@@ -58,7 +61,7 @@ export default function Editor() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!title || !content) {
-            alert('标题和内容不能为空');
+            showToast('标题和内容不能为空', 'error');
             return;
         }
 
@@ -75,14 +78,14 @@ export default function Editor() {
 
             if (id) {
                 await updatePost(id, postData);
-                alert('文章更新成功');
+                showToast('文章更新成功', 'success');
             } else {
                 await createPost(postData);
-                alert('文章创建成功');
+                showToast('文章创建成功', 'success');
                 navigate('/blog');
             }
         } catch (error) {
-            alert(id ? '更新失败' : '创建失败');
+            showToast(id ? '更新失败' : '创建失败', 'error');
         } finally {
             setLoading(false);
         }

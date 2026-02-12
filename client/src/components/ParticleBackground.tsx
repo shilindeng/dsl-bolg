@@ -1,15 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTheme } from '../hooks/useTheme';
 
-interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    size: number;
-    opacity: number;
-}
-
 export default function ParticleBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const { theme } = useTheme();
@@ -22,85 +13,96 @@ export default function ParticleBackground() {
         if (!ctx) return;
 
         let animationId: number;
-        let particles: Particle[] = [];
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
 
-        const resize = () => {
-            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-        };
+        // Matrix Rain Conf
+        const fontSize = 14;
+        const columns = Math.floor(width / fontSize);
+        const drops: number[] = new Array(columns).fill(1);
+        const chars = '01日二三四五六七八九ABCDEF';
 
-        const createParticles = () => {
-            const count = Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 15000);
-            particles = Array.from({ length: Math.min(count, 80) }, () => ({
-                x: Math.random() * canvas.offsetWidth,
-                y: Math.random() * canvas.offsetHeight,
-                vx: (Math.random() - 0.5) * 0.4,
-                vy: (Math.random() - 0.5) * 0.4,
-                size: Math.random() * 2 + 0.5,
-                opacity: Math.random() * 0.5 + 0.1,
-            }));
-        };
+        const drawMatrix = () => {
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.05)'; // Fade effect
+            ctx.fillRect(0, 0, width, height);
 
-        const draw = () => {
-            ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-            const color = theme === 'dark' ? '0, 212, 170' : '0, 184, 148';
+            ctx.fillStyle = theme === 'dark' ? '#00ffc8' : '#00b890'; // Neon Cyan
+            ctx.font = `${fontSize}px 'IBM Plex Mono'`;
 
-            particles.forEach((p, i) => {
-                // 更新位置
-                p.x += p.vx;
-                p.y += p.vy;
-                if (p.x < 0 || p.x > canvas.offsetWidth) p.vx *= -1;
-                if (p.y < 0 || p.y > canvas.offsetHeight) p.vy *= -1;
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
 
-                // 画粒子
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${color}, ${p.opacity})`;
-                ctx.fill();
-
-                // 画连线
-                for (let j = i + 1; j < particles.length; j++) {
-                    const dx = p.x - particles[j].x;
-                    const dy = p.y - particles[j].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist < 120) {
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.strokeStyle = `rgba(${color}, ${0.1 * (1 - dist / 120)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
+                // Randomly brighter characters
+                if (Math.random() > 0.95) {
+                    ctx.fillStyle = '#fff';
+                } else {
+                    ctx.fillStyle = theme === 'dark' ? '#00ffc8' : '#00b890';
                 }
-            });
 
-            animationId = requestAnimationFrame(draw);
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
         };
 
-        resize();
-        createParticles();
-        draw();
+        const drawGrid = () => {
+            // Perspective Grid (Drawing once or overlaid? Matrix rain looks better alone or with subtle grid)
+            // Let's stick to Matrix rain as the primary effect, but maybe add a static grid overlay in CSS
+        };
 
-        window.addEventListener('resize', () => {
-            resize();
-            createParticles();
-        });
+        const animate = () => {
+            drawMatrix();
+            animationId = requestAnimationFrame(animate);
+        };
 
-        return () => cancelAnimationFrame(animationId);
+        const handleResize = () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        };
+
+        window.addEventListener('resize', handleResize);
+        animate();
+
+        return () => {
+            cancelAnimationFrame(animationId);
+            window.removeEventListener('resize', handleResize);
+        };
     }, [theme]);
 
     return (
-        <canvas
-            ref={canvasRef}
-            style={{
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden' }}>
+            {/* Perspective Grid Background (CSS) */}
+            <div style={{
                 position: 'absolute',
-                inset: 0,
+                top: 0,
+                left: 0,
                 width: '100%',
                 height: '100%',
+                background: `
+                    linear-gradient(transparent 95%, var(--border-dim) 95%),
+                    linear-gradient(90deg, transparent 95%, var(--border-dim) 95%)
+                `,
+                backgroundSize: '40px 40px',
+                transform: 'perspective(500px) rotateX(60deg) translateY(-100px) scale(2)',
+                opacity: 0.15,
                 pointerEvents: 'none',
-                zIndex: 0,
-            }}
-        />
+            }} />
+
+            <canvas
+                ref={canvasRef}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0.15, // Subtle rain
+                    pointerEvents: 'none',
+                }}
+            />
+        </div>
     );
 }

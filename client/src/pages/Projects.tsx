@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { fetchProjects, type Project } from '../api/client';
 import ProjectCard from '../components/ProjectCard';
+import TypewriterText from '../components/TypewriterText';
+import ScrollReveal from '../components/ScrollReveal';
 
 export default function Projects() {
     const [projects, setProjects] = useState<Project[]>([]);
@@ -15,17 +17,23 @@ export default function Projects() {
 
     return (
         <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
-            <div className="animate-fade-in-up" style={{ opacity: 0, marginBottom: 'var(--space-2xl)' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: 'var(--space-sm)' }}>
-                    <span className="gradient-text">🛠️ 项目</span>
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>我的 Vibe Coding 作品集</p>
-            </div>
+            <ScrollReveal className="animate-fade-in-up" style={{ marginBottom: 'var(--space-2xl)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+                    <span style={{ color: 'var(--accent-cyan)', fontSize: '2rem' }}>$</span>
+                    <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+                        ls <span style={{ color: 'var(--accent-purple)' }}>~/projects</span>
+                    </h1>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', paddingLeft: '32px' }}>
+                    // 列出目录中... 发现 {projects.length} 个可执行文件。
+                    // 正在列出目录... 发现 {projects.length} 个项目。
+                </p>
+            </ScrollReveal>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 'var(--space-3xl)', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: '2rem' }} className="animate-float">⏳</div>
-                    <p>加载中...</p>
+                    <div style={{ marginBottom: '1rem', fontSize: '2rem' }} className="animate-pulse">⌛</div>
+                    <TypewriterText text="编译资源中..." speed={50} />
                 </div>
             ) : (
                 <div style={{

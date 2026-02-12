@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { fetchPosts, fetchTags, type Post, type Tag } from '../api/client';
 import PostCard from '../components/PostCard';
+import TypewriterText from '../components/TypewriterText';
+import ScrollReveal from '../components/ScrollReveal';
 
 export default function Blog() {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -16,96 +18,136 @@ export default function Blog() {
     useEffect(() => {
         setLoading(true);
         fetchPosts({ tag: activeTag || undefined, search: search || undefined })
-            .then(setPosts)
+            .then((data) => setPosts(data))
             .catch(console.error)
             .finally(() => setLoading(false));
     }, [activeTag, search]);
 
     return (
         <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
-            {/* 页面标题 */}
-            <div className="animate-fade-in-up" style={{ opacity: 0, marginBottom: 'var(--space-2xl)' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: 'var(--space-sm)' }}>
-                    <span className="gradient-text">📝 博客</span>
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>技术笔记、项目分享与思考</p>
+            {/* Header */}
+            <div className="animate-fade-in-up" style={{ marginBottom: 'var(--space-2xl)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+                    <span style={{ color: 'var(--accent-pink)', fontSize: '2rem' }}>$</span>
+                    <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+                        cat <span style={{ color: 'var(--accent-cyan)' }}>/var/log/thoughts</span>
+                    </h1>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', paddingLeft: '32px' }}>
+                    // 解密开发者思维碎片...
+                </p>
             </div>
 
-            {/* 搜索和筛选 */}
-            <div className="animate-fade-in-up delay-1" style={{
-                opacity: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-md)',
+            {/* Controls */}
+            <ScrollReveal delay={0.1} className="blog-controls" style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr auto',
+                gap: 'var(--space-lg)',
                 marginBottom: 'var(--space-2xl)',
+                alignItems: 'end'
             }}>
-                {/* 搜索框 */}
-                <div style={{ position: 'relative', maxWidth: '400px' }}>
-                    <span style={{
-                        position: 'absolute',
-                        left: 'var(--space-md)',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
+                {/* Search */}
+                <div>
+                    <label style={{
+                        display: 'block',
+                        marginBottom: '8px',
+                        fontSize: '0.8rem',
                         color: 'var(--text-muted)',
-                        fontSize: '0.9rem',
-                    }}>🔍</span>
-                    <input
-                        type="text"
-                        placeholder="搜索文章..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: 'var(--space-sm) var(--space-md) var(--space-sm) 40px',
-                            background: 'var(--bg-glass)',
-                            border: '1px solid var(--border-glass)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.9rem',
-                            fontFamily: 'var(--font-sans)',
-                            outline: 'none',
-                            transition: 'border-color var(--transition-fast)',
-                        }}
-                        onFocus={e => (e.target.style.borderColor = 'var(--accent-primary)')}
-                        onBlur={e => (e.target.style.borderColor = 'var(--border-glass)')}
-                    />
+                        fontFamily: 'var(--font-mono)'
+                    }}>
+                        搜索_查询:
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                        <span style={{
+                            position: 'absolute',
+                            left: '12px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: 'var(--accent-cyan)',
+                            fontFamily: 'var(--font-mono)',
+                            pointerEvents: 'none'
+                        }}>grep &gt;</span>
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="输入关键字..."
+                            style={{
+                                width: '100%',
+                                padding: '12px 12px 12px 70px',
+                                background: 'rgba(5, 5, 16, 0.6)',
+                                border: '1px solid var(--border-dim)',
+                                color: 'var(--text-primary)',
+                                fontFamily: 'var(--font-mono)',
+                                outline: 'none',
+                                transition: 'all 0.2s ease',
+                                borderRadius: 'var(--radius-sm)',
+                            }}
+                            onFocus={e => {
+                                e.target.style.borderColor = 'var(--accent-cyan)';
+                                e.target.style.boxShadow = 'var(--glow-cyan)';
+                            }}
+                            onBlur={e => {
+                                e.target.style.borderColor = 'var(--border-dim)';
+                                e.target.style.boxShadow = 'none';
+                            }}
+                        />
+                    </div>
                 </div>
 
-                {/* 标签筛选 */}
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+                {/* Tags */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '600px' }}>
                     <button
-                        className={activeTag === '' ? 'btn btn-primary' : 'btn btn-ghost'}
                         onClick={() => setActiveTag('')}
-                        style={{ fontSize: '0.8rem', padding: '4px 14px' }}
-                    >全部</button>
+                        style={{
+                            background: activeTag === '' ? 'var(--accent-cyan)' : 'transparent',
+                            color: activeTag === '' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                            border: activeTag === '' ? '1px solid var(--accent-cyan)' : '1px solid var(--border-dim)',
+                            padding: '6px 12px',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.8rem',
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        [ 全部 ]
+                    </button>
                     {tags.map(tag => (
                         <button
                             key={tag.id}
-                            className={activeTag === tag.slug ? 'btn btn-primary' : 'btn btn-ghost'}
                             onClick={() => setActiveTag(tag.slug)}
-                            style={{ fontSize: '0.8rem', padding: '4px 14px' }}
+                            style={{
+                                background: activeTag === tag.slug ? 'var(--accent-cyan)' : 'transparent',
+                                color: activeTag === tag.slug ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                                border: activeTag === tag.slug ? '1px solid var(--accent-cyan)' : '1px solid var(--border-dim)',
+                                padding: '6px 12px',
+                                cursor: 'pointer',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '0.8rem',
+                                transition: 'all 0.2s',
+                            }}
                         >
-                            {tag.name} {tag._count && <span style={{ opacity: 0.6 }}>({tag._count.posts})</span>}
+                            {tag.name}
                         </button>
                     ))}
                 </div>
-            </div>
+            </ScrollReveal>
 
-            {/* 文章列表 */}
+            {/* List */}
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 'var(--space-3xl)', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: 'var(--space-md)' }} className="animate-float">⏳</div>
-                    <p>加载中...</p>
+                    <div className="animate-pulse" style={{ fontSize: '2rem', marginBottom: '1rem' }}>...</div>
+                    <TypewriterText text="加载文件中..." speed={50} />
                 </div>
             ) : posts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 'var(--space-3xl)', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: 'var(--space-md)' }}>📭</div>
-                    <p>没有找到相关文章</p>
+                <div style={{ textAlign: 'center', padding: 'var(--space-3xl)', color: 'var(--text-primary)' }}>
+                    <div style={{ fontSize: '3rem', color: 'var(--accent-pink)', marginBottom: '1rem' }}>404</div>
+                    <p style={{ fontFamily: 'var(--font-mono)' }}>该扇区未找到数据</p>
                 </div>
             ) : (
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
                     gap: 'var(--space-lg)',
                 }}>
                     {posts.map((post, i) => (
@@ -113,6 +155,17 @@ export default function Blog() {
                     ))}
                 </div>
             )}
+
+            <style>{`
+                @media (max-width: 900px) {
+                    .blog-controls {
+                        grid-template-columns: 1fr !important;
+                    }
+                    .blog-controls > div:last-child {
+                        justify-content: flex-start !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
