@@ -52,7 +52,8 @@ export default function Editor() {
             setContent(prev => prev + imageMarkdown);
             showToast('图片上传成功', 'success');
         } catch (error) {
-            showToast('图片上传失败', 'error');
+            console.error('Upload Error Details:', error);
+            showToast('图片上传失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
         } finally {
             setUploading(false);
         }

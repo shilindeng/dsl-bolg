@@ -1,27 +1,35 @@
 import { Router, Request, Response } from 'express';
-import prisma from '../lib/prisma.js';
+import { supabaseAdmin } from '../lib/supabase.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/projects — list all projects
+// GET /api/projects — 项目列表
 router.get('/', async (_req: Request, res: Response) => {
     try {
-        const projects = await prisma.project.findMany({
-            orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-        });
+        const { data: projects, error } = await supabaseAdmin
+            .from('Project')
+            .select('*')
+            .order('featured', { ascending: false })
+            .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+
         res.json(projects);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch projects' });
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ error: '获取项目失败' });
     }
 });
 
-// POST /api/projects — create a new project
-router.post('/', async (req: Request, res: Response) => {
+// POST /api/projects — 创建项目 (需认证)
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
 
-        const project = await prisma.project.create({
-            data: {
+        const { data, error } = await supabaseAdmin
+            .from('Project')
+            .insert([{
                 name,
                 description,
                 techStack: techStack || '',
@@ -29,49 +37,66 @@ router.post('/', async (req: Request, res: Response) => {
                 repoUrl: repoUrl || null,
                 coverImage: coverImage || null,
                 featured: featured || false,
-            },
-        });
+                // createdAt will be default now()
+            }])
+            .select()
+            .single();
 
-        res.status(201).json(project);
+        if (error) throw error;
+
+        res.status(201).json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to create project' });
+        console.error('Error creating project:', error);
+        res.status(500).json({ error: '创建项目失败' });
     }
 });
 
-// PUT /api/projects/:id — update a project
-router.put('/:id', async (req: Request, res: Response) => {
+// PUT /api/projects/:id — 更新项目 (需认证)
+router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id));
         const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
 
-        const data: any = {};
-        if (name !== undefined) data.name = name;
-        if (description !== undefined) data.description = description;
-        if (techStack !== undefined) data.techStack = techStack;
-        if (liveUrl !== undefined) data.liveUrl = liveUrl;
-        if (repoUrl !== undefined) data.repoUrl = repoUrl;
-        if (coverImage !== undefined) data.coverImage = coverImage;
-        if (featured !== undefined) data.featured = featured;
+        const updates: any = {};
+        if (name !== undefined) updates.name = name;
+        if (description !== undefined) updates.description = description;
+        if (techStack !== undefined) updates.techStack = techStack;
+        if (liveUrl !== undefined) updates.liveUrl = liveUrl;
+        if (repoUrl !== undefined) updates.repoUrl = repoUrl;
+        if (coverImage !== undefined) updates.coverImage = coverImage;
+        if (featured !== undefined) updates.featured = featured;
 
-        const project = await prisma.project.update({
-            where: { id },
-            data,
-        });
+        const { data, error } = await supabaseAdmin
+            .from('Project')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
-        res.json(project);
+        if (error) throw error;
+
+        res.json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Failed to update project' });
+        console.error('Error updating project:', error);
+        res.status(500).json({ error: '更新项目失败' });
     }
 });
 
-// DELETE /api/projects/:id — delete a project
-router.delete('/:id', async (req: Request, res: Response) => {
+// DELETE /api/projects/:id — 删除项目 (需认证)
+router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id));
-        await prisma.project.delete({ where: { id } });
-        res.json({ message: 'Project deleted' });
+        const { error } = await supabaseAdmin
+            .from('Project')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        res.json({ message: '项目已删除' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to delete project' });
+        console.error('Error deleting project:', error);
+        res.status(500).json({ error: '删除项目失败' });
     }
 });
 

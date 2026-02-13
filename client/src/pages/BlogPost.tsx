@@ -3,24 +3,52 @@ import { useParams, Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { fetchPost, type Post } from '../api/client';
+import { fetchPost, likePost, fetchComments, type Post, type Comment } from '../api/client';
 import ReadingProgress from '../components/ReadingProgress';
 import GlitchText from '../components/GlitchText';
-import 'highlight.js/styles/atom-one-dark.css'; // Ensure we have a dark theme for code
+import Comments from '../components/Comments';
+import 'highlight.js/styles/atom-one-dark.css';
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
     const [post, setPost] = useState<Post | null>(null);
+    const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [liking, setLiking] = useState(false);
 
     useEffect(() => {
         if (slug) {
             fetchPost(slug)
-                .then(setPost)
+                .then(data => {
+                    setPost(data);
+                    // Initial comments might come from post include, or fetch separately
+                    if (data.comments) setComments(data.comments);
+                    // If backend doesn't return deep comments, might need fetchComments(data.id)
+                })
                 .catch(console.error)
                 .finally(() => setLoading(false));
         }
     }, [slug]);
+
+    const handleLike = async () => {
+        if (!post || liking) return;
+        setLiking(true);
+        try {
+            const { likes } = await likePost(post.slug);
+            setPost(prev => prev ? { ...prev, meta: { ...prev.meta!, likes } } : null);
+        } catch (error) {
+            console.error('Like failed', error);
+        } finally {
+            setLiking(false);
+        }
+    };
+
+    const handleCommentAdded = (newComment: Comment) => {
+        // Typically new comments are pending approval, so maybe don't show immediately?
+        // Or show with a "Pending" flag. 
+        // For now, let's assume if it came back it might be visible or we just alert user.
+        // Actually the API returns the comment.
+    };
 
     if (loading) return (
         <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
@@ -70,6 +98,7 @@ export default function BlogPost() {
                                 日期: {new Date(post.createdAt).toISOString().split('T')[0]}
                             </span>
                             <span>// 日志_ID: {post.id}</span>
+                            <span>👀 {post.meta?.views || 0}</span>
                         </div>
 
                         <h1 style={{
@@ -96,7 +125,6 @@ export default function BlogPost() {
                                 code(props) {
                                     const { children, className, node, ...rest } = props
                                     const match = /language-(\w+)/.exec(className || '')
-                                    // Custom code block styling if we wanted to intercept it, but CSS usually handles it well
                                     return match ? (
                                         <div style={{ position: 'relative', marginTop: '1.5em', marginBottom: '1.5em' }}>
                                             <div style={{
@@ -152,10 +180,35 @@ export default function BlogPost() {
                         borderTop: '1px solid var(--border-dim)',
                         textAlign: 'center',
                         color: 'var(--text-muted)',
-                        fontFamily: 'var(--font-mono)'
                     }}>
-                        *** 传输结束 ***
+                        <div style={{ marginBottom: '2rem' }}>
+                            <button
+                                onClick={handleLike}
+                                disabled={liking}
+                                className="btn"
+                                style={{
+                                    background: 'var(--bg-secondary)',
+                                    border: '1px solid var(--accent-pink)',
+                                    color: 'var(--accent-pink)',
+                                    fontSize: '1.2rem',
+                                    padding: '0.5rem 2rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '10px'
+                                }}
+                            >
+                                <span>❤️</span>
+                                <span>{post.meta?.likes || 0}</span>
+                            </button>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)' }}>*** 传输结束 ***</div>
                     </div>
+
+                    <Comments
+                        postId={post.id}
+                        comments={comments}
+                        onCommentAdded={handleCommentAdded}
+                    />
                 </article>
             </div>
         </div>

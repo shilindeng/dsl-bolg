@@ -3,21 +3,29 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Post {
-  id         Int      @id @default(autoincrement())
-  title      String
-  slug       String   @unique
-  excerpt    String   @default("")
-  content    String
-  coverImage String?
-  published  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  tags       Tag[]    @relation("PostTags")
+  id          Int        @id @default(autoincrement())
+  title       String
+  slug        String     @unique
+  excerpt     String     @default("")
+  content     String
+  coverImage  String?
+  published   Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  scheduledAt DateTime?
+  tags        Tag[]      @relation("PostTags")
+  categoryId  Int?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  comments    Comment[]
+  meta        PostMeta?
+  seriesId    Int?
+  seriesOrder Int?
+  series      Series?    @relation(fields: [seriesId], references: [id])
 }
 
 model Tag {
@@ -25,6 +33,44 @@ model Tag {
   name  String @unique
   slug  String @unique
   posts Post[] @relation("PostTags")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  slug  String @unique
+  posts Post[]
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  author    String
+  email     String?
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  Int?
+  parent    Comment?  @relation("Replies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("Replies")
+  approved  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+}
+
+model PostMeta {
+  id       Int  @id @default(autoincrement())
+  postId   Int  @unique
+  post     Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  views    Int  @default(0)
+  likes    Int  @default(0)
+  readTime Int  @default(0)
+}
+
+model Series {
+  id          Int     @id @default(autoincrement())
+  title       String
+  slug        String  @unique
+  description String?
+  posts       Post[]
 }
 
 model Project {

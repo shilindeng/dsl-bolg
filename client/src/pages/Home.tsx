@@ -21,8 +21,8 @@ export default function Home() {
     }, [play]);
 
     useEffect(() => {
-        Promise.all([fetchPosts(), fetchProjects()])
-            .then(([p, pr]) => { setPosts(p.slice(0, 3)); setProjects(pr.filter(x => x.featured).slice(0, 2)); })
+        Promise.all([fetchPosts({ limit: 3 }), fetchProjects()])
+            .then(([postsRes, pr]) => { setPosts(postsRes.data.slice(0, 3)); setProjects(pr.filter(x => x.featured).slice(0, 2)); })
             .catch(console.error)
             .finally(() => setLoading(false));
     }, []);
