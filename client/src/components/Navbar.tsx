@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import GlitchText from './GlitchText';
 
 const navLinks = [
@@ -15,6 +16,26 @@ export default function Navbar() {
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+        });
+
+        // Listen for changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        // user state will update via listener
+    };
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -25,6 +46,21 @@ export default function Navbar() {
     useEffect(() => {
         setMobileOpen(false);
     }, [location]);
+
+    const navLinkStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 16px',
+        fontSize: '0.85rem',
+        fontWeight: 600,
+        textDecoration: 'none',
+        position: 'relative' as const,
+        clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0 100%, 0 20%)',
+        transition: 'all 0.2s ease',
+        background: 'transparent',
+        cursor: 'pointer'
+    };
 
     return (
         <nav className="navbar" style={{
@@ -103,6 +139,34 @@ export default function Navbar() {
                         </Link>
                     );
                 })}
+
+                {/* Auth Button */}
+                {user ? (
+                    <button
+                        onClick={handleLogout}
+                        style={{
+                            ...navLinkStyle,
+                            border: '1px solid var(--accent-pink)',
+                            color: 'var(--accent-pink)',
+                            marginLeft: '10px'
+                        }}
+                    >
+                        <span>[ 登出 ]</span>
+                    </button>
+                ) : (
+                    <Link
+                        to="/login"
+                        style={{
+                            ...navLinkStyle,
+                            border: '1px solid var(--accent-cyan)',
+                            color: 'var(--accent-cyan)',
+                            marginLeft: '10px'
+                        }}
+                    >
+                        <span>[ 登录 ]</span>
+                    </Link>
+                )}
+
                 <div style={{ marginLeft: 'var(--space-md)' }}>
                     <ThemeToggle />
                 </div>

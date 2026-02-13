@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 
 /**
  * 认证中间件 — 验证 Supabase JWT Token
@@ -16,7 +16,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     const token = authHeader.split(' ')[1];
 
     try {
-        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
             res.status(401).json({ error: '未授权：Token 无效或已过期' });

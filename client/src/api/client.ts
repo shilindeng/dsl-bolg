@@ -121,11 +121,12 @@ export async function fetchPost(slug: string): Promise<Post> {
 }
 
 export async function createPost(post: PostInput): Promise<Post> {
+    const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeaders(),
+            ...headers,
         },
         body: JSON.stringify(post),
     });
@@ -134,11 +135,12 @@ export async function createPost(post: PostInput): Promise<Post> {
 }
 
 export async function updatePost(id: number, post: Partial<PostInput>): Promise<Post> {
+    const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts/${id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeaders(),
+            ...headers,
         },
         body: JSON.stringify(post),
     });
@@ -147,9 +149,10 @@ export async function updatePost(id: number, post: Partial<PostInput>): Promise<
 }
 
 export async function deletePost(id: number): Promise<void> {
+    const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders(),
+        headers: headers,
     });
     if (!res.ok) throw new Error('删除文章失败');
 }
@@ -213,9 +216,10 @@ export async function fetchProjects(): Promise<Project[]> {
 export async function uploadImage(file: File): Promise<{ url: string; filename: string }> {
     const formData = new FormData();
     formData.append('image', file);
+    const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
-        headers: getAuthHeaders(),
+        headers: headers,
         body: formData,
     });
     if (!res.ok) throw new Error('图片上传失败');

@@ -12,6 +12,8 @@ import commentsRouter from './routes/comments.js';
 import categoriesRouter from './routes/categories.js';
 import feedRouter from './routes/feed.js';
 import { uploadRouter } from './middleware/upload.js';
+import sitemapRouter from './routes/sitemap.js';
+import analyticsRouter from './routes/analytics.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,6 +45,8 @@ app.use('/api/comments', commentsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/feed', feedRouter);
 app.use('/api', uploadRouter);
+app.use('/api/analytics', analyticsRouter);
+app.use('/', sitemapRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

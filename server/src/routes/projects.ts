@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -7,7 +7,7 @@ const router = Router();
 // GET /api/projects — 项目列表
 router.get('/', async (_req: Request, res: Response) => {
     try {
-        const { data: projects, error } = await supabaseAdmin
+        const { data: projects, error } = await supabase
             .from('Project')
             .select('*')
             .order('featured', { ascending: false })
@@ -27,7 +27,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('Project')
             .insert([{
                 name,
@@ -66,7 +66,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
         if (coverImage !== undefined) updates.coverImage = coverImage;
         if (featured !== undefined) updates.featured = featured;
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('Project')
             .update(updates)
             .eq('id', id)
@@ -86,7 +86,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id));
-        const { error } = await supabaseAdmin
+        const { error } = await supabase
             .from('Project')
             .delete()
             .eq('id', id);

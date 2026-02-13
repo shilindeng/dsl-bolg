@@ -7,6 +7,7 @@ import TypewriterText from '../components/TypewriterText';
 import GlitchText from '../components/GlitchText';
 import ScrollReveal from '../components/ScrollReveal';
 import { useSound } from '../hooks/useSound';
+import SEO from '../components/SEO';
 
 export default function Home() {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -29,6 +30,7 @@ export default function Home() {
 
     return (
         <div style={{ position: 'relative' }}>
+            <SEO title="首页" description="DSL 的个人赛博朋克博客 — 代码、AI 与数字现实。" />
             {/* Hero Section */}
             <section style={{
                 position: 'relative',

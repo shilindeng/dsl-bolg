@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 import slugify from 'slugify';
 
 const router = Router();
@@ -11,7 +11,7 @@ router.get('/', async (_req: Request, res: Response) => {
         // _PostTags is the join table created by Prisma. 
         // PostgREST might not expose tables starting with _ by default or it might be tricky.
         // Let's first try basic select.
-        const { data: tags, error } = await supabaseAdmin
+        const { data: tags, error } = await supabase
             .from('Tag')
             .select('*')
             .order('name', { ascending: true });
@@ -40,7 +40,7 @@ router.post('/', async (req: Request, res: Response) => {
         const { name } = req.body;
         const slug = slugify(name, { lower: true, strict: true });
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from('Tag')
             .insert([{ name, slug }])
             .select() // Return the created record

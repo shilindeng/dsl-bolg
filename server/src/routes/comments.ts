@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
         // Note: 'replies' alias relies on self-relation FK. 
         // We explicitly specify the relation if needed, or rely on Supabase detection.
         // Assuming FK is parentId.
-        const { data: comments, error } = await supabaseAdmin
+        const { data: comments, error } = await supabase
             .from('Comment')
             .select(`
                 *,
@@ -48,7 +48,7 @@ router.post('/', async (req: Request, res: Response) => {
             return;
         }
 
-        const { data: comment, error } = await supabaseAdmin
+        const { data: comment, error } = await supabase
             .from('Comment')
             .insert([{
                 content,

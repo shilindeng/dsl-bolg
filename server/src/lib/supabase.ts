@@ -1,19 +1,15 @@
-import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
+dotenv.config();
 
-if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('SERVER: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Check .env file.');
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase env vars in server!');
 }
 
+export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
-// 服务端使用 service_role key (绕过 RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-// 客户端使用 anon key (受 RLS 约束)
-export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-
-export { supabaseUrl, supabaseAnonKey };
+export const supabaseAdmin = createClient(supabaseUrl || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '');

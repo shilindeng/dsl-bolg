@@ -7,6 +7,9 @@ import BlogPost from './pages/BlogPost';
 import Editor from './pages/Editor';
 import Projects from './pages/Projects';
 import About from './pages/About';
+import Login from './pages/Login';
+import Dashboard from './pages/admin/Dashboard';
+import AdminRoute from './components/AdminRoute';
 import { ThemeProvider } from './hooks/useTheme';
 import { ToastProvider } from './hooks/useToast';
 import CRTOverlay from './components/CRTOverlay';
@@ -29,9 +32,15 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/blog" element={<Blog />} />
                             <Route path="/blog/:slug" element={<BlogPost />} />
+                            <Route path="/login" element={<Login />} />
                             <Route path="/editor" element={<Editor />} />
                             <Route path="/projects" element={<Projects />} />
                             <Route path="/about" element={<About />} />
+
+                            {/* Admin Routes */}
+                            <Route element={<AdminRoute />}>
+                                <Route path="/admin/dashboard" element={<Dashboard />} />
+                            </Route>
                         </Routes>
                     </main>
 

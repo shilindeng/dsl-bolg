@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabaseAdmin } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const router = Router();
 
@@ -7,7 +7,7 @@ const router = Router();
 router.get('/rss', async (_req: Request, res: Response) => {
     try {
         // Fetch posts
-        const { data: posts, error } = await supabaseAdmin
+        const { data: posts, error } = await supabase
             .from('Post')
             .select('*')
             .eq('published', true)
@@ -21,14 +21,14 @@ router.get('/rss', async (_req: Request, res: Response) => {
         const postIds = posts.map(p => p.id);
 
         // 2. Get PostTags (postId, tagId)
-        const { data: postTags } = await supabaseAdmin
+        const { data: postTags } = await supabase
             .from('PostTags')
             .select('postId, tagId')
             .in('postId', postIds);
 
         // 3. Get all relevant Tags
         const tagIds = postTags ? [...new Set(postTags.map(pt => pt.tagId))] : [];
-        const { data: allTags } = await supabaseAdmin
+        const { data: allTags } = await supabase
             .from('Tag')
             .select('*')
             .in('id', tagIds);
@@ -79,7 +79,7 @@ router.get('/rss', async (_req: Request, res: Response) => {
 // GET /api/feed/sitemap.xml — XML Sitemap
 router.get('/sitemap.xml', async (_req: Request, res: Response) => {
     try {
-        const { data: posts, error } = await supabaseAdmin
+        const { data: posts, error } = await supabase
             .from('Post')
             .select('slug, updatedAt')
             .eq('published', true);

@@ -7,6 +7,8 @@ import { fetchPost, likePost, fetchComments, type Post, type Comment } from '../
 import ReadingProgress from '../components/ReadingProgress';
 import GlitchText from '../components/GlitchText';
 import Comments from '../components/Comments';
+import SEO from '../components/SEO';
+import LazyImage from '../components/LazyImage';
 import 'highlight.js/styles/atom-one-dark.css';
 
 export default function BlogPost() {
@@ -69,6 +71,12 @@ export default function BlogPost() {
 
     return (
         <div style={{ position: 'relative' }}>
+            <SEO
+                title={post.title}
+                description={post.excerpt || post.content.substring(0, 150)}
+                image={post.coverImage}
+                type="article"
+            />
             <ReadingProgress />
 
             <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)', maxWidth: '900px' }}>
@@ -156,7 +164,7 @@ export default function BlogPost() {
                                 },
                                 img: ({ node, ...props }) => (
                                     <div style={{ border: '1px solid var(--border-dim)', padding: '5px', background: 'var(--bg-secondary)', margin: '2rem 0' }}>
-                                        <img {...props} style={{ maxWidth: '100%', height: 'auto', display: 'block' }} />
+                                        <LazyImage {...props} src={props.src || ''} alt={props.alt} />
                                     </div>
                                 ),
                                 blockquote: ({ node, ...props }) => (
