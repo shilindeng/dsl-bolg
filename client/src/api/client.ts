@@ -121,7 +121,7 @@ export async function fetchPost(slug: string): Promise<Post> {
 }
 
 export async function createPost(post: PostInput): Promise<Post> {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts`, {
         method: 'POST',
         headers: {
@@ -135,7 +135,7 @@ export async function createPost(post: PostInput): Promise<Post> {
 }
 
 export async function updatePost(id: number, post: Partial<PostInput>): Promise<Post> {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts/${id}`, {
         method: 'PUT',
         headers: {
@@ -149,7 +149,7 @@ export async function updatePost(id: number, post: Partial<PostInput>): Promise<
 }
 
 export async function deletePost(id: number): Promise<void> {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const res = await fetch(`${API_BASE}/posts/${id}`, {
         method: 'DELETE',
         headers: headers,
@@ -216,7 +216,7 @@ export async function fetchProjects(): Promise<Project[]> {
 export async function uploadImage(file: File): Promise<{ url: string; filename: string }> {
     const formData = new FormData();
     formData.append('image', file);
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders();
     const res = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
         headers: headers,
@@ -229,15 +229,7 @@ export async function uploadImage(file: File): Promise<{ url: string; filename: 
 // ==================== 认证工具 ====================
 
 function getAuthHeaders(): Record<string, string> {
-    // Try to get token from Supabase client storage if manually set item not found
-    // Usually Supabase stores it as `sb-<project-ref>-auth-token`
-    // But let's assume the user's login logic sets 'supabase_token' as implied by line 227.
-    // If not, we might need to debug where the token is stored. 
-    // For now, trust the existing code but ensure it's actually set.
-    const token = localStorage.getItem('supabase_token')
-        || localStorage.getItem('sb-access-token')
-        || (JSON.parse(localStorage.getItem('sb-fzwbtffigdqkppfzwbtf-auth-token') || '{}')?.access_token);
-
+    const token = localStorage.getItem('auth_token');
     if (token) {
         return { Authorization: `Bearer ${token}` };
     }

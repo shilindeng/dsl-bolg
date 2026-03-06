@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
 import GlitchText from '../../components/GlitchText';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -14,27 +13,29 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch data from our new Analytics API
-        // But wait, our client.ts doesn't have analytics methods yet.
-        // We can use supabase client to call our API? 
-        // Or better, just add a fetch call here with token.
-
         const fetchData = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
-
-            if (!token) return;
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                console.warn('[Dashboard] No auth_token found in localStorage');
+                setLoading(false);
+                return;
+            }
 
             const headers = { 'Authorization': `Bearer ${token}` };
 
             try {
                 const [summaryRes, topRes] = await Promise.all([
-                    fetch('http://localhost:3001/api/analytics/summary', { headers }),
-                    fetch('http://localhost:3001/api/analytics/top-posts', { headers })
+                    fetch('/api/analytics/summary', { headers }),
+                    fetch('/api/analytics/top-posts', { headers })
                 ]);
 
+                console.log('[Dashboard] summary status:', summaryRes.status, 'top-posts status:', topRes.status);
+
                 if (summaryRes.ok) setStats(await summaryRes.json());
+                else console.error('[Dashboard] Summary failed:', await summaryRes.text());
+
                 if (topRes.ok) setTopPosts(await topRes.json());
+                else console.error('[Dashboard] Top posts failed:', await topRes.text());
             } catch (error) {
                 console.error('Dashboard fetch error', error);
             } finally {
@@ -47,7 +48,7 @@ export default function Dashboard() {
 
     if (loading) return <div>Loading Matrix...</div>;
 
-    // Fake trend data for chart if we don't have real time-series yet
+    // Fake trend data for chart
     const data = [
         { name: 'Mon', uv: 4000, pv: 2400 },
         { name: 'Tue', uv: 3000, pv: 1398 },
@@ -121,7 +122,7 @@ export default function Dashboard() {
                                     <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{p.title.substring(0, 20)}...</span>
                                 </div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                    {p.meta?.[0]?.views || p.views || 0} 👀
+                                    {p.views || 0} 👀
                                 </div>
                             </div>
                         ))}

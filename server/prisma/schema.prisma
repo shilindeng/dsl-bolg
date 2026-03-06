@@ -3,8 +3,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./blog.db"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String   @default("Admin")
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
 }
 
 model Post {
@@ -17,8 +26,6 @@ model Post {
   published   Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  scheduledAt DateTime?
-  tags        Tag[]      @relation("PostTags")
   categoryId  Int?
   category    Category?  @relation(fields: [categoryId], references: [id])
   comments    Comment[]
@@ -26,13 +33,23 @@ model Post {
   seriesId    Int?
   seriesOrder Int?
   series      Series?    @relation(fields: [seriesId], references: [id])
+  tags        PostTag[]
 }
 
 model Tag {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  slug  String @unique
-  posts Post[] @relation("PostTags")
+  id    Int       @id @default(autoincrement())
+  name  String    @unique
+  slug  String    @unique
+  posts PostTag[]
+}
+
+model PostTag {
+  postId Int
+  tagId  Int
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
 }
 
 model Category {

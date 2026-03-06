@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import GlitchText from './GlitchText';
 
 const navLinks = [
@@ -18,23 +17,36 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [user, setUser] = useState<any>(null);
 
+    const checkAuth = () => {
+        const userStr = localStorage.getItem('auth_user');
+        const token = localStorage.getItem('auth_token');
+        if (userStr && token) {
+            try {
+                setUser(JSON.parse(userStr));
+            } catch {
+                setUser(null);
+            }
+        } else {
+            setUser(null);
+        }
+    };
+
     useEffect(() => {
-        // Check initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-        });
-
-        // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-        });
-
-        return () => subscription.unsubscribe();
+        checkAuth();
+        // Listen for auth changes from Login/Logout
+        window.addEventListener('auth-change', checkAuth);
+        window.addEventListener('storage', checkAuth);
+        return () => {
+            window.removeEventListener('auth-change', checkAuth);
+            window.removeEventListener('storage', checkAuth);
+        };
     }, []);
 
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-        // user state will update via listener
+    const handleLogout = () => {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        setUser(null);
+        window.dispatchEvent(new Event('auth-change'));
     };
 
     useEffect(() => {

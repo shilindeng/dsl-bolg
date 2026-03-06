@@ -1,19 +1,37 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 
 export default function AdminRoute() {
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            // Simple email check for now. Ideally use Role or Custom Claim.
-            if (user?.email === 'admin@example.com') {
-                setIsAdmin(true);
+        const checkAdmin = async () => {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                setLoading(false);
+                return;
             }
+
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    if (user.role === 'admin') {
+                        setIsAdmin(true);
+                    }
+                }
+            } catch (error) {
+                console.error('Admin check failed:', error);
+            }
+
             setLoading(false);
-        });
+        };
+
+        checkAdmin();
     }, []);
 
     if (loading) return (

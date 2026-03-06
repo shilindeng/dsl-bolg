@@ -1,40 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { supabase, supabaseAdmin } from '../lib/supabase.js';
+import prisma from '../lib/prisma.js';
 import slugify from 'slugify';
 import { authMiddleware } from '../middleware/auth.js';
 
-// Define AuthenticatedRequest interface since global declaration might not be picked up immediately
 interface AuthenticatedRequest extends Request {
     user?: any;
 }
 
 const router = Router();
-
-// Helper to get tags for posts
-async function attachTagsToPosts(posts: any[]) {
-    if (!posts || posts.length === 0) return posts;
-    const postIds = posts.map(p => p.id);
-
-    // Get PostTags
-    const { data: postTags } = await supabaseAdmin
-        .from('PostTags')
-        .select('postId, tagId')
-        .in('postId', postIds);
-
-    if (!postTags || postTags.length === 0) return posts.map(p => ({ ...p, tags: [] }));
-
-    const tagIds = [...new Set(postTags.map(pt => pt.tagId))];
-    const { data: allTags } = await supabase
-        .from('Tag')
-        .select('*')
-        .in('id', tagIds);
-
-    return posts.map(post => {
-        const currentTagIds = postTags.filter(pt => pt.postId === post.id).map(pt => pt.tagId);
-        const tags = allTags?.filter(t => currentTagIds.includes(t.id)) || [];
-        return { ...post, tags };
-    });
-}
 
 // GET /api/posts — 分页列表
 router.get('/', async (req: Request, res: Response) => {
@@ -43,70 +16,68 @@ router.get('/', async (req: Request, res: Response) => {
 
         const pageNum = Math.max(1, parseInt(page as string));
         const pageSize = Math.min(50, Math.max(1, parseInt(limit as string)));
-        const from = (pageNum - 1) * pageSize;
-        const to = from + pageSize - 1;
+        const skip = (pageNum - 1) * pageSize;
 
-        let query = supabase
-            .from('Post')
-            .select(`
-                *,
-                category:Category(*),
-                meta:PostMeta(*),
-                series:Series(*)
-            `, { count: 'exact' });
+        // Build where clause
+        const where: any = {};
 
-        // Filters
-        if (published === 'true') query = query.eq('published', true);
-        if (published === 'false') query = query.eq('published', false);
+        if (published === 'true') where.published = true;
+        if (published === 'false') where.published = false;
 
-        if (category) {
-            // Get Category ID first
-            const { data: cat } = await supabase.from('Category').select('id').eq('slug', category).single();
-            if (cat) query = query.eq('categoryId', cat.id);
-            else return res.json({ data: [], pagination: { page: pageNum, limit: pageSize, total: 0, totalPages: 0 } });
+        if (search) {
+            where.OR = [
+                { title: { contains: search as string } },
+                { content: { contains: search as string } }
+            ];
         }
 
-        if (tag) {
-            // Get Tag ID -> Post IDs
-            const { data: t } = await supabase.from('Tag').select('id').eq('slug', tag).single();
-            if (t) {
-                const { data: pts } = await supabase.from('PostTags').select('postId').eq('tagId', t.id);
-                const postIds = pts?.map(pt => pt.postId) || [];
-                if (postIds.length > 0) query = query.in('id', postIds);
-                else return res.json({ data: [], pagination: { page: pageNum, limit: pageSize, total: 0, totalPages: 0 } });
+        if (category) {
+            const cat = await prisma.category.findUnique({ where: { slug: category as string } });
+            if (cat) {
+                where.categoryId = cat.id;
             } else {
                 return res.json({ data: [], pagination: { page: pageNum, limit: pageSize, total: 0, totalPages: 0 } });
             }
         }
 
-        if (search) {
-            query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+        if (tag) {
+            const t = await prisma.tag.findUnique({ where: { slug: tag as string } });
+            if (t) {
+                where.tags = { some: { tagId: t.id } };
+            } else {
+                return res.json({ data: [], pagination: { page: pageNum, limit: pageSize, total: 0, totalPages: 0 } });
+            }
         }
 
-        query = query.order('createdAt', { ascending: false }).range(from, to);
+        const [posts, total] = await Promise.all([
+            prisma.post.findMany({
+                where,
+                include: {
+                    tags: { include: { tag: true } },
+                    category: true,
+                    meta: true,
+                    series: true,
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: pageSize,
+            }),
+            prisma.post.count({ where }),
+        ]);
 
-        const { data: posts, count, error } = await query;
-
-        if (error) throw error;
-
-        // Attach tags manually
-        let postsWithTags = await attachTagsToPosts(posts || []);
-
-        // Flatten arrays for 1:1 relations (meta, category, series) if Supabase returns them as arrays
-        postsWithTags = postsWithTags.map((p: any) => ({
+        // Transform tags from PostTag[] to Tag[]
+        const postsFormatted = posts.map(p => ({
             ...p,
-            meta: Array.isArray(p.meta) ? p.meta[0] : p.meta,
-            category: Array.isArray(p.category) ? p.category[0] : p.category,
-            series: Array.isArray(p.series) ? p.series[0] : p.series
+            tags: p.tags.map(pt => pt.tag),
         }));
 
         res.json({
-            data: postsWithTags,
+            data: postsFormatted,
             pagination: {
                 page: pageNum,
                 limit: pageSize,
-                total: count || 0,
-                totalPages: Math.ceil((count || 0) / pageSize),
+                total,
+                totalPages: Math.ceil(total / pageSize),
             },
         });
     } catch (error) {
@@ -118,68 +89,47 @@ router.get('/', async (req: Request, res: Response) => {
 // GET /api/posts/:slug — 单篇文章
 router.get('/:slug', async (req: Request, res: Response) => {
     try {
-        const { data: post, error } = await supabase
-            .from('Post')
-            .select(`
-                *,
-                category:Category(*),
-                meta:PostMeta(*),
-                series:Series(*),
-                comments:Comment(*)
-            `)
-            .eq('slug', req.params.slug)
-            .single();
+        const post = await prisma.post.findUnique({
+            where: { slug: req.params.slug },
+            include: {
+                tags: { include: { tag: true } },
+                category: true,
+                meta: true,
+                series: true,
+            },
+        });
 
-        if (error || !post) {
+        if (!post) {
             return res.status(404).json({ error: '文章未找到' });
         }
 
-        // Attach tags
-        let [postWithTags] = await attachTagsToPosts([post]);
-
-        // Flatten 1:1 relations
-        postWithTags = {
-            ...postWithTags,
-            meta: Array.isArray(postWithTags.meta) ? postWithTags.meta[0] : postWithTags.meta,
-            category: Array.isArray(postWithTags.category) ? postWithTags.category[0] : postWithTags.category,
-            series: Array.isArray(postWithTags.series) ? postWithTags.series[0] : postWithTags.series,
-        };
-
-        // Fetch comments recursively (manual or separate query?)
-        // The simple select above gets comments but not replies. 
-        // We fetch comments separately to match structure.
-        const { data: comments } = await supabase
-            .from('Comment')
-            .select('*, replies:Comment!parentId(*)')
-            .eq('postId', post.id)
-            .eq('approved', true) // Only approved
-            .is('parentId', null)
-            .order('createdAt', { ascending: false });
-
-        postWithTags.comments = comments || [];
+        // Fetch comments with replies
+        const comments = await prisma.comment.findMany({
+            where: { postId: post.id, approved: true, parentId: null },
+            include: {
+                replies: {
+                    where: { approved: true },
+                    orderBy: { createdAt: 'asc' },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
 
         // Increment views
-        const { error: rpcError } = await supabaseAdmin.rpc('increment_page_view', { page_slug: req.params.slug });
+        await prisma.postMeta.upsert({
+            where: { postId: post.id },
+            update: { views: { increment: 1 } },
+            create: { postId: post.id, views: 1, readTime: Math.ceil(post.content.length / 500) },
+        });
 
-        if (rpcError) {
-            // Fallback: manual update if RPC fails (e.g. not applied yet)
-            console.warn('RPC increment_page_view failed, trying manual update', rpcError);
-            const { data: meta } = await supabase.from('PostMeta').select('*').eq('postId', post.id).single();
-            if (meta) {
-                await supabase.from('PostMeta').update({ views: meta.views + 1 }).eq('postId', post.id);
-            } else {
-                await supabase.from('PostMeta').insert({ postId: post.id, views: 1, readTime: Math.ceil(post.content.length / 500) });
-            }
-        }
-        // Or manual upsert meta
-        const { data: meta } = await supabase.from('PostMeta').select('*').eq('postId', post.id).single();
-        if (meta) {
-            await supabaseAdmin.from('PostMeta').update({ views: meta.views + 1 }).eq('postId', post.id);
-        } else {
-            await supabaseAdmin.from('PostMeta').insert({ postId: post.id, views: 1, readTime: Math.ceil(post.content.length / 500) });
-        }
+        // Format response
+        const formatted = {
+            ...post,
+            tags: post.tags.map(pt => pt.tag),
+            comments,
+        };
 
-        res.json(postWithTags);
+        res.json(formatted);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: '获取文章失败' });
@@ -189,20 +139,16 @@ router.get('/:slug', async (req: Request, res: Response) => {
 // POST /api/posts/:slug/like
 router.post('/:slug/like', async (req: Request, res: Response) => {
     try {
-        const { data: post } = await supabase.from('Post').select('id').eq('slug', req.params.slug).single();
+        const post = await prisma.post.findUnique({ where: { slug: req.params.slug } });
         if (!post) return res.status(404).json({ error: '文章未找到' });
 
-        const { data: meta } = await supabase.from('PostMeta').select('*').eq('postId', post.id).single();
-        let newLikes = 1;
-        if (meta) {
-            newLikes = meta.likes + 1;
-            await supabase.from('PostMeta').update({ likes: newLikes }).eq('postId', post.id);
-        } else {
-            await supabase.from('PostMeta').insert({ postId: post.id, likes: 1 });
-        }
+        const meta = await prisma.postMeta.upsert({
+            where: { postId: post.id },
+            update: { likes: { increment: 1 } },
+            create: { postId: post.id, likes: 1 },
+        });
 
-        console.log(`[Like] Post ${post.id} liked. New count: ${newLikes}`);
-        res.json({ likes: newLikes });
+        res.json({ likes: meta.likes });
     } catch (error) {
         res.status(500).json({ error: '点赞失败' });
     }
@@ -210,77 +156,62 @@ router.post('/:slug/like', async (req: Request, res: Response) => {
 
 // POST /api/posts
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
-    // RBAC Check
     const user = (req as AuthenticatedRequest).user;
-    if (user?.email !== 'admin@example.com') {
+    if (user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
     try {
-        console.log('[Create Post] Request Body:', req.body);
         const { title, content, excerpt, coverImage, published, tags, categoryId } = req.body;
-        // Append random 6 chars to slug to ensure uniqueness and avoid collisions
         const slug = slugify(title, { lower: true, strict: true }) + '-' + Math.random().toString(36).substring(2, 8);
 
-        // 1. Upsert Tags and get IDs
-        let tagIds: number[] = [];
-        if (tags && Array.isArray(tags)) {
-            for (const tagName of tags) {
-                const tSlug = slugify(tagName, { lower: true, strict: true });
-                // Upsert? 
-                const { data: existing } = await supabase.from('Tag').select('id').eq('slug', tSlug).single();
-                if (existing) {
-                    tagIds.push(existing.id);
-                } else {
-                    const { data: newTag } = await supabase.from('Tag').insert({ name: tagName, slug: tSlug }).select().single();
-                    if (newTag) tagIds.push(newTag.id);
-                }
-            }
-        }
-
-        // 2. Create Post
-        const { data: post, error } = await supabase
-            .from('Post')
-            .insert({
-                title, slug, content,
+        // Create post with tags
+        const post = await prisma.post.create({
+            data: {
+                title,
+                slug,
+                content,
                 excerpt: excerpt || '',
                 coverImage: coverImage || null,
                 published: published || false,
                 categoryId: categoryId || null,
-                updatedAt: new Date().toISOString(), // Fix: Manual updatedAt
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        // 3. Create PostMeta
-        await supabase.from('PostMeta').insert({
-            postId: post.id,
-            readTime: Math.ceil(content.length / 500)
+                meta: {
+                    create: { readTime: Math.ceil(content.length / 500) }
+                },
+                tags: tags && Array.isArray(tags) ? {
+                    create: await Promise.all(
+                        tags.map(async (tagName: string) => {
+                            const tSlug = slugify(tagName, { lower: true, strict: true });
+                            const tag = await prisma.tag.upsert({
+                                where: { slug: tSlug },
+                                update: {},
+                                create: { name: tagName, slug: tSlug },
+                            });
+                            return { tagId: tag.id };
+                        })
+                    )
+                } : undefined,
+            },
+            include: {
+                tags: { include: { tag: true } },
+                category: true,
+                meta: true,
+            },
         });
 
-        // 4. Link Tags (Insert into View? or _PostTags via View)
-        if (tagIds.length > 0) {
-            const links = tagIds.map(tid => ({ postId: post.id, tagId: tid }));
-            // Insert into PostTags view (Assuming it supports insert, simplified view often does)
-            // If View insert fails, user needs to expose table or use RPC.
-            // Let's assume View insert works for "PostTags" view mapping 1:1 to "_PostTags".
-            await supabase.from('PostTags').insert(links);
-        }
-
-        const [finalPost] = await attachTagsToPosts([post]);
-        res.status(201).json(finalPost);
+        res.status(201).json({
+            ...post,
+            tags: post.tags.map(pt => pt.tag),
+        });
     } catch (error) {
         console.error('[Create Post] FAILED:', error);
-        res.status(500).json({ error: '创建文章失败', details: error });
+        res.status(500).json({ error: '创建文章失败', details: String(error) });
     }
 });
 
 // PUT /api/posts/:id
 router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
-    // RBAC Check
     const user = (req as AuthenticatedRequest).user;
-    if (user?.email !== 'admin@example.com') {
+    if (user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
     try {
@@ -299,48 +230,51 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
         if (categoryId !== undefined) updates.categoryId = categoryId;
 
         // Update Post
-        const { data: post, error } = await supabase
-            .from('Post')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
+        const post = await prisma.post.update({
+            where: { id },
+            data: updates,
+        });
 
         // Update Meta
         if (content !== undefined) {
             const readTime = Math.ceil(content.length / 500);
-            const { data: meta } = await supabase.from('PostMeta').select('id').eq('postId', id).single();
-            if (meta) await supabase.from('PostMeta').update({ readTime }).eq('postId', id);
-            else await supabase.from('PostMeta').insert({ postId: id, readTime });
+            await prisma.postMeta.upsert({
+                where: { postId: id },
+                update: { readTime },
+                create: { postId: id, readTime },
+            });
         }
 
         // Update Tags
         if (tags && Array.isArray(tags)) {
             // Delete old
-            await supabase.from('PostTags').delete().eq('postId', id);
+            await prisma.postTag.deleteMany({ where: { postId: id } });
 
             // Re-insert
-            let tagIds: number[] = [];
             for (const tagName of tags) {
                 const tSlug = slugify(tagName, { lower: true, strict: true });
-                const { data: existing } = await supabase.from('Tag').select('id').eq('slug', tSlug).single();
-                if (existing) {
-                    tagIds.push(existing.id);
-                } else {
-                    const { data: newTag } = await supabase.from('Tag').insert({ name: tagName, slug: tSlug }).select().single();
-                    if (newTag) tagIds.push(newTag.id);
-                }
-            }
-            if (tagIds.length > 0) {
-                const links = tagIds.map(tid => ({ postId: id, tagId: tid }));
-                await supabase.from('PostTags').insert(links);
+                const tag = await prisma.tag.upsert({
+                    where: { slug: tSlug },
+                    update: {},
+                    create: { name: tagName, slug: tSlug },
+                });
+                await prisma.postTag.create({ data: { postId: id, tagId: tag.id } });
             }
         }
 
-        const [finalPost] = await attachTagsToPosts([post]);
-        res.json(finalPost);
+        const final = await prisma.post.findUnique({
+            where: { id },
+            include: {
+                tags: { include: { tag: true } },
+                category: true,
+                meta: true,
+            },
+        });
+
+        res.json({
+            ...final,
+            tags: final?.tags.map(pt => pt.tag) || [],
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: '更新文章失败' });
@@ -349,14 +283,13 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
 
 // DELETE /api/posts/:id
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
-    // RBAC Check
     const user = (req as AuthenticatedRequest).user;
-    if (user?.email !== 'admin@example.com') {
+    if (user?.role !== 'admin') {
         return res.status(403).json({ error: 'Forbidden: Admin access required' });
     }
     try {
         const id = parseInt(req.params.id as string);
-        await supabase.from('Post').delete().eq('id', id);
+        await prisma.post.delete({ where: { id } });
         res.json({ message: '文章已删除' });
     } catch (error) {
         res.status(500).json({ error: '删除文章失败' });

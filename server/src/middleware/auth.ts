@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../lib/supabase';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dsl-blog-secret-key-change-in-production';
 
 /**
- * 认证中间件 — 验证 Supabase JWT Token
- * 用法: router.post('/', authMiddleware, handler)
+ * 认证中间件 — 验证本地 JWT Token
  */
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
@@ -16,17 +17,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     const token = authHeader.split(' ')[1];
 
     try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-
-        if (error || !user) {
-            res.status(401).json({ error: '未授权：Token 无效或已过期' });
-            return;
-        }
-
-        // 将用户信息挂载到 request 上，便于后续路由使用
-        (req as any).user = user;
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        (req as any).user = decoded;
         next();
     } catch (err) {
-        res.status(500).json({ error: '认证服务异常' });
+        res.status(401).json({ error: '未授权：Token 无效或已过期' });
     }
 }

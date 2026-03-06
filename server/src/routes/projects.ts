@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
+import prisma from '../lib/prisma.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -7,13 +7,12 @@ const router = Router();
 // GET /api/projects — 项目列表
 router.get('/', async (_req: Request, res: Response) => {
     try {
-        const { data: projects, error } = await supabase
-            .from('Project')
-            .select('*')
-            .order('featured', { ascending: false })
-            .order('createdAt', { ascending: false });
-
-        if (error) throw error;
+        const projects = await prisma.project.findMany({
+            orderBy: [
+                { featured: 'desc' },
+                { createdAt: 'desc' },
+            ],
+        });
 
         res.json(projects);
     } catch (error) {
@@ -27,9 +26,8 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
 
-        const { data, error } = await supabase
-            .from('Project')
-            .insert([{
+        const project = await prisma.project.create({
+            data: {
                 name,
                 description,
                 techStack: techStack || '',
@@ -37,14 +35,10 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
                 repoUrl: repoUrl || null,
                 coverImage: coverImage || null,
                 featured: featured || false,
-                // createdAt will be default now()
-            }])
-            .select()
-            .single();
+            },
+        });
 
-        if (error) throw error;
-
-        res.status(201).json(data);
+        res.status(201).json(project);
     } catch (error) {
         console.error('Error creating project:', error);
         res.status(500).json({ error: '创建项目失败' });
@@ -66,16 +60,12 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
         if (coverImage !== undefined) updates.coverImage = coverImage;
         if (featured !== undefined) updates.featured = featured;
 
-        const { data, error } = await supabase
-            .from('Project')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
+        const project = await prisma.project.update({
+            where: { id },
+            data: updates,
+        });
 
-        if (error) throw error;
-
-        res.json(data);
+        res.json(project);
     } catch (error) {
         console.error('Error updating project:', error);
         res.status(500).json({ error: '更新项目失败' });
@@ -86,13 +76,7 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id));
-        const { error } = await supabase
-            .from('Project')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
+        await prisma.project.delete({ where: { id } });
         res.json({ message: '项目已删除' });
     } catch (error) {
         console.error('Error deleting project:', error);

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
+import prisma from '../lib/prisma.js';
 
 const router = Router();
 
@@ -12,24 +12,20 @@ router.get('/', async (req: Request, res: Response) => {
             return;
         }
 
-        // Fetch top-level comments with approved replies
-        // Note: 'replies' alias relies on self-relation FK. 
-        // We explicitly specify the relation if needed, or rely on Supabase detection.
-        // Assuming FK is parentId.
-        const { data: comments, error } = await supabase
-            .from('Comment')
-            .select(`
-                *,
-                replies:Comment!parentId(*)
-            `)
-            .eq('postId', postId)
-            .eq('approved', true)
-            .is('parentId', null) // Only top level
-            .eq('replies.approved', true) // Filter replies
-            .order('createdAt', { ascending: false }) // Top level order
-            .order('createdAt', { foreignTable: 'replies', ascending: true }); // Replies order
-
-        if (error) throw error;
+        const comments = await prisma.comment.findMany({
+            where: {
+                postId: parseInt(postId as string),
+                approved: true,
+                parentId: null,
+            },
+            include: {
+                replies: {
+                    where: { approved: true },
+                    orderBy: { createdAt: 'asc' },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
 
         res.json(comments);
     } catch (error) {
@@ -48,22 +44,18 @@ router.post('/', async (req: Request, res: Response) => {
             return;
         }
 
-        const { data: comment, error } = await supabase
-            .from('Comment')
-            .insert([{
+        const comment = await prisma.comment.create({
+            data: {
                 content,
                 author,
                 email: email || null,
                 postId: parseInt(postId),
                 parentId: parentId ? parseInt(parentId) : null,
-                approved: true // Auto-approve for now
-            }])
-            .select()
-            .single();
+                approved: true, // Auto-approve for now
+            },
+        });
 
-        if (error) throw error;
-
-        res.status(201).json({ message: '评论已提交，等待审核', comment });
+        res.status(201).json({ message: '评论已提交', comment });
     } catch (error) {
         console.error('Error creating comment:', error);
         res.status(500).json({ error: '提交评论失败' });

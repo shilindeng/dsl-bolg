@@ -1,84 +1,157 @@
-# 赛博朋克个人博客 (DSL Edition)
+# DSL Blog — 赛博朋克个人博客
 
-> "Wake up, User..."
+一个前后端分离的赛博朋克风格个人博客系统，采用现代技术栈构建。
 
-专为 Vibe Coding 时代打造的高性能、赛博朋克主题个人博客系统。基于 React, Vite 和 Node.js 构建。
+## 技术栈
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Status](https://img.shields.io/badge/system-ONLINE-green.svg)
+### 前端
+- **React 19** + **Vite 6** — 构建和开发
+- **react-router-dom v7** — 路由
+- **react-markdown** + remark-gfm + rehype-highlight — Markdown 渲染
+- **recharts** — 数据图表
+- **react-helmet-async** — SEO
 
-## ⚡ 核心特性
+### 后端
+- **Express** — Web 框架
+- **Prisma** — ORM
+- **SQLite** — 数据库（零配置）
+- **JWT + bcryptjs** — 认证
+- **multer** — 文件上传
 
-### 🎨 赛博朋克美学 (Cyberpunk Aesthetic)
-- **沉浸式 UI**: CRT 扫描线、Glitch 故障艺术、霓虹光晕、毛玻璃质感。
-- **动态交互**: 黑客帝国代码雨背景、滚动解密动画、打字机效果。
-- **高科技音效 (SFX)**: 集成 Web Audio API，提供悬停、点击及系统启动音效。
+## 功能
 
-### 🛠️ 技术栈
-- **前端 (Frontend)**: React 18, TypeScript, Vite
-- **样式 (Styling)**: 原生 CSS (变量系统 & Grid 布局), Bento Grid 非对称设计
-- **后端 (Backend)**: Node.js, Express, Prisma (SQLite)
-- **本地化**: 全站支持中文显示 (技术术语保留英文以维持极客感)
+- ✅ 文章 CRUD（Markdown 编辑器）
+- ✅ 分类 & 标签系统
+- ✅ 评论系统（含嵌套回复）
+- ✅ 管理员认证（JWT）
+- ✅ 文章点赞 & 浏览量统计
+- ✅ 管理员数据看板
+- ✅ 图片上传（本地存储）
+- ✅ RSS Feed & Sitemap
+- ✅ SEO 优化
+- ✅ 亮色/暗色主题
+- ✅ 粒子背景、CRT 覆盖、故障文字等赛博朋克特效
 
-### 🧩 组件系统
-- **终端导航栏**: 命令行风格导航，带有动态输入光标。
-- **全息通知 (Toasts)**: 自定义 Cyberpunk 风格通知系统，替代原生 Alert。
-- **沉浸式编辑器**: 集成 Markdown 块级编辑器，支持实时预览。
+## 快速开始
 
-## 🚀 快速开始
+### 1. 安装依赖
 
-### 环境要求
-- Node.js > 18
-- NPM
+```bash
+# 后端
+cd server
+npm install
 
-### 安装步骤
-
-1. **克隆与安装**
-   ```bash
-   git clone <repo-url>
-   cd dsl-blog
-   
-   # 安装前端依赖
-   cd client
-   npm install
-   
-   # 安装后端依赖
-   cd ../server
-   npm install
-   ```
-
-2. **初始化数据库**
-   ```bash
-   cd server
-   npm run db:generate
-   npm run db:push
-   npm run db:seed
-   ```
-
-3. **启动开发模式**
-   ```bash
-   # 终端 1 (后端服务)
-   cd server
-   npm run dev
-   
-   # 终端 2 (前端页面)
-   cd client
-   npm run dev
-   ```
-
-## 📂 项目结构
-
-```
-/dsl-blog
-  ├── client/          # React 前端
-  │   ├── src/components/  # UI 组件 (CRT, Glitch 等)
-  │   ├── src/hooks/       # 自定义 Hooks (useSound, useToast)
-  │   └── ...
-  └── server/          # Express 后端
-      ├── prisma/          # 数据库架构 & 种子数据
-      └── ...
+# 前端
+cd ../client
+npm install
 ```
 
-## 📝 开源协议
+### 2. 初始化数据库
+
+```bash
+cd server
+npx prisma db push
+npx tsx prisma/seed.ts
+```
+
+Seed 会创建管理员账号和示例数据：
+- 📧 邮箱: `admin@dsl.blog`
+- 🔑 密码: `admin123`
+
+### 3. 启动开发服务器
+
+```bash
+# 启动后端 (端口 3001)
+cd server
+npm run dev
+
+# 启动前端 (端口 5173)
+cd client
+npm run dev
+```
+
+访问 http://localhost:5173
+
+## 项目结构
+
+```
+dsl-bolg/
+├── client/                 # 前端 React 应用
+│   ├── src/
+│   │   ├── api/           # API 客户端
+│   │   ├── components/    # UI 组件 (16个)
+│   │   ├── hooks/         # 自定义 Hooks
+│   │   ├── pages/         # 页面组件
+│   │   └── index.css      # 全局样式
+│   └── vite.config.ts
+├── server/                 # 后端 Express 应用
+│   ├── prisma/
+│   │   ├── schema.prisma  # 数据库模型
+│   │   └── seed.ts        # 种子数据
+│   ├── src/
+│   │   ├── lib/           # Prisma Client
+│   │   ├── middleware/    # 认证 & 上传中间件
+│   │   └── routes/        # API 路由 (9个)
+│   └── uploads/           # 上传文件目录
+└── README.md
+```
+
+## 生产部署 (Linux)
+
+```bash
+# 1. 安装 Node.js 18+
+# 2. 克隆项目并安装依赖
+git clone <repo> && cd dsl-bolg
+cd server && npm install && cd ../client && npm install && cd ..
+
+# 3. 初始化数据库
+cd server && npx prisma db push && npx tsx prisma/seed.ts
+
+# 4. 构建前端
+cd ../client && npm run build
+
+# 5. 启动后端
+cd ../server && npm start
+
+# 6. 用 nginx 代理前端静态文件和后端 API
+```
+
+### Nginx 示例配置
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端静态文件
+    location / {
+        root /path/to/dsl-bolg/client/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 代理
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # 上传文件
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:3001;
+    }
+}
+```
+
+## 环境变量
+
+### server/.env
+```env
+PORT=3001
+JWT_SECRET=your-secret-key
+SITE_URL=http://your-domain.com
+```
+
+## License
 
 MIT

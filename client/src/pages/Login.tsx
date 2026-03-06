@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
 
@@ -14,19 +13,32 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        if (error) {
-            showToast(error.message, 'error');
-            setLoading(false);
-        } else {
+            const data = await res.json();
+
+            if (!res.ok) {
+                showToast(data.error || '登录失败', 'error');
+                setLoading(false);
+                return;
+            }
+
+            // Store token and user info
+            localStorage.setItem('auth_token', data.token);
+            localStorage.setItem('auth_user', JSON.stringify(data.user));
+
             showToast('Welcome back, Netrunner.', 'success');
-            // Store session token manually for legacy api client if needed, 
-            // but we should update client.ts to use supabase.auth.getSession()
+            // Dispatch custom event so Navbar can update
+            window.dispatchEvent(new Event('auth-change'));
             navigate('/blog');
+        } catch (error) {
+            showToast('网络错误', 'error');
+            setLoading(false);
         }
     };
 
