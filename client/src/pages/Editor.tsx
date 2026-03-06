@@ -204,6 +204,16 @@ export default function Editor() {
                             <div className="eyebrow">文章编辑器</div>
                             <h1 className="section-title" style={{ marginTop: '1rem' }}>{id ? '编辑文章' : '新建文章'}</h1>
                             <p className="lead">封面、正文、标签、分类和发布状态都在一个界面里完成。</p>
+                            <div className="hero-metrics">
+                                <div className="metric-card">
+                                    <span className="muted mono">PREVIEW</span>
+                                    <strong>{previewMode ? '实时预览开启' : '聚焦编辑模式'}</strong>
+                                </div>
+                                <div className="metric-card">
+                                    <span className="muted mono">AUTOSAVE</span>
+                                    <strong>草稿自动保存在本地</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="editor-header-actions">

@@ -25,6 +25,7 @@ server/dev.db-journal
 logs
 *.log
 npm-debug.log*
+.codex-logs
 
 # Playwright
 client/playwright-artifacts

@@ -25,13 +25,13 @@ export default function Navbar({ isAdmin }: NavbarProps) {
     });
 
     return (
-        <header className="site-nav">
+        <header className={`site-nav ${open ? 'is-open' : ''}`}>
             <div className="container site-nav-inner">
                 <Link to="/" className="site-nav-brand" aria-label="返回首页">
                     <span className="brand-mark mono">DSL</span>
                     <div className="brand-copy">
-                        <strong>赛博编辑实验室</strong>
-                        <span>{siteConfig.author.role}</span>
+                        <strong>{siteConfig.name}</strong>
+                        <span>赛博编辑实验室 · {siteConfig.author.role}</span>
                     </div>
                 </Link>
 
@@ -40,14 +40,16 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                 </nav>
 
                 <div className="site-nav-actions">
-                    <span className="nav-status mono" aria-hidden="true">
-                        站点在线 / WWW.SHILIN.TECH
-                    </span>
+                    <div className="section-stack nav-status-group">
+                        <span className="nav-status mono" aria-hidden="true">
+                            ONLINE / WWW.SHILIN.TECH
+                        </span>
 
-                    <span className="command-hint nav-command" aria-hidden="true">
-                        <kbd>Ctrl</kbd>
-                        <kbd>K</kbd>
-                    </span>
+                        <span className="command-hint nav-command" aria-hidden="true">
+                            <kbd>Ctrl</kbd>
+                            <kbd>K</kbd>
+                        </span>
+                    </div>
 
                     {isAdmin ? (
                         <>
@@ -62,8 +64,9 @@ export default function Navbar({ isAdmin }: NavbarProps) {
 
                     <button
                         type="button"
-                        className="icon-button mobile-only"
+                        className="icon-button mobile-only mobile-menu-toggle"
                         aria-label="切换移动端菜单"
+                        aria-expanded={open}
                         onClick={() => setOpen((value) => !value)}
                     >
                         <span className="mono">{open ? 'CLOSE' : 'MENU'}</span>
@@ -71,12 +74,21 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                 </div>
             </div>
 
+            <div className={`nav-drawer-backdrop ${open ? 'is-open' : ''}`} onClick={() => setOpen(false)} />
+
             {open ? (
-                <div className="container">
-                    <div className="menu-sheet">
+                <div className="container nav-drawer-shell">
+                    <div className="menu-sheet nav-drawer">
                         <div className="menu-sheet-body">
+                            <div className="eyebrow">Site Navigation</div>
                             {navLinks}
                             {isAdmin ? <Link to="/editor" className="site-nav-link">新建文章</Link> : null}
+                            {isAdmin ? <Link to="/admin/dashboard" className="site-nav-link">管理后台</Link> : <Link to="/login" className="site-nav-link">管理员登录</Link>}
+                            <ThemeToggle />
+                            <div className="metric-card">
+                                <span className="muted mono">STATUS</span>
+                                <strong>移动端进入后自动切换旗舰导航体验</strong>
+                            </div>
                         </div>
                     </div>
                 </div>

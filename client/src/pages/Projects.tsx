@@ -20,14 +20,27 @@ export default function Projects() {
 
             <section className="section page-hero">
                 <div className="container page-hero-shell">
-                    <div>
-                        <div className="eyebrow">精选项目</div>
-                        <h1 className="section-title">项目与实验</h1>
-                        <p className="lead">
-                            这里展示的不是项目数量，而是我选择长期打磨、能够代表方法和判断力边界的作品。
-                        </p>
+                    <div className="section-stack">
+                        <div>
+                            <div className="eyebrow">精选项目</div>
+                            <h1 className="section-title">项目与实验</h1>
+                            <p className="lead">
+                                这里展示的不是项目数量，而是我选择长期打磨、能够代表方法和判断力边界的作品。
+                            </p>
+                        </div>
+
+                        <div className="hero-metrics">
+                            <div className="metric-card">
+                                <span className="muted mono">PROJECTS</span>
+                                <strong>{loading ? '--' : projects.length} 个公开项目</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">FOCUS</span>
+                                <strong>产品 / 系统 / 体验</strong>
+                            </div>
+                        </div>
                     </div>
-                    <div className="page-hero-badge mono">产品 / 系统 / 体验</div>
+                    <div className="page-hero-badge mono">作品集 / 方法论 / 长期维护</div>
                 </div>
             </section>
 

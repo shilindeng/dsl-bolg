@@ -55,21 +55,29 @@ export default function Home() {
 
             <section className="section hero-section" data-testid="home-hero">
                 <div className="container hero-grid">
-                    <div className="hero-shell">
+                    <div className="hero-shell" data-testid="hero-panel">
                         <ParticleBackground />
                         <div className="hero-scanline" />
+
                         <div className="hero-content">
-                            <div className="eyebrow">赛博编辑系统</div>
+                            <div className="cyber-header-bar">
+                                <span className="cyber-dot" />
+                                <span className="cyber-dot" />
+                                <span className="cyber-dot" />
+                                <span className="command-hint">PERSONAL BRAND SYSTEM / LIVE</span>
+                            </div>
+
                             <div className="hero-copy">
-                                <p className="hero-kicker mono">来自上海的长期信号</p>
+                                <div className="eyebrow">Future Editorial Identity</div>
+                                <p className="hero-kicker mono">来自上海的长期信号 · 写作 / 系统 / 产品 / 审美</p>
                                 <h1 className="display-title">
-                                    写技术、做产品，
+                                    把博客做成
                                     <br />
-                                    也认真经营数字审美。
+                                    一套真正上线的个人品牌系统。
                                 </h1>
                                 <p className="lead">
-                                    这里不是临时作品页，而是一套长期写作、项目沉淀和个人表达系统。
-                                    我关注前端体验、AI 工作流、内容结构，以及博客如何变成持续增值的资产。
+                                    这里不是模板化展示页，而是围绕技术写作、AI 工作流、内容工程与设计表达持续迭代的长期资产。
+                                    我关心的不只是“好看”，而是一个站点如何同时拥有秩序、质感、效率和记忆点。
                                 </p>
                             </div>
 
@@ -90,7 +98,27 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <WeatherCard />
+                    <div className="section-stack">
+                        <WeatherCard />
+
+                        <div className="panel panel-body">
+                            <div className="section-heading-left">
+                                <div>
+                                    <div className="eyebrow">Current Focus</div>
+                                    <h2 className="section-title">正在打磨的能力栈</h2>
+                                </div>
+                            </div>
+
+                            <div className="principle-list">
+                                {siteConfig.currentFocus.map((item, index) => (
+                                    <div key={item} className="metric-card">
+                                        <span className="muted mono">0{index + 1}</span>
+                                        <strong>{item}</strong>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -99,10 +127,10 @@ export default function Home() {
                     <div className="section-heading">
                         <div>
                             <div className="eyebrow">核心信号</div>
-                            <h2 className="section-title">这个博客为什么存在</h2>
+                            <h2 className="section-title">不是“有博客”，而是“有系统”</h2>
                         </div>
                         <p className="lead">
-                            我想做的不是“看起来像博客”的网站，而是一套有气质、有结构、也有执行力的公开系统。
+                            我希望这个站点既能表达个性，又能承载长期内容、项目沉淀和真实工作流，而不是只停留在漂亮截图层面。
                         </p>
                     </div>
 
@@ -118,19 +146,19 @@ export default function Home() {
                 </div>
             </section>
 
-            <section className="section">
-                <div className="container editorial-grid">
-                    <div className="section-stack">
-                        <div className="section-heading section-heading-left">
-                            <div>
-                                <div className="eyebrow">精选写作</div>
-                                <h2 className="section-title">精选文章</h2>
-                            </div>
-                            <p className="lead">
-                                先看代表性内容，再决定要不要持续关注。这里不追求热闹，而是强调可复用的方法和判断。
-                            </p>
+            <section className="section section-frame">
+                <div className="container section-stack">
+                    <div className="section-heading">
+                        <div>
+                            <div className="eyebrow">精选写作</div>
+                            <h2 className="section-title">先看代表性内容，再判断是否值得持续关注</h2>
                         </div>
+                        <p className="lead">
+                            文章不是内容填充物，而是方法、判断和项目经验的公开接口。优先展示能代表这个系统气质的内容。
+                        </p>
+                    </div>
 
+                    <div className="section-stack">
                         {loading ? (
                             <div className="empty-state">正在读取代表文章...</div>
                         ) : featuredPost ? (
@@ -138,12 +166,12 @@ export default function Home() {
                         ) : (
                             <div className="empty-state">暂时还没有公开文章。</div>
                         )}
-                    </div>
 
-                    <div className="post-stack">
-                        {secondaryPosts.map((post) => (
-                            <PostCard key={post.id} post={post} />
-                        ))}
+                        <div className="post-stack">
+                            {secondaryPosts.map((post) => (
+                                <PostCard key={post.id} post={post} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -153,7 +181,7 @@ export default function Home() {
                     <div className="section-heading">
                         <div>
                             <div className="eyebrow">关注方向</div>
-                            <h2 className="section-title">我的工作重心</h2>
+                            <h2 className="section-title">我正在把哪些事情做得更像产品</h2>
                         </div>
                     </div>
 
@@ -170,14 +198,14 @@ export default function Home() {
             </section>
 
             <section className="section">
-                <div className="container">
+                <div className="container section-stack">
                     <div className="section-heading">
                         <div>
                             <div className="eyebrow">精选项目</div>
-                            <h2 className="section-title">代表项目</h2>
+                            <h2 className="section-title">代表项目不是数量，而是判断力的横截面</h2>
                         </div>
                         <p className="lead">
-                            项目展示不是为了堆数量，而是为了证明方法论、完成度和持续打磨能力。
+                            每个项目都应该能说明一件事：我如何从概念、结构、体验和交付四个维度去做完整产品，而不是只做静态展示。
                         </p>
                     </div>
 
@@ -222,9 +250,9 @@ export default function Home() {
                     <div className="cta-shell">
                         <div>
                             <div className="eyebrow">联系 / 合作</div>
-                            <h2 className="section-title">如果你也在做认真而长期的东西，可以联系我。</h2>
+                            <h2 className="section-title">如果你也在做长期主义、内容系统或 AI 工作流，可以联系我。</h2>
                             <p className="lead">
-                                适合交流的主题包括：个人品牌站、内容产品、AI 工作流、设计系统、前端体验和独立项目。
+                                适合交流的方向包括：个人品牌站、内容产品、设计系统、AI 自动化、前端体验与独立项目的长期运营。
                             </p>
                         </div>
 

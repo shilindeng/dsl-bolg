@@ -151,6 +151,12 @@ Windows 本机入口：
    - `/rss.xml`
 9. 若校验失败，自动回滚到上一版 release
 
+适用前提：
+
+- 标准发布流程默认从 `origin/main` 拉取最新代码
+- 推荐做法是先在本地完成开发、验证并 push 到 `main`，再执行远程更新
+- 如果线上需要临时发布尚未进入 `main` 的本地工作区代码，应视为例外操作，仍需复用现有 release、备份、校验和回滚逻辑
+
 关键约束：
 
 - `update.sh` **不会执行 seed**
@@ -227,3 +233,4 @@ ls -1dt /opt/dsl-blog/backups/*.tar.gz | head
 - `https://www.shilin.tech/rss.xml` 返回正式域名
 - `https://shilin.tech` 仍然是 OpenClaw
 - `systemctl status dsl-blog-api` 为 `active`
+- 手机视口进入首页、博客页、文章页和后台登录页时无横向滚动、无破版、可正常点击主操作按钮

@@ -8,10 +8,23 @@ export default function About() {
 
             <section className="section page-hero">
                 <div className="container page-hero-shell">
-                    <div>
-                        <div className="eyebrow">关于 DSL</div>
-                        <h1 className="section-title">{siteConfig.author.name}</h1>
-                        <p className="lead">{siteConfig.author.summary}</p>
+                    <div className="section-stack">
+                        <div>
+                            <div className="eyebrow">关于 DSL</div>
+                            <h1 className="section-title">{siteConfig.author.name}</h1>
+                            <p className="lead">{siteConfig.author.summary}</p>
+                        </div>
+
+                        <div className="hero-metrics">
+                            <div className="metric-card">
+                                <span className="muted mono">LOCATION</span>
+                                <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">ROLE</span>
+                                <strong>{siteConfig.author.role}</strong>
+                            </div>
+                        </div>
                     </div>
                     <div className="page-hero-badge mono">系统思维 / 界面表达 / AI 工作流</div>
                 </div>

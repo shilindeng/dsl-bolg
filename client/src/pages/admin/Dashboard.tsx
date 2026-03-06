@@ -148,6 +148,7 @@ export default function Dashboard() {
                     <div>
                         <div className="eyebrow">后台控制台</div>
                         <h1 className="section-title" style={{ marginTop: '1rem' }}>内容管理</h1>
+                        <p className="lead">把文章、评论、项目和发布数据放进一个响应式的运营界面里处理。</p>
                     </div>
 
                     <div className="admin-header-actions">

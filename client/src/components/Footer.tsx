@@ -14,6 +14,7 @@ export default function Footer() {
                     <div className="footer-badges">
                         <span className="chip mono">赛博 / 编辑 / 工程</span>
                         <span className="chip mono">上海信号源</span>
+                        <span className="chip mono">Mobile Ready</span>
                     </div>
                 </section>
 

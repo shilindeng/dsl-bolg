@@ -48,6 +48,11 @@ export default function Blog() {
 
     const featuredPost = page === 1 ? posts[0] : null;
     const restPosts = page === 1 ? posts.slice(1) : posts;
+    const activeFilters = [
+        activeCategory ? categories.find((item) => item.slug === activeCategory)?.name : '',
+        activeTag ? tags.find((item) => item.slug === activeTag)?.name : '',
+        deferredSearch.trim(),
+    ].filter(Boolean) as string[];
 
     return (
         <>
@@ -55,14 +60,38 @@ export default function Blog() {
 
             <section className="section page-hero">
                 <div className="container page-hero-shell">
-                    <div>
-                        <div className="eyebrow">文章归档</div>
-                        <h1 className="section-title">文章归档</h1>
-                        <p className="lead">
-                            按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力和可复用经验，而不是追逐热度。
+                    <div className="section-stack">
+                        <div>
+                            <div className="eyebrow">文章归档</div>
+                            <h1 className="section-title">文章归档</h1>
+                            <p className="lead">
+                                按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力和可复用经验，而不是追逐热度。
+                            </p>
+                        </div>
+
+                        <div className="hero-metrics">
+                            <div className="metric-card">
+                                <span className="muted mono">FILTER MODEL</span>
+                                <strong>搜索 / 分类 / 标签</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">CATEGORIES</span>
+                                <strong>{categories.length || '--'} 个分类</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">TAGS</span>
+                                <strong>{tags.length || '--'} 个标签</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="panel panel-body">
+                        <div className="eyebrow">检索模式</div>
+                        <h2 className="section-title">可检索 / 可筛选 / 长文优先</h2>
+                        <p className="muted">
+                            这是一个为长期阅读而设计的归档系统，而不是简单的文章列表。先收敛线索，再进入正文。
                         </p>
                     </div>
-                    <div className="page-hero-badge mono">可检索 / 可筛选 / 长文优先</div>
                 </div>
             </section>
 
@@ -79,6 +108,14 @@ export default function Blog() {
                                 placeholder="搜索标题、摘要或关键词..."
                             />
                         </label>
+
+                        {activeFilters.length ? (
+                            <div className="tag-list">
+                                {activeFilters.map((item) => (
+                                    <span key={item} className="tag">{item}</span>
+                                ))}
+                            </div>
+                        ) : null}
 
                         <div className="filter-group">
                             <span className="filter-label mono">CATEGORY</span>

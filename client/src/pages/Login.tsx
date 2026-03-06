@@ -45,10 +45,20 @@ export default function Login() {
                         <p className="lead">
                             这是内容发布、文章编辑和评论审核入口，不对普通访问者开放。
                         </p>
+                        <div className="hero-metrics">
+                            <div className="metric-card">
+                                <span className="muted mono">ACCESS</span>
+                                <strong>仅管理员可进入</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">SECURITY</span>
+                                <strong>Turnstile + Token</strong>
+                            </div>
+                        </div>
                         <div className="principle-list">
                             <div className="metric-card">
                                 <span className="muted mono">权限</span>
-                                <strong>仅管理员可用</strong>
+                                    <strong>仅管理员可用</strong>
                             </div>
                             <div className="metric-card">
                                 <span className="muted mono">保护</span>
