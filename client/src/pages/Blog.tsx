@@ -51,69 +51,80 @@ export default function Blog() {
 
     return (
         <>
-            <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的技术写作与项目思考。" />
+            <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的技术写作、产品思考与界面研究。" />
 
-            <section className="section">
-                <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
-                    <div style={{ display: 'grid', gap: '1rem' }}>
+            <section className="section page-hero">
+                <div className="container page-hero-shell">
+                    <div>
                         <div className="eyebrow">Writing Archive</div>
                         <h1 className="section-title">文章归档</h1>
                         <p className="lead">
-                            按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力与可复用经验，而不是追逐热度。
+                            按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力和可复用经验，而不是追逐热度。
                         </p>
                     </div>
+                    <div className="page-hero-badge mono">SEARCHABLE / FILTERABLE / LONG-FORM</div>
+                </div>
+            </section>
 
-                    <div className="panel">
-                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
-                            <label className="form-field">
-                                <span className="form-label">搜索文章</span>
-                                <input
-                                    data-testid="blog-search-input"
-                                    className="form-input"
-                                    value={search}
-                                    onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                                    placeholder="搜索标题、摘要或关键词..."
-                                />
-                            </label>
+            <section className="section section-tight">
+                <div className="container">
+                    <div className="filter-shell">
+                        <label className="form-field">
+                            <span className="form-label">搜索文章</span>
+                            <input
+                                data-testid="blog-search-input"
+                                className="form-input"
+                                value={search}
+                                onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                                placeholder="搜索标题、摘要或关键词..."
+                            />
+                        </label>
 
-                            <div className="subtle-grid">
-                                <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap' }}>
-                                    <button type="button" className={`btn ${activeCategory ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveCategory('')}>
-                                        全部分类
+                        <div className="filter-group">
+                            <span className="filter-label mono">CATEGORY</span>
+                            <div className="filter-row">
+                                <button type="button" className={`btn ${activeCategory ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveCategory('')}>
+                                    全部分类
+                                </button>
+                                {categories.map((category) => (
+                                    <button
+                                        key={category.id}
+                                        type="button"
+                                        data-testid={`category-filter-${category.slug}`}
+                                        className={`btn ${activeCategory === category.slug ? 'btn-secondary' : 'btn-ghost'}`}
+                                        onClick={() => setActiveCategory(category.slug)}
+                                    >
+                                        {category.name}
                                     </button>
-                                    {categories.map((category) => (
-                                        <button
-                                            key={category.id}
-                                            type="button"
-                                            data-testid={`category-filter-${category.slug}`}
-                                            className={`btn ${activeCategory === category.slug ? 'btn-secondary' : 'btn-ghost'}`}
-                                            onClick={() => setActiveCategory(category.slug)}
-                                        >
-                                            {category.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                ))}
+                            </div>
+                        </div>
 
-                                <div style={{ display: 'flex', gap: '0.7rem', flexWrap: 'wrap' }}>
-                                    <button type="button" className={`btn ${activeTag ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveTag('')}>
-                                        全部标签
+                        <div className="filter-group">
+                            <span className="filter-label mono">TAG</span>
+                            <div className="filter-row">
+                                <button type="button" className={`btn ${activeTag ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveTag('')}>
+                                    全部标签
+                                </button>
+                                {tags.map((tag) => (
+                                    <button
+                                        key={tag.id}
+                                        type="button"
+                                        data-testid={`tag-filter-${tag.slug}`}
+                                        className={`btn ${activeTag === tag.slug ? 'btn-secondary' : 'btn-ghost'}`}
+                                        onClick={() => setActiveTag(tag.slug)}
+                                    >
+                                        {tag.name}
                                     </button>
-                                    {tags.map((tag) => (
-                                        <button
-                                            key={tag.id}
-                                            type="button"
-                                            data-testid={`tag-filter-${tag.slug}`}
-                                            className={`btn ${activeTag === tag.slug ? 'btn-secondary' : 'btn-ghost'}`}
-                                            onClick={() => setActiveTag(tag.slug)}
-                                        >
-                                            {tag.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                ))}
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
 
+            <section className="section">
+                <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
                     {loading ? (
                         <div className="empty-state">正在同步文章归档...</div>
                     ) : posts.length === 0 ? (
@@ -130,7 +141,7 @@ export default function Blog() {
                     )}
 
                     {totalPages > 1 ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                        <div className="pagination-shell">
                             <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
                                 上一页
                             </button>

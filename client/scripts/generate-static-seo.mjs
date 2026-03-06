@@ -1,8 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { loadEnv } from 'vite';
 
 const rootDir = process.cwd();
 const distDir = path.join(rootDir, 'dist');
+const env = {
+    ...loadEnv('production', rootDir, ''),
+    ...process.env,
+};
 
 const normalizeUrl = (value) => value.replace(/\/+$/, '');
 const xmlEscape = (value) =>
@@ -13,8 +18,8 @@ const xmlEscape = (value) =>
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&apos;');
 
-const siteUrl = normalizeUrl(process.env.VITE_SITE_URL || 'http://localhost:4173');
-const apiBaseRaw = (process.env.VITE_API_BASE || '/api').trim();
+const siteUrl = normalizeUrl(env.VITE_SITE_URL || 'http://localhost:4173');
+const apiBaseRaw = (env.VITE_API_BASE || '/api').trim();
 const apiCandidates = apiBaseRaw.startsWith('http')
     ? [normalizeUrl(apiBaseRaw)]
     : ['http://127.0.0.1:3001/api', 'http://localhost:3001/api'];

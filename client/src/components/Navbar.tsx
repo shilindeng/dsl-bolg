@@ -27,20 +27,25 @@ export default function Navbar({ isAdmin }: NavbarProps) {
     return (
         <header className="site-nav">
             <div className="container site-nav-inner">
-                <Link to="/" style={{ display: 'grid', gap: '0.15rem' }}>
-                    <strong className="mono" style={{ letterSpacing: '0.12em' }}>{siteConfig.shortName}_BLOG</strong>
-                    <span className="muted" style={{ fontSize: '0.85rem' }}>
-                        Personal brand, long-form writing, selective projects
-                    </span>
+                <Link to="/" className="site-nav-brand" aria-label="返回首页">
+                    <span className="brand-mark mono">DSL</span>
+                    <div className="brand-copy">
+                        <strong>Cyber Editorial Lab</strong>
+                        <span>{siteConfig.author.role}</span>
+                    </div>
                 </Link>
 
                 <nav className="site-nav-links" aria-label="主导航">
                     {navLinks}
                 </nav>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span className="command-hint" aria-hidden="true">
-                        <kbd>⌘</kbd>
+                <div className="site-nav-actions">
+                    <span className="nav-status mono" aria-hidden="true">
+                        LIVE / WWW.SHILIN.TECH
+                    </span>
+
+                    <span className="command-hint nav-command" aria-hidden="true">
+                        <kbd>Ctrl</kbd>
                         <kbd>K</kbd>
                     </span>
 
@@ -58,17 +63,17 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                         aria-label="切换移动端菜单"
                         onClick={() => setOpen((value) => !value)}
                     >
-                        <span className="mono">{open ? '×' : '≡'}</span>
+                        <span className="mono">{open ? 'CLOSE' : 'MENU'}</span>
                     </button>
                 </div>
             </div>
 
             {open ? (
                 <div className="container">
-                    <div className="panel menu-sheet">
-                        <div className="panel-body" style={{ display: 'grid', gap: '0.4rem' }}>
+                    <div className="menu-sheet">
+                        <div className="menu-sheet-body">
                             {navLinks}
-                            {isAdmin ? <Link to="/editor" className="site-nav-link is-active">新建文章</Link> : null}
+                            {isAdmin ? <Link to="/editor" className="site-nav-link">新建文章</Link> : null}
                         </div>
                     </div>
                 </div>

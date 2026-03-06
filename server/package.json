@@ -2,6 +2,7 @@
   "name": "dsl-blog-server",
   "version": "1.0.0",
   "description": "Backend API for DSL personal blog",
+  "type": "module",
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",

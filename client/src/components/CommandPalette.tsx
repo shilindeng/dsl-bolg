@@ -67,7 +67,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
             {
                 id: '/admin/dashboard',
                 label: '管理员控制台',
-                description: '查看数据和审核评论',
+                description: '查看数据与审核评论',
                 onSelect: () => navigate('/admin/dashboard'),
                 type: '后台',
             },

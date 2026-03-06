@@ -21,6 +21,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 app.set('trust proxy', 1);
 
@@ -76,8 +77,8 @@ app.get('/api/health', (_req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+app.listen(Number(PORT), HOST, () => {
+    console.log(`Server running at http://${HOST}:${PORT}`);
 });
 
 export default app;

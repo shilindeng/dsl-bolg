@@ -27,18 +27,21 @@ async function ensureCategory(name: string, slug: string) {
 async function main() {
     console.log('Seeding database...');
 
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@dsl.blog';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminName = process.env.ADMIN_NAME || 'DSL';
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     await prisma.user.upsert({
-        where: { email: 'admin@dsl.blog' },
+        where: { email: adminEmail },
         update: {
             password: hashedPassword,
-            name: 'DSL',
+            name: adminName,
             role: 'admin',
         },
         create: {
-            email: 'admin@dsl.blog',
+            email: adminEmail,
             password: hashedPassword,
-            name: 'DSL',
+            name: adminName,
             role: 'admin',
         },
     });
@@ -258,7 +261,7 @@ SEO、RSS、结构化数据、社交分享图，这些都决定内容是否能�
     }
 
     console.log('Seed complete.');
-    console.log('Admin login: admin@dsl.blog / admin123');
+    console.log(`Admin login: ${adminEmail} / ${adminPassword}`);
 }
 
 main()

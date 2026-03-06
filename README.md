@@ -2,16 +2,6 @@
 
 一个前后端分离的个人品牌博客系统，面向长期写作、公开项目沉淀和专业化内容分发。
 
-## 当前版本重点
-
-- 高级赛博编辑感 UI：首页保留氛围化 3D 粒子和天气卡片，正文页强调可读性
-- 博客首页、归档页、文章详情、项目页、关于页、后台控制台已完成专业化重构
-- 评论改为审核流，后台支持评论审核
-- 登录和评论支持 Cloudflare Turnstile
-- 图片上传支持本地存储，并预留 Cloudflare R2 接入能力
-- 前端构建后自动生成根域名 `robots.txt`、`sitemap.xml`、`rss.xml`
-- 已补齐 Playwright 本地 E2E 冒烟测试与截图产物
-
 ## 技术栈
 
 ### Client
@@ -27,14 +17,14 @@
 
 - Express
 - Prisma
-- SQLite（当前本地开发环境）
+- SQLite
 - JWT + bcryptjs
 - Multer
 - Cloudflare Turnstile server-side verification
 
-## 本地启动
+## 本地开发
 
-### 1. 安装依赖
+### 安装依赖
 
 ```bash
 cd server
@@ -44,9 +34,7 @@ cd ../client
 npm install
 ```
 
-`client/.npmrc` 已处理 React 19 的 peer 依赖兼容，直接执行 `npm install` 即可。
-
-### 2. 初始化数据库
+### 初始化数据库
 
 ```bash
 cd server
@@ -60,7 +48,7 @@ npm run db:seed
 - 邮箱：`admin@dsl.blog`
 - 密码：`admin123`
 
-### 3. 启动开发环境
+### 启动开发环境
 
 ```bash
 # server
@@ -77,7 +65,7 @@ npm run dev
 - 前端：`http://127.0.0.1:5173`
 - 后端：`http://127.0.0.1:3001`
 
-## 构建与验收
+## 构建与测试
 
 ### 服务端构建
 
@@ -99,39 +87,13 @@ npm run build
 - `dist/sitemap.xml`
 - `dist/rss.xml`
 
-如果构建时 API 可访问，会把公开文章写入 `sitemap.xml` 和 `rss.xml`；否则会退化为核心页面静态文件，构建仍然通过。
-
 ### Playwright E2E
-
-首次安装浏览器：
 
 ```bash
 cd client
 npm run e2e:install
-```
-
-运行端到端测试：
-
-```bash
-cd client
 npm run e2e
 ```
-
-有界面模式：
-
-```bash
-cd client
-npm run e2e:headed
-```
-
-测试会自动拉起：
-
-- `server`：`http://127.0.0.1:3001`
-- `client preview`：`http://127.0.0.1:4173`
-
-截图产物输出到：
-
-- `client/playwright-artifacts/screenshots`
 
 ## 环境变量
 
@@ -140,13 +102,36 @@ npm run e2e:headed
 - [client/.env.example](/D:/vibe-coding/dsl-bolg/client/.env.example)
 - [server/.env.example](/D:/vibe-coding/dsl-bolg/server/.env.example)
 
-## 生产部署方向
+## 生产部署
 
-推荐架构：
+当前仓库的生产拓扑已经切换为：
 
-- 前端部署到 Cloudflare Pages
-- API 部署到独立服务器，并挂到 `api.<domain>`
-- 图片优先切到 Cloudflare R2
-- 当前仓库保留 SQLite 作为本地/临时环境，生产建议迁移到 PostgreSQL
+- `Caddy` 提供 HTTPS、静态文件和 `/api`/`/uploads` 反向代理
+- `systemd` 托管 Node API 进程
+- `releases/current/shared` 目录结构支持无状态发布与回滚
+- SQLite 数据库、上传文件、前后端环境变量保存在共享目录，不随发布覆盖
 
-更完整的部署说明见 [deployment_manual.md](/D:/vibe-coding/dsl-bolg/deployment_manual.md)。
+详细说明见 [deployment_manual.md](/D:/vibe-coding/dsl-bolg/deployment_manual.md)。
+
+## 一键更新上线
+
+仓库内已提供：
+
+- [deploy/server/bootstrap.sh](/D:/vibe-coding/dsl-bolg/deploy/server/bootstrap.sh)
+- [deploy/server/update.sh](/D:/vibe-coding/dsl-bolg/deploy/server/update.sh)
+- [deploy/server/backup.sh](/D:/vibe-coding/dsl-bolg/deploy/server/backup.sh)
+- [deploy/server/deploy.env.example](/D:/vibe-coding/dsl-bolg/deploy/server/deploy.env.example)
+- [deploy/update-remote.ps1](/D:/vibe-coding/dsl-bolg/deploy/update-remote.ps1)
+
+推荐流程：
+
+1. 服务器准备好 `/opt/dsl-blog/config/deploy.env`
+2. 首次执行 `bootstrap.sh`
+3. 后续每次上线执行 `update.sh`
+4. Windows 本机可直接调用 `deploy/update-remote.ps1`
+
+注意：
+
+- `bootstrap.sh` 只用于首装或重建环境，允许在没有数据库时执行 seed
+- `update.sh` 是日常发布入口，**不会**执行 seed
+- 备份只在部署前执行，归档保存在服务器本地 `/opt/dsl-blog/backups`

@@ -120,136 +120,146 @@ export default function BlogPost() {
 
             <ReadingProgress />
 
-            <section className="section">
+            <section className="section article-hero-section">
+                <div className="container article-hero-shell">
+                    <div className="article-hero-copy">
+                        <Link to="/blog" className="command-hint article-back-link">
+                            返回文章归档
+                        </Link>
+                        <div className="eyebrow">Article Transmission</div>
+                        <h1 className="article-title">{post.title}</h1>
+                        <p className="lead">{post.excerpt}</p>
+
+                        <div className="article-meta" data-testid="article-meta">
+                            <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                            <span>{post.meta?.readTime || 1} 分钟阅读</span>
+                            <span>{post.meta?.views || 0} 次浏览</span>
+                            <span>最后更新于 {formatDate(post.updatedAt)}</span>
+                        </div>
+
+                        <div className="tag-list">
+                            {post.category ? <span className="chip">{post.category.name}</span> : null}
+                            {post.tags.map((tag) => (
+                                <span key={tag.id} className="tag">{tag.name}</span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="article-hero-side">
+                        <div className="article-side-card">
+                            <span className="signal-label mono">ARTICLE STATUS</span>
+                            <strong>Published and maintained</strong>
+                            <p className="muted">这里的文章会持续修订，而不是发布即结束。</p>
+                        </div>
+                        <div className="article-side-card">
+                            <span className="signal-label mono">READ MODE</span>
+                            <strong>Long-form / Structured / Referencable</strong>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="section article-body-section">
                 <div className="container article-layout">
                     <article className="article-main">
-                        <div style={{ display: 'grid', gap: '1.2rem' }}>
-                            <Link to="/blog" className="command-hint" style={{ width: 'fit-content' }}>
-                                返回文章归档
-                            </Link>
-
-                            <div className="eyebrow">Article</div>
-                            <h1 className="section-title" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)' }}>{post.title}</h1>
-                            <p className="lead">{post.excerpt}</p>
-
-                            <div className="article-meta" data-testid="article-meta">
-                                <span>{formatDate(post.publishedAt || post.createdAt)}</span>
-                                <span>{post.meta?.readTime || 1} 分钟阅读</span>
-                                <span>{post.meta?.views || 0} 次浏览</span>
-                                <span>最后更新于 {formatDate(post.updatedAt)}</span>
+                        {post.coverImage ? (
+                            <div className="article-cover">
+                                <LazyImage src={post.coverImage} alt={post.title} />
                             </div>
+                        ) : null}
 
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
-                                {post.category ? <span className="chip">{post.category.name}</span> : null}
-                                {post.tags.map((tag) => (
-                                    <span key={tag.id} className="tag">{tag.name}</span>
-                                ))}
-                            </div>
-
-                            {post.coverImage ? (
-                                <div className="article-cover">
-                                    <LazyImage src={post.coverImage} alt={post.title} />
-                                </div>
-                            ) : null}
-
-                            <div className="markdown-body" data-testid="article-content">
-                                <Markdown
-                                    remarkPlugins={[remarkGfm]}
-                                    rehypePlugins={[rehypeHighlight]}
-                                    components={{
-                                        h2: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h2 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h2>
-                                            );
-                                        },
-                                        h3: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h3 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h3>
-                                            );
-                                        },
-                                        h4: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h4 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h4>
-                                            );
-                                        },
-                                        img: ({ node, alt, ...props }) => (
-                                            <figure>
-                                                <div className="article-cover" style={{ margin: 0 }}>
-                                                    <LazyImage {...props} src={props.src || ''} alt={alt} />
-                                                </div>
-                                                {alt ? <figcaption>{alt}</figcaption> : null}
-                                            </figure>
-                                        ),
-                                    }}
-                                >
-                                    {post.content}
-                                </Markdown>
-                            </div>
-
-                            <div className="panel">
-                                <div className="panel-body" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                    <div style={{ display: 'grid', gap: '0.35rem' }}>
-                                        <strong>这篇文章对你有帮助吗？</strong>
-                                        <span className="muted">点赞会帮助我判断哪些主题值得继续深入。</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                                        <button type="button" className="btn btn-primary" data-testid="article-like-button" onClick={handleLike} disabled={liking}>
-                                            {liking ? '处理中...' : `点赞 ${post.meta?.likes || 0}`}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-secondary"
-                                            data-testid="article-copy-link-button"
-                                            onClick={() => navigator.clipboard.writeText(articleUrl)}
-                                        >
-                                            复制链接
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {queueCount > 0 ? (
-                                <div className="panel">
-                                    <div className="panel-body">
-                                        <span className="badge" data-testid="pending-comment-badge" style={{ color: 'var(--accent-emerald)' }}>
-                                            已新增 {queueCount} 条待审核评论
-                                        </span>
-                                    </div>
-                                </div>
-                            ) : null}
+                        <div className="markdown-body" data-testid="article-content">
+                            <Markdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeHighlight]}
+                                components={{
+                                    h2: ({ children }) => {
+                                        const text = String(children);
+                                        const id = buildHeadingId(text);
+                                        return (
+                                            <h2 id={id}>
+                                                <a href={`#${id}`}>{children}</a>
+                                            </h2>
+                                        );
+                                    },
+                                    h3: ({ children }) => {
+                                        const text = String(children);
+                                        const id = buildHeadingId(text);
+                                        return (
+                                            <h3 id={id}>
+                                                <a href={`#${id}`}>{children}</a>
+                                            </h3>
+                                        );
+                                    },
+                                    h4: ({ children }) => {
+                                        const text = String(children);
+                                        const id = buildHeadingId(text);
+                                        return (
+                                            <h4 id={id}>
+                                                <a href={`#${id}`}>{children}</a>
+                                            </h4>
+                                        );
+                                    },
+                                    img: ({ alt, ...props }) => (
+                                        <figure>
+                                            <div className="article-cover article-inline-cover">
+                                                <LazyImage {...props} src={props.src || ''} alt={alt} />
+                                            </div>
+                                            {alt ? <figcaption>{alt}</figcaption> : null}
+                                        </figure>
+                                    ),
+                                }}
+                            >
+                                {post.content}
+                            </Markdown>
                         </div>
+
+                        <div className="article-actions-shell">
+                            <div>
+                                <strong>这篇文章对你有帮助吗？</strong>
+                                <p className="muted">点赞会帮助我判断哪些主题值得继续深挖。</p>
+                            </div>
+                            <div className="article-actions">
+                                <button type="button" className="btn btn-primary" data-testid="article-like-button" onClick={handleLike} disabled={liking}>
+                                    {liking ? '处理中...' : `点赞 ${post.meta?.likes || 0}`}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    data-testid="article-copy-link-button"
+                                    onClick={() => navigator.clipboard.writeText(articleUrl)}
+                                >
+                                    复制链接
+                                </button>
+                            </div>
+                        </div>
+
+                        {queueCount > 0 ? (
+                            <div className="article-queue-note">
+                                <span className="badge badge-green" data-testid="pending-comment-badge">
+                                    已新增 {queueCount} 条待审核评论
+                                </span>
+                            </div>
+                        ) : null}
 
                         <Comments postId={post.id} comments={comments} onCommentAdded={handleCommentAdded} />
 
                         {post.relatedPosts?.length ? (
                             <section className="section-tight">
-                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                <div className="section-heading section-heading-left">
                                     <div>
                                         <div className="eyebrow">Related Reading</div>
-                                        <h3 style={{ marginTop: '1rem', fontSize: '1.8rem' }}>继续阅读</h3>
+                                        <h3>继续阅读</h3>
                                     </div>
-                                    <div className="two-grid">
-                                        {post.relatedPosts.map((item) => (
-                                            <Link key={item.id} to={`/blog/${item.slug}`} className="panel">
-                                                <div className="panel-body" style={{ display: 'grid', gap: '0.75rem' }}>
-                                                    <strong>{item.title}</strong>
-                                                    <span className="muted">{item.excerpt}</span>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
+                                </div>
+                                <div className="two-grid">
+                                    {post.relatedPosts.map((item) => (
+                                        <Link key={item.id} to={`/blog/${item.slug}`} className="signal-card">
+                                            <span className="signal-label mono">RELATED</span>
+                                            <h3>{item.title}</h3>
+                                            <p>{item.excerpt}</p>
+                                        </Link>
+                                    ))}
                                 </div>
                             </section>
                         ) : null}
@@ -257,34 +267,30 @@ export default function BlogPost() {
 
                     <aside className="article-sidebar">
                         {post.toc?.length ? (
-                            <div className="panel">
-                                <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
-                                    <strong className="mono">目录</strong>
-                                    <div className="toc-list" data-testid="post-toc">
-                                        {post.toc.map((item) => (
-                                            <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
-                                                {item.text}
-                                            </a>
-                                        ))}
-                                    </div>
+                            <div className="article-side-card">
+                                <strong className="mono">目录</strong>
+                                <div className="toc-list" data-testid="post-toc">
+                                    {post.toc.map((item) => (
+                                        <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
+                                            {item.text}
+                                        </a>
+                                    ))}
                                 </div>
                             </div>
                         ) : null}
 
-                        <div className="panel">
-                            <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
-                                <strong className="mono">导航</strong>
-                                {post.previousPost ? (
-                                    <Link to={`/blog/${post.previousPost.slug}`} className="muted">
-                                        ← {post.previousPost.title}
-                                    </Link>
-                                ) : null}
-                                {post.nextPost ? (
-                                    <Link to={`/blog/${post.nextPost.slug}`} className="muted">
-                                        → {post.nextPost.title}
-                                    </Link>
-                                ) : null}
-                            </div>
+                        <div className="article-side-card">
+                            <strong className="mono">导航</strong>
+                            {post.previousPost ? (
+                                <Link to={`/blog/${post.previousPost.slug}`} className="muted">
+                                    上一篇: {post.previousPost.title}
+                                </Link>
+                            ) : null}
+                            {post.nextPost ? (
+                                <Link to={`/blog/${post.nextPost.slug}`} className="muted">
+                                    下一篇: {post.nextPost.title}
+                                </Link>
+                            ) : null}
                         </div>
                     </aside>
                 </div>

@@ -1,149 +1,229 @@
 # 部署手册
 
-当前推荐架构：
+当前线上架构：
 
-- 前端：Cloudflare Pages
-- API：独立 Linux 服务器 + PM2 + Nginx
-- 域名：主站 `your-domain.com`，API `api.your-domain.com`
-- 图片：优先 Cloudflare R2
+- `shilin.tech`：保留给 OpenClaw
+- `www.shilin.tech`：博客站点
+- Web/API 同机部署在阿里云 Linux
+- `Caddy` 负责 HTTPS、静态文件、`/api`、`/uploads`
+- `systemd` 托管 `dsl-blog-api`
 
-## 1. 架构说明
+## 1. 目录结构
 
-- 主域名承载静态站点、前端路由、根域名 SEO 文件：
-  - `/robots.txt`
-  - `/sitemap.xml`
-  - `/rss.xml`
-- API 域名承载数据接口、登录、评论、上传、动态 feed/sitemap 能力
-- 生产主链路优先使用前端构建产物里的根域名 SEO 文件；API 侧保留动态版本作为补充能力
+统一使用 `/opt/dsl-blog`：
 
-## 2. Cloudflare Pages 部署前端
+```text
+/opt/dsl-blog
+├─ bin/                 # 服务器上实际执行的运维脚本
+├─ config/
+│  └─ deploy.env        # 部署配置
+├─ repo/                # git 工作副本，固定跟踪 origin/main
+├─ releases/            # 每次发布的版本目录
+├─ current -> releases/<timestamp>
+├─ shared/              # 持久化状态
+│  ├─ server.env
+│  ├─ client.env.production
+│  ├─ prisma/blog.db
+│  └─ uploads/
+└─ backups/             # 部署前备份归档
+```
 
-### Pages 项目配置
+共享状态不会被新版本覆盖：
 
-- Root directory: `client`
-- Build command: `npm run build`
-- Output directory: `dist`
+- `server.env`
+- `client.env.production`
+- `shared/prisma/blog.db`
+- `shared/uploads`
 
-仓库已经包含：
+## 2. 部署配置
 
-- `client/public/_redirects`
-- `client/public/_headers`
+服务器使用统一配置文件：
 
-它们用于：
+- [deploy/server/deploy.env.example](/D:/vibe-coding/dsl-bolg/deploy/server/deploy.env.example)
 
-- 解决 SPA 深链刷新 404
-- 下发基础安全头和静态资源缓存策略
-
-### 前端环境变量
+当前生产建议值：
 
 ```env
-VITE_API_BASE=https://api.your-domain.com/api
-VITE_SITE_URL=https://your-domain.com
-VITE_TURNSTILE_SITE_KEY=your-turnstile-site-key
+REPO_URL=https://github.com/shilindeng/dsl-bolg.git
+DEPLOY_BRANCH=main
+APP_ROOT=/opt/dsl-blog
+SERVICE_NAME=dsl-blog-api
+SITE_URL=https://www.shilin.tech
+BLOG_HOST=www.shilin.tech
+ROOT_DOMAIN=shilin.tech
+ROOT_PROXY_TARGET=127.0.0.1:18789
+BACKUP_KEEP=7
 ```
 
-## 3. 服务器部署 API
+## 3. 首次安装 / 重建环境
 
-服务器准备：
+### 准备共享文件
 
-- Node.js 20+
-- PM2
-- Nginx
-- Git
+至少准备这两个文件：
 
-### 部署步骤
+- `/opt/dsl-blog/shared/server.env`
+- `/opt/dsl-blog/shared/client.env.production`
 
-```bash
-git clone <your-repo>
-cd dsl-bolg/server
-npm install
-npm run db:generate
-npx prisma db push
-npm run db:seed
-npm run build
-pm2 start ecosystem.config.cjs
-pm2 save
-```
+参考来源：
 
-仓库已提供：
+- [server/.env.example](/D:/vibe-coding/dsl-bolg/server/.env.example)
+- [client/.env.example](/D:/vibe-coding/dsl-bolg/client/.env.example)
 
-- [ecosystem.config.cjs](/D:/vibe-coding/dsl-bolg/server/ecosystem.config.cjs)
-
-生产启动脚本：
-
-```bash
-npm run start:prod
-```
-
-### 服务端环境变量示例
+当前生产值建议：
 
 ```env
+# /opt/dsl-blog/shared/server.env
+NODE_ENV=production
 PORT=3001
+HOST=127.0.0.1
 JWT_SECRET=replace-with-a-long-random-secret
-SITE_NAME=DSL Blog
-SITE_URL=https://your-domain.com
-API_URL=https://api.your-domain.com
-ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
-TURNSTILE_SECRET_KEY=your-turnstile-secret
-UPLOAD_MODE=r2
-R2_ACCOUNT_ID=your-account-id
-R2_BUCKET_NAME=your-bucket-name
-R2_ACCESS_KEY_ID=your-access-key
-R2_SECRET_ACCESS_KEY=your-secret-key
-R2_PUBLIC_URL=https://pub-xxxxxxxx.r2.dev
+SITE_NAME=Shilin Blog
+SITE_URL=https://www.shilin.tech
+API_URL=https://www.shilin.tech/api
+ALLOWED_ORIGINS=https://www.shilin.tech
+TURNSTILE_SECRET_KEY=
+UPLOAD_MODE=local
+ADMIN_EMAIL=admin@shilin.tech
+ADMIN_PASSWORD=change-me
+ADMIN_NAME=Shilin
 ```
 
-## 4. Nginx 反向代理
+```env
+# /opt/dsl-blog/shared/client.env.production
+VITE_API_BASE=/api
+VITE_SITE_URL=https://www.shilin.tech
+VITE_TURNSTILE_SITE_KEY=
+```
 
-仓库已提供示例配置：
-
-- [deploy/nginx/dsl-blog-api.conf.example](/D:/vibe-coding/dsl-bolg/deploy/nginx/dsl-blog-api.conf.example)
-
-建议放到：
-
-- `/etc/nginx/sites-available/dsl-blog-api`
-
-启用后执行：
+### 执行 bootstrap
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/dsl-blog-api /etc/nginx/sites-enabled/dsl-blog-api
-sudo nginx -t
-sudo systemctl reload nginx
+bash /opt/dsl-blog/bin/bootstrap.sh
 ```
 
-如果仍使用本地上传目录而不是 R2，需要保留 API 服务对 `/uploads` 的暴露能力。
+`bootstrap.sh` 会做这些事：
 
-## 5. Cloudflare 配置建议
+1. 初始化目录
+2. clone `origin/main` 到 `/opt/dsl-blog/repo`
+3. 迁移旧的 `/opt/dsl-blog/app` 状态到 `shared`
+4. 创建首个 release
+5. 安装 systemd/Caddy 配置
+6. 若 `shared/prisma/blog.db` 不存在，则执行一次 `npm run db:seed`
+7. 切换 `current` 并启动服务
 
-- Pages 绑定主域名 `your-domain.com`
-- `api.your-domain.com` 通过 DNS 指向你的服务器
-- SSL 使用 `Full (strict)`
-- 登录和评论表单启用 Turnstile
-- 图片迁移到 R2 后，把 `R2_PUBLIC_URL` 配到服务端环境变量
+注意：
 
-## 6. 生产建议
+- `bootstrap.sh` 只用于首装或重建环境
+- 它允许在空数据库时 seed
+- 如果数据库已经存在，不会重复 seed
 
-- 当前 Prisma schema 仍以 SQLite 作为本地默认值；生产建议迁移到 PostgreSQL
-- 如果切 PostgreSQL，建议单独处理 provider、migration 和数据迁移，不要直接在线上手改
-- 图片尽早迁移到 R2，避免本地磁盘变成长期负担
-- 上线前至少验证：
-  - 登录
-  - 发文
-  - 评论提交与审核
-  - 图片上传
-  - `robots.txt`
-  - `sitemap.xml`
-  - `rss.xml`
-  - Pages 深链刷新是否正常
+## 4. 日常一键上线
 
-## 7. 最终上线核对清单
+服务器入口：
 
-- Cloudflare Pages 构建成功，根域名可访问
-- `api.your-domain.com/api/health` 返回正常
-- `your-domain.com/robots.txt` 返回前端构建产物
-- `your-domain.com/sitemap.xml` 返回前端构建产物
-- `your-domain.com/rss.xml` 返回前端构建产物
-- Turnstile 已分别在前端和服务端配置
-- `ALLOWED_ORIGINS` 已包含实际域名
-- PM2 进程已持久化并开机自启
-- Nginx 配置校验通过
+```bash
+bash /opt/dsl-blog/bin/update.sh
+```
+
+Windows 本机入口：
+
+```powershell
+.\deploy\update-remote.ps1 -ServerHost 198.11.176.136 -User root -KeyPath D:\vibe-coding\root.pem
+```
+
+`update.sh` 的顺序：
+
+1. 先执行部署前备份
+2. 从 `origin/main` 拉最新代码
+3. 生成新的 release
+4. 把共享状态链接到 release
+5. 执行：
+   - `npm ci`
+   - `npm run db:generate`
+   - `npx prisma db push`
+   - `npm run build`
+6. 切换 `current`
+7. 重启 `dsl-blog-api`
+8. 校验：
+   - `/api/health`
+   - `/robots.txt`
+   - `/sitemap.xml`
+   - `/rss.xml`
+9. 若校验失败，自动回滚到上一版 release
+
+关键约束：
+
+- `update.sh` **不会执行 seed**
+- 它不会重置管理员密码
+- 它不会覆盖现有文章、项目、评论、数据库或上传文件
+- 如果当前 release 是从旧的 `/opt/dsl-blog/app` 迁移过来的，`update.sh` 会先拒绝执行，防止把线上回退到尚未 push 到 `origin/main` 的旧代码
+
+## 5. 备份策略
+
+入口：
+
+```bash
+bash /opt/dsl-blog/bin/backup.sh
+```
+
+部署脚本会在每次发布前自动调用一次，不需要额外 cron。
+
+备份内容：
+
+- `shared/prisma/blog.db`
+- `shared/uploads`
+- `shared/server.env`
+- `shared/client.env.production`
+- `/etc/caddy/Caddyfile`
+- `/etc/systemd/system/dsl-blog-api.service`
+
+归档位置：
+
+- `/opt/dsl-blog/backups/<timestamp>.tar.gz`
+
+保留策略：
+
+- 默认仅保留最近 `7` 份
+
+## 6. 运维命令
+
+查看 API 状态：
+
+```bash
+systemctl status dsl-blog-api --no-pager -l
+```
+
+重启 API：
+
+```bash
+systemctl restart dsl-blog-api
+```
+
+检查 Caddy 配置：
+
+```bash
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+```
+
+查看当前发布版本：
+
+```bash
+readlink -f /opt/dsl-blog/current
+```
+
+查看最近备份：
+
+```bash
+ls -1dt /opt/dsl-blog/backups/*.tar.gz | head
+```
+
+## 7. 上线核对
+
+- `https://www.shilin.tech` 可访问
+- `https://www.shilin.tech/api/health` 返回 200 JSON
+- `https://www.shilin.tech/robots.txt` 返回正式域名
+- `https://www.shilin.tech/sitemap.xml` 返回正式域名
+- `https://www.shilin.tech/rss.xml` 返回正式域名
+- `https://shilin.tech` 仍然是 OpenClaw
+- `systemctl status dsl-blog-api` 为 `active`

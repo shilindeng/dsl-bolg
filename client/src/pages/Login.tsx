@@ -37,50 +37,59 @@ export default function Login() {
         <>
             <SEO title="登录" description="管理员登录入口。" />
 
-            <section className="section">
-                <div className="container" style={{ display: 'grid', placeItems: 'center' }}>
-                    <div className="panel" style={{ width: 'min(520px, 100%)' }}>
-                        <div className="panel-body" style={{ display: 'grid', gap: '1.2rem' }}>
-                            <div className="eyebrow">Admin Access</div>
-                            <div style={{ display: 'grid', gap: '0.8rem' }}>
-                                <h1 className="section-title" style={{ fontSize: '2.4rem' }}>管理员登录</h1>
-                                <p className="muted" style={{ margin: 0 }}>
-                                    这是内容发布和评论审核入口，不对公开访客开放。
-                                </p>
+            <section className="section login-section">
+                <div className="container login-grid">
+                    <div className="feature-panel accent-panel">
+                        <div className="eyebrow">Admin Access</div>
+                        <h1 className="section-title">控制台登录</h1>
+                        <p className="lead">
+                            这是内容发布、文章编辑和评论审核入口，不对普通访问者开放。
+                        </p>
+                        <div className="principle-list">
+                            <div className="metric-card">
+                                <span className="muted mono">PERMISSION</span>
+                                <strong>Admin only</strong>
                             </div>
-
-                            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }} data-testid="login-form">
-                                <label className="form-field">
-                                    <span className="form-label">邮箱</span>
-                                    <input
-                                        className="form-input"
-                                        data-testid="login-email-input"
-                                        type="email"
-                                        value={email}
-                                        onChange={(event) => setEmail(event.target.value)}
-                                        required
-                                    />
-                                </label>
-
-                                <label className="form-field">
-                                    <span className="form-label">密码</span>
-                                    <input
-                                        className="form-input"
-                                        data-testid="login-password-input"
-                                        type="password"
-                                        value={password}
-                                        onChange={(event) => setPassword(event.target.value)}
-                                        required
-                                    />
-                                </label>
-
-                                <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
-
-                                <button type="submit" className="btn btn-primary" data-testid="login-submit-button" disabled={loading}>
-                                    {loading ? '验证中...' : '进入控制台'}
-                                </button>
-                            </form>
+                            <div className="metric-card">
+                                <span className="muted mono">PROTECTION</span>
+                                <strong>Turnstile verification enabled</strong>
+                            </div>
                         </div>
+                    </div>
+
+                    <div className="login-card">
+                        <div className="eyebrow">Secure Sign In</div>
+                        <form onSubmit={handleSubmit} className="comment-form" data-testid="login-form">
+                            <label className="form-field">
+                                <span className="form-label">邮箱</span>
+                                <input
+                                    className="form-input"
+                                    data-testid="login-email-input"
+                                    type="email"
+                                    value={email}
+                                    onChange={(event) => setEmail(event.target.value)}
+                                    required
+                                />
+                            </label>
+
+                            <label className="form-field">
+                                <span className="form-label">密码</span>
+                                <input
+                                    className="form-input"
+                                    data-testid="login-password-input"
+                                    type="password"
+                                    value={password}
+                                    onChange={(event) => setPassword(event.target.value)}
+                                    required
+                                />
+                            </label>
+
+                            <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+
+                            <button type="submit" className="btn btn-primary" data-testid="login-submit-button" disabled={loading}>
+                                {loading ? '验证中...' : '进入控制台'}
+                            </button>
+                        </form>
                     </div>
                 </div>
             </section>
