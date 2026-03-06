@@ -1,55 +1,74 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
+import { siteConfig } from '../lib/site.js';
 
 const router = Router();
 
 router.get('/robots.txt', (_req, res) => {
-    const siteUrl = process.env.SITE_URL || 'http://localhost:5173';
     const robots = `User-agent: *
 Allow: /
-Sitemap: ${siteUrl}/sitemap.xml
+Sitemap: ${siteConfig.siteUrl}/sitemap.xml
 `;
+
     res.header('Content-Type', 'text/plain');
     res.send(robots);
 });
 
 router.get('/sitemap.xml', async (_req, res) => {
     try {
-        const posts = await prisma.post.findMany({
-            where: { published: true },
-            select: { slug: true, updatedAt: true },
-        });
-
-        const siteUrl = process.env.SITE_URL || 'http://localhost:5173';
+        const [posts, projects] = await Promise.all([
+            prisma.post.findMany({
+                where: { published: true },
+                select: { slug: true, updatedAt: true },
+            }),
+            prisma.project.findMany({
+                select: { slug: true, updatedAt: true },
+            }),
+        ]);
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>${siteUrl}/</loc>
+        <loc>${siteConfig.siteUrl}/</loc>
         <changefreq>daily</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>${siteUrl}/blog</loc>
+        <loc>${siteConfig.siteUrl}/blog</loc>
         <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>${siteConfig.siteUrl}/projects</loc>
+        <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
-        <loc>${siteUrl}/projects</loc>
+        <loc>${siteConfig.siteUrl}/about</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+`;
+
+        for (const post of posts) {
+            xml += `    <url>
+        <loc>${siteConfig.siteUrl}/blog/${post.slug}</loc>
+        <lastmod>${new Date(post.updatedAt).toISOString()}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
 `;
+        }
 
-        posts.forEach(post => {
+        for (const project of projects) {
             xml += `    <url>
-        <loc>${siteUrl}/blog/${post.slug}</loc>
-        <lastmod>${new Date(post.updatedAt).toISOString()}</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.7</priority>
+        <loc>${siteConfig.siteUrl}/projects#${project.slug}</loc>
+        <lastmod>${new Date(project.updatedAt).toISOString()}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
     </url>
 `;
-        });
+        }
 
         xml += `</urlset>`;
 

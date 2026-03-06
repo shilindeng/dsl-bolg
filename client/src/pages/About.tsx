@@ -1,170 +1,85 @@
-import TypewriterText from '../components/TypewriterText';
-import ScrollReveal from '../components/ScrollReveal';
-import BentoCard from '../components/BentoCard';
+import SEO from '../components/SEO';
+import { siteConfig } from '../config/site';
 
 export default function About() {
-    const skills = [
-        { name: 'JavaScript / TypeScript', level: 95 },
-        { name: 'React / Next.js', level: 90 },
-        { name: 'Node.js', level: 85 },
-        { name: 'Python', level: 80 },
-        { name: 'UI / UX Design', level: 75 },
-        { name: 'Vibe Coding', level: 100 },
-    ];
-
-    const timeline = [
-        { year: '2026', event: 'Mastered Full-Stack Vibe Coding' },
-        { year: '2025', event: 'Launched DSL Personal System' },
-        { year: '2026', event: '精通全栈氛围编程' },
-        { year: '2025', event: '发布 DSL 个人系统' },
-        { year: '2024', event: '深入探索 AI 智能体' },
-        { year: '2023', event: '开启 Web 开发之旅' },
+    const capabilities = [
+        '把个人站、内容站和品牌站整合成一套长期资产系统。',
+        '在风格化视觉里保持内容可读性和专业感。',
+        '把 AI 工作流真正接入研发、写作和迭代节奏。',
+        '从界面到部署，保持项目可以长期维护。',
     ];
 
     return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
+        <>
+            <SEO title="关于" description="关于 DSL、工作方式与长期关注的问题域。" />
 
-            {/* Header */}
-            <div className="animate-fade-in-up" style={{ marginBottom: 'var(--space-3xl)', textAlign: 'center' }}>
-                <div style={{
-                    width: '120px',
-                    height: '120px',
-                    borderRadius: '50%',
-                    background: 'var(--bg-tertiary)',
-                    border: '2px solid var(--accent-cyan)',
-                    margin: '0 auto var(--space-lg)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    boxShadow: '0 0 30px rgba(0,255,200,0.2)'
-                }}>
-                    <span style={{ fontSize: '3rem' }}>⚡</span>
-                </div>
-                <h1 style={{ fontSize: '3rem', marginBottom: 'var(--space-sm)' }}>
-                    <TypewriterText text="USER: DSL" speed={100} delay={500} />
-                </h1>
-                <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', fontFamily: 'var(--font-mono)' }}>
-                    全栈开发者 | AI 爱好者 | 赛博朋克架构师
-                </p>
-            </div>
-
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(12, 1fr)',
-                gap: 'var(--space-lg)',
-            }}>
-
-                {/* Intro Card */}
-                <BentoCard span={2} style={{ gridColumn: 'span 7' }} title="生物数据">
-                    <ScrollReveal>
-                        <p style={{ marginBottom: 'var(--space-md)', fontSize: '1.1rem', lineHeight: 1.8 }}>
-                            Hello World. 我是一名热衷于构建沉浸式网络体验的开发者。
-                            我的使命是将代码与艺术融合，创造出有生命力的数字环境。
-                        </p>
-                        <p style={{ color: 'var(--text-secondary)' }}>
-                            当我不写代码时，我会在 AI 的前沿探索，定制我的终端，
-                            或者沉浸在科幻美学中。
-                        </p>
-                        <div style={{ marginTop: 'var(--space-lg)', display: 'flex', gap: 'var(--space-md)' }}>
-                            <a href="mailto:hello@example.com" className="btn btn-primary">联系我</a>
-                        </div>
-                    </ScrollReveal>
-                </BentoCard>
-
-                {/* System Stats (Neofetch style) */}
-                <BentoCard span={1} style={{ gridColumn: 'span 5' }} title="系统信息">
-                    <ScrollReveal delay={0.2}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--accent-purple)' }}>操作系统:</span> <span>Windows 11 (Custom)</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--accent-purple)' }}>终端:</span> <span>PowerShell 7</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--accent-purple)' }}>编辑器:</span> <span>VS Code</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--accent-purple)' }}>主题:</span> <span>Cyberpunk 2077</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: 'var(--accent-purple)' }}>运行时间:</span> <span>99.9%</span>
-                            </div>
-
-                            <div style={{ marginTop: '20px', display: 'flex', gap: '8px' }}>
-                                <div style={{ width: '20px', height: '20px', background: 'var(--bg-primary)' }} />
-                                <div style={{ width: '20px', height: '20px', background: 'var(--accent-cyan)' }} />
-                                <div style={{ width: '20px', height: '20px', background: 'var(--accent-purple)' }} />
-                                <div style={{ width: '20px', height: '20px', background: 'var(--accent-pink)' }} />
-                                <div style={{ width: '20px', height: '20px', background: 'var(--text-primary)' }} />
+            <section className="section">
+                <div className="container split-grid">
+                    <div className="panel">
+                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                            <div className="eyebrow">About DSL</div>
+                            <h1 className="section-title">{siteConfig.author.name}</h1>
+                            <p className="lead">{siteConfig.author.summary}</p>
+                            <p style={{ margin: 0 }}>{siteConfig.author.bio}</p>
+                            <div className="metric-card">
+                                <span className="muted mono">Location</span>
+                                <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
                             </div>
                         </div>
-                    </ScrollReveal>
-                </BentoCard>
+                    </div>
 
-                {/* Skills */}
-                <div style={{ gridColumn: 'span 12', marginTop: 'var(--space-xl)' }}>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-lg)', borderLeft: '4px solid var(--accent-cyan)', paddingLeft: '1rem' }}>
-                        技能矩阵
-                    </h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-lg)' }}>
-                        {skills.map((skill, i) => (
-                            <div key={skill.name} className="cyber-card" style={{ padding: 'var(--space-md)', border: 'none', background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
-                                    <span>{skill.name}</span>
-                                    <span style={{ color: 'var(--accent-cyan)' }}>{skill.level}%</span>
-                                </div>
-                                <div style={{ height: '6px', background: 'var(--border-dim)', width: '100%', position: 'relative' }}>
-                                    <ScrollReveal delay={i * 0.1}>
-                                        <div style={{
-                                            position: 'absolute', top: 0, left: 0, height: '100%',
-                                            width: `${skill.level}%`,
-                                            background: 'var(--accent-gradient, linear-gradient(90deg, var(--accent-cyan), var(--accent-purple)))',
-                                            boxShadow: 'var(--glow-cyan)'
-                                        }} />
-                                    </ScrollReveal>
-                                </div>
+                    <div className="panel">
+                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                            <div className="eyebrow">Working Method</div>
+                            <h2 style={{ fontSize: '1.8rem' }}>我如何做事</h2>
+                            <div style={{ display: 'grid', gap: '0.85rem' }}>
+                                {siteConfig.principles.map((item) => (
+                                    <div key={item} className="metric-card">
+                                        <strong>{item}</strong>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
+            </section>
 
-                {/* Timeline */}
-                <div style={{ gridColumn: 'span 12', marginTop: 'var(--space-xl)' }}>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--space-lg)', borderLeft: '4px solid var(--accent-pink)', paddingLeft: '1rem' }}>
-                        变更日志 (时间线)
-                    </h2>
-                    <div style={{ position: 'relative', paddingLeft: '20px' }}>
-                        <div style={{ position: 'absolute', left: '0', top: '0', bottom: '0', width: '2px', background: 'var(--border-dim)' }} />
+            <section className="section-tight">
+                <div className="container two-grid">
+                    <div className="panel">
+                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                            <div className="eyebrow">Capability</div>
+                            <h2 style={{ fontSize: '1.8rem' }}>擅长解决的问题</h2>
+                            <div style={{ display: 'grid', gap: '0.85rem' }}>
+                                {capabilities.map((item) => (
+                                    <div key={item} className="metric-card">
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
-                        {timeline.map((item, i) => (
-                            <ScrollReveal key={i} delay={i * 0.1} style={{ marginBottom: 'var(--space-lg)', position: 'relative' }}>
-                                <div style={{
-                                    position: 'absolute', left: '-24px', top: '6px',
-                                    width: '10px', height: '10px', borderRadius: '50%',
-                                    background: i === 0 ? 'var(--accent-pink)' : 'var(--bg-tertiary)',
-                                    border: '2px solid var(--accent-pink)'
-                                }} />
-                                <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-pink)', fontSize: '0.9rem' }}>
-                                    {item.year}
-                                </div>
-                                <div style={{ fontSize: '1.1rem' }}>
-                                    {item.event}
-                                </div>
-                            </ScrollReveal>
-                        ))}
+                    <div className="panel">
+                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                            <div className="eyebrow">Current Focus</div>
+                            <h2 style={{ fontSize: '1.8rem' }}>最近在持续打磨的方向</h2>
+                            <div className="metric-card">
+                                <span className="muted mono">01</span>
+                                <strong>个人品牌博客的专业化表达</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">02</span>
+                                <strong>AI 参与开发与写作的可复用工作流</strong>
+                            </div>
+                            <div className="metric-card">
+                                <span className="muted mono">03</span>
+                                <strong>高辨识度但不牺牲可读性的界面系统</strong>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-            </div>
-            <style>{`
-                @media (max-width: 768px) {
-                    .container > div:nth-child(2) > div {
-                        grid-column: span 12 !important;
-                    }
-                }
-            `}</style>
-        </div>
+            </section>
+        </>
     );
 }

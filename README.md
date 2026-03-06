@@ -1,157 +1,152 @@
-# DSL Blog — 赛博朋克个人博客
+# DSL Blog
 
-一个前后端分离的赛博朋克风格个人博客系统，采用现代技术栈构建。
+一个前后端分离的个人品牌博客系统，面向长期写作、公开项目沉淀和专业化内容分发。
+
+## 当前版本重点
+
+- 高级赛博编辑感 UI：首页保留氛围化 3D 粒子和天气卡片，正文页强调可读性
+- 博客首页、归档页、文章详情、项目页、关于页、后台控制台已完成专业化重构
+- 评论改为审核流，后台支持评论审核
+- 登录和评论支持 Cloudflare Turnstile
+- 图片上传支持本地存储，并预留 Cloudflare R2 接入能力
+- 前端构建后自动生成根域名 `robots.txt`、`sitemap.xml`、`rss.xml`
+- 已补齐 Playwright 本地 E2E 冒烟测试与截图产物
 
 ## 技术栈
 
-### 前端
-- **React 19** + **Vite 6** — 构建和开发
-- **react-router-dom v7** — 路由
-- **react-markdown** + remark-gfm + rehype-highlight — Markdown 渲染
-- **recharts** — 数据图表
-- **react-helmet-async** — SEO
+### Client
 
-### 后端
-- **Express** — Web 框架
-- **Prisma** — ORM
-- **SQLite** — 数据库（零配置）
-- **JWT + bcryptjs** — 认证
-- **multer** — 文件上传
+- React 19
+- Vite 6
+- React Router 7
+- React Markdown + `remark-gfm` + `rehype-highlight`
+- React Helmet Async
+- Playwright
 
-## 功能
+### Server
 
-- ✅ 文章 CRUD（Markdown 编辑器）
-- ✅ 分类 & 标签系统
-- ✅ 评论系统（含嵌套回复）
-- ✅ 管理员认证（JWT）
-- ✅ 文章点赞 & 浏览量统计
-- ✅ 管理员数据看板
-- ✅ 图片上传（本地存储）
-- ✅ RSS Feed & Sitemap
-- ✅ SEO 优化
-- ✅ 亮色/暗色主题
-- ✅ 粒子背景、CRT 覆盖、故障文字等赛博朋克特效
+- Express
+- Prisma
+- SQLite（当前本地开发环境）
+- JWT + bcryptjs
+- Multer
+- Cloudflare Turnstile server-side verification
 
-## 快速开始
+## 本地启动
 
 ### 1. 安装依赖
 
 ```bash
-# 后端
 cd server
 npm install
 
-# 前端
 cd ../client
 npm install
 ```
+
+`client/.npmrc` 已处理 React 19 的 peer 依赖兼容，直接执行 `npm install` 即可。
 
 ### 2. 初始化数据库
 
 ```bash
 cd server
+npm run db:generate
 npx prisma db push
-npx tsx prisma/seed.ts
+npm run db:seed
 ```
 
-Seed 会创建管理员账号和示例数据：
-- 📧 邮箱: `admin@dsl.blog`
-- 🔑 密码: `admin123`
+默认管理员账号：
 
-### 3. 启动开发服务器
+- 邮箱：`admin@dsl.blog`
+- 密码：`admin123`
+
+### 3. 启动开发环境
 
 ```bash
-# 启动后端 (端口 3001)
+# server
 cd server
 npm run dev
 
-# 启动前端 (端口 5173)
+# client
 cd client
 npm run dev
 ```
 
-访问 http://localhost:5173
+默认访问地址：
 
-## 项目结构
+- 前端：`http://127.0.0.1:5173`
+- 后端：`http://127.0.0.1:3001`
 
-```
-dsl-bolg/
-├── client/                 # 前端 React 应用
-│   ├── src/
-│   │   ├── api/           # API 客户端
-│   │   ├── components/    # UI 组件 (16个)
-│   │   ├── hooks/         # 自定义 Hooks
-│   │   ├── pages/         # 页面组件
-│   │   └── index.css      # 全局样式
-│   └── vite.config.ts
-├── server/                 # 后端 Express 应用
-│   ├── prisma/
-│   │   ├── schema.prisma  # 数据库模型
-│   │   └── seed.ts        # 种子数据
-│   ├── src/
-│   │   ├── lib/           # Prisma Client
-│   │   ├── middleware/    # 认证 & 上传中间件
-│   │   └── routes/        # API 路由 (9个)
-│   └── uploads/           # 上传文件目录
-└── README.md
-```
+## 构建与验收
 
-## 生产部署 (Linux)
+### 服务端构建
 
 ```bash
-# 1. 安装 Node.js 18+
-# 2. 克隆项目并安装依赖
-git clone <repo> && cd dsl-bolg
-cd server && npm install && cd ../client && npm install && cd ..
-
-# 3. 初始化数据库
-cd server && npx prisma db push && npx tsx prisma/seed.ts
-
-# 4. 构建前端
-cd ../client && npm run build
-
-# 5. 启动后端
-cd ../server && npm start
-
-# 6. 用 nginx 代理前端静态文件和后端 API
+cd server
+npm run build
 ```
 
-### Nginx 示例配置
+### 前端构建
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 前端静态文件
-    location / {
-        root /path/to/dsl-bolg/client/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # 后端 API 代理
-    location /api/ {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # 上传文件
-    location /uploads/ {
-        proxy_pass http://127.0.0.1:3001;
-    }
-}
+```bash
+cd client
+npm run build
 ```
+
+前端构建会额外生成：
+
+- `dist/robots.txt`
+- `dist/sitemap.xml`
+- `dist/rss.xml`
+
+如果构建时 API 可访问，会把公开文章写入 `sitemap.xml` 和 `rss.xml`；否则会退化为核心页面静态文件，构建仍然通过。
+
+### Playwright E2E
+
+首次安装浏览器：
+
+```bash
+cd client
+npm run e2e:install
+```
+
+运行端到端测试：
+
+```bash
+cd client
+npm run e2e
+```
+
+有界面模式：
+
+```bash
+cd client
+npm run e2e:headed
+```
+
+测试会自动拉起：
+
+- `server`：`http://127.0.0.1:3001`
+- `client preview`：`http://127.0.0.1:4173`
+
+截图产物输出到：
+
+- `client/playwright-artifacts/screenshots`
 
 ## 环境变量
 
-### server/.env
-```env
-PORT=3001
-JWT_SECRET=your-secret-key
-SITE_URL=http://your-domain.com
-```
+参考：
 
-## License
+- [client/.env.example](/D:/vibe-coding/dsl-bolg/client/.env.example)
+- [server/.env.example](/D:/vibe-coding/dsl-bolg/server/.env.example)
 
-MIT
+## 生产部署方向
+
+推荐架构：
+
+- 前端部署到 Cloudflare Pages
+- API 部署到独立服务器，并挂到 `api.<domain>`
+- 图片优先切到 Cloudflare R2
+- 当前仓库保留 SQLite 作为本地/临时环境，生产建议迁移到 PostgreSQL
+
+更完整的部署说明见 [deployment_manual.md](/D:/vibe-coding/dsl-bolg/deployment_manual.md)。

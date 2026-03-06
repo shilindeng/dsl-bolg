@@ -1,64 +1,133 @@
 import { Router, Request, Response } from 'express';
+import slugify from 'slugify';
 import prisma from '../lib/prisma.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/projects — 项目列表
+async function resolveProjectSlug(input: string, excludeId?: number) {
+    const base = slugify(input, { lower: true, strict: true }) || `project-${Date.now()}`;
+    let candidate = base;
+    let counter = 1;
+
+    while (true) {
+        const existing = await prisma.project.findUnique({ where: { slug: candidate } });
+        if (!existing || existing.id === excludeId) {
+            return candidate;
+        }
+
+        candidate = `${base}-${counter}`;
+        counter += 1;
+    }
+}
+
 router.get('/', async (_req: Request, res: Response) => {
     try {
         const projects = await prisma.project.findMany({
-            orderBy: [
-                { featured: 'desc' },
-                { createdAt: 'desc' },
-            ],
+            orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
         });
 
         res.json(projects);
     } catch (error) {
         console.error('Error fetching projects:', error);
-        res.status(500).json({ error: '获取项目失败' });
+        res.status(500).json({ error: 'Failed to fetch projects' });
     }
 });
 
-// POST /api/projects — 创建项目 (需认证)
-router.post('/', authMiddleware, async (req: Request, res: Response) => {
+router.get('/:slug', async (req: Request, res: Response) => {
     try {
-        const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
+        const project = await prisma.project.findUnique({
+            where: { slug: String(req.params.slug) },
+        });
 
+        if (!project) {
+            res.status(404).json({ error: 'Project not found' });
+            return;
+        }
+
+        res.json(project);
+    } catch (error) {
+        console.error('Error fetching project:', error);
+        res.status(500).json({ error: 'Failed to fetch project' });
+    }
+});
+
+router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const { name, slug, summary, description, techStack, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+            name: string;
+            slug?: string;
+            summary?: string;
+            description: string;
+            techStack?: string;
+            liveUrl?: string | null;
+            repoUrl?: string | null;
+            coverImage?: string | null;
+            featured?: boolean;
+            order?: number | string;
+        };
+        const parsedOrder = Number(order);
         const project = await prisma.project.create({
             data: {
                 name,
+                slug: await resolveProjectSlug(slug || name),
+                summary: summary?.trim() || '',
                 description,
                 techStack: techStack || '',
                 liveUrl: liveUrl || null,
                 repoUrl: repoUrl || null,
                 coverImage: coverImage || null,
-                featured: featured || false,
+                featured: Boolean(featured),
+                order: Number.isNaN(parsedOrder) ? 0 : parsedOrder,
             },
         });
 
         res.status(201).json(project);
     } catch (error) {
         console.error('Error creating project:', error);
-        res.status(500).json({ error: '创建项目失败' });
+        res.status(500).json({ error: 'Failed to create project' });
     }
 });
 
-// PUT /api/projects/:id — 更新项目 (需认证)
-router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const id = parseInt(String(req.params.id));
-        const { name, description, techStack, liveUrl, repoUrl, coverImage, featured } = req.body;
+        const id = parseInt(String(req.params.id), 10);
+        const existing = await prisma.project.findUnique({ where: { id } });
 
-        const updates: any = {};
+        if (!existing) {
+            res.status(404).json({ error: 'Project not found' });
+            return;
+        }
+
+        const { name, slug, summary, description, techStack, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+            name?: string;
+            slug?: string;
+            summary?: string;
+            description?: string;
+            techStack?: string;
+            liveUrl?: string | null;
+            repoUrl?: string | null;
+            coverImage?: string | null;
+            featured?: boolean;
+            order?: number | string;
+        };
+        const updates: Record<string, unknown> = {};
+
         if (name !== undefined) updates.name = name;
+        if (summary !== undefined) updates.summary = summary?.trim() || '';
         if (description !== undefined) updates.description = description;
         if (techStack !== undefined) updates.techStack = techStack;
-        if (liveUrl !== undefined) updates.liveUrl = liveUrl;
-        if (repoUrl !== undefined) updates.repoUrl = repoUrl;
-        if (coverImage !== undefined) updates.coverImage = coverImage;
-        if (featured !== undefined) updates.featured = featured;
+        if (liveUrl !== undefined) updates.liveUrl = liveUrl || null;
+        if (repoUrl !== undefined) updates.repoUrl = repoUrl || null;
+        if (coverImage !== undefined) updates.coverImage = coverImage || null;
+        if (featured !== undefined) updates.featured = Boolean(featured);
+        if (order !== undefined) {
+            const parsedOrder = Number(order);
+            updates.order = Number.isNaN(parsedOrder) ? 0 : parsedOrder;
+        }
+        if (name !== undefined || slug !== undefined) {
+            updates.slug = await resolveProjectSlug(slug || name || existing.name, id);
+        }
 
         const project = await prisma.project.update({
             where: { id },
@@ -68,19 +137,18 @@ router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
         res.json(project);
     } catch (error) {
         console.error('Error updating project:', error);
-        res.status(500).json({ error: '更新项目失败' });
+        res.status(500).json({ error: 'Failed to update project' });
     }
 });
 
-// DELETE /api/projects/:id — 删除项目 (需认证)
-router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const id = parseInt(String(req.params.id));
+        const id = parseInt(String(req.params.id), 10);
         await prisma.project.delete({ where: { id } });
-        res.json({ message: '项目已删除' });
+        res.json({ message: 'Project deleted' });
     } catch (error) {
         console.error('Error deleting project:', error);
-        res.status(500).json({ error: '删除项目失败' });
+        res.status(500).json({ error: 'Failed to delete project' });
     }
 });
 

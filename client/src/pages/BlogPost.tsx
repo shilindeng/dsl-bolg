@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { fetchPost, likePost, fetchComments, type Post, type Comment } from '../api/client';
+import { fetchPost, likePost, type Comment, type Post } from '../api/client';
 import ReadingProgress from '../components/ReadingProgress';
-import GlitchText from '../components/GlitchText';
 import Comments from '../components/Comments';
 import SEO from '../components/SEO';
 import LazyImage from '../components/LazyImage';
+import { buildHeadingId } from '../lib/content';
+import { formatDate } from '../lib/format';
+import { siteConfig } from '../config/site';
 import 'highlight.js/styles/atom-one-dark.css';
 
 export default function BlogPost() {
@@ -17,208 +19,276 @@ export default function BlogPost() {
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [liking, setLiking] = useState(false);
+    const [queueCount, setQueueCount] = useState(0);
 
     useEffect(() => {
-        if (slug) {
-            fetchPost(slug)
-                .then(data => {
-                    setPost(data);
-                    // Initial comments might come from post include, or fetch separately
-                    if (data.comments) setComments(data.comments);
-                    // If backend doesn't return deep comments, might need fetchComments(data.id)
-                })
-                .catch(console.error)
-                .finally(() => setLoading(false));
-        }
+        if (!slug) return;
+        let cancelled = false;
+        setLoading(true);
+
+        fetchPost(slug)
+            .then((data) => {
+                if (cancelled) return;
+                setPost(data);
+                setComments(data.comments || []);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [slug]);
 
     const handleLike = async () => {
         if (!post || liking) return;
         setLiking(true);
         try {
-            const { likes } = await likePost(post.slug);
-            setPost(prev => prev ? { ...prev, meta: { ...prev.meta!, likes } } : null);
-        } catch (error) {
-            console.error('Like failed', error);
+            const result = await likePost(post.slug);
+            setPost((current) =>
+                current
+                    ? {
+                        ...current,
+                        meta: {
+                            views: current.meta?.views || 0,
+                            readTime: current.meta?.readTime || 1,
+                            likes: result.likes,
+                        },
+                    }
+                    : current,
+            );
         } finally {
             setLiking(false);
         }
     };
 
-    const handleCommentAdded = (newComment: Comment) => {
-        // Typically new comments are pending approval, so maybe don't show immediately?
-        // Or show with a "Pending" flag. 
-        // For now, let's assume if it came back it might be visible or we just alert user.
-        // Actually the API returns the comment.
+    const handleCommentAdded = () => {
+        setQueueCount((value) => value + 1);
     };
 
-    if (loading) return (
-        <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-            <div className="animate-spin" style={{
-                width: '40px', height: '40px', border: '2px solid var(--accent-cyan)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '20px'
-            }} />
-            <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>正在解密...</div>
-        </div>
-    );
+    if (loading) {
+        return (
+            <section className="section">
+                <div className="container">
+                    <div className="empty-state">正在加载文章...</div>
+                </div>
+            </section>
+        );
+    }
 
-    if (!post) return (
-        <div className="container" style={{ padding: 'var(--space-3xl) 0', textAlign: 'center' }}>
-            <h1 style={{ color: 'var(--accent-pink)', fontSize: '4rem' }}>404</h1>
-            <p style={{ fontFamily: 'var(--font-mono)' }}>文件损坏或丢失</p>
-            <Link to="/blog" className="btn" style={{ marginTop: 'var(--space-lg)' }}>&lt; 返回</Link>
-        </div>
-    );
+    if (!post) {
+        return (
+            <section className="section">
+                <div className="container">
+                    <div className="empty-state">
+                        <h1 className="section-title">文章不存在</h1>
+                        <Link to="/blog" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+                            返回博客
+                        </Link>
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    const articleUrl = `${siteConfig.url}/blog/${post.slug}`;
+    const articleJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.title,
+        description: post.excerpt,
+        datePublished: post.publishedAt || post.createdAt,
+        dateModified: post.updatedAt,
+        author: { '@type': 'Person', name: siteConfig.author.name },
+        image: post.coverImage ? `${siteConfig.url}${post.coverImage}` : `${siteConfig.url}${siteConfig.defaultOgImage}`,
+        url: articleUrl,
+    };
 
     return (
-        <div style={{ position: 'relative' }}>
+        <>
             <SEO
                 title={post.title}
-                description={post.excerpt || post.content.substring(0, 150)}
-                image={post.coverImage}
+                description={post.excerpt}
+                image={post.coverImage ?? undefined}
                 type="article"
+                url={articleUrl}
+                publishedTime={post.publishedAt || post.createdAt}
+                modifiedTime={post.updatedAt}
+                jsonLd={articleJsonLd}
             />
+
             <ReadingProgress />
 
-            <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)', maxWidth: '900px' }}>
-                <Link to="/blog" style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    color: 'var(--text-muted)',
-                    marginBottom: 'var(--space-xl)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.9rem'
-                }}>
-                    &lt; cd .. (返回)
-                </Link>
+            <section className="section">
+                <div className="container article-layout">
+                    <article className="article-main">
+                        <div style={{ display: 'grid', gap: '1.2rem' }}>
+                            <Link to="/blog" className="command-hint" style={{ width: 'fit-content' }}>
+                                返回文章归档
+                            </Link>
 
-                <article className="animate-fade-in-up">
-                    <header style={{ marginBottom: 'var(--space-2xl)', borderBottom: '1px solid var(--border-dim)', paddingBottom: 'var(--space-lg)' }}>
-                        <div style={{
-                            fontFamily: 'var(--font-mono)',
-                            color: 'var(--accent-cyan)',
-                            marginBottom: 'var(--space-sm)',
-                            display: 'flex',
-                            gap: 'var(--space-md)',
-                            fontSize: '0.9rem'
-                        }}>
-                            <span>
-                                日期: {new Date(post.createdAt).toISOString().split('T')[0]}
-                            </span>
-                            <span>// 日志_ID: {post.id}</span>
-                            <span>👀 {post.meta?.views || 0}</span>
-                        </div>
+                            <div className="eyebrow">Article</div>
+                            <h1 className="section-title" style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)' }}>{post.title}</h1>
+                            <p className="lead">{post.excerpt}</p>
 
-                        <h1 style={{
-                            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                            color: 'var(--text-primary)',
-                            marginBottom: 'var(--space-md)',
-                            lineHeight: 1.2
-                        }}>
-                            <GlitchText text={post.title} as="span" />
-                        </h1>
+                            <div className="article-meta" data-testid="article-meta">
+                                <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                                <span>{post.meta?.readTime || 1} 分钟阅读</span>
+                                <span>{post.meta?.views || 0} 次浏览</span>
+                                <span>最后更新于 {formatDate(post.updatedAt)}</span>
+                            </div>
 
-                        <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
-                            {post.tags.map(tag => (
-                                <span key={tag.id} className="tag">{tag.name}</span>
-                            ))}
-                        </div>
-                    </header>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+                                {post.category ? <span className="chip">{post.category.name}</span> : null}
+                                {post.tags.map((tag) => (
+                                    <span key={tag.id} className="tag">{tag.name}</span>
+                                ))}
+                            </div>
 
-                    <div className="markdown-body">
-                        <Markdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeHighlight]}
-                            components={{
-                                code(props) {
-                                    const { children, className, node, ...rest } = props
-                                    const match = /language-(\w+)/.exec(className || '')
-                                    return match ? (
-                                        <div style={{ position: 'relative', marginTop: '1.5em', marginBottom: '1.5em' }}>
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '-24px',
-                                                left: '0',
-                                                background: 'var(--bg-tertiary)',
-                                                border: '1px solid var(--border-dim)',
-                                                borderBottom: 'none',
-                                                padding: '2px 10px',
-                                                fontSize: '0.75rem',
-                                                color: 'var(--text-muted)',
-                                                fontFamily: 'var(--font-mono)',
-                                                borderTopLeftRadius: '4px',
-                                                borderTopRightRadius: '4px',
-                                                textTransform: 'uppercase'
-                                            }}>
-                                                {match[1]}
-                                            </div>
-                                            <code {...rest} className={className}>
-                                                {children}
-                                            </code>
-                                        </div>
-                                    ) : (
-                                        <code {...rest} className={className} style={{ color: 'var(--accent-pink)', background: 'rgba(255,0,85,0.1)', padding: '2px 4px', borderRadius: '3px' }}>
-                                            {children}
-                                        </code>
-                                    )
-                                },
-                                img: ({ node, ...props }) => (
-                                    <div style={{ border: '1px solid var(--border-dim)', padding: '5px', background: 'var(--bg-secondary)', margin: '2rem 0' }}>
-                                        <LazyImage {...props} src={props.src || ''} alt={props.alt} />
+                            {post.coverImage ? (
+                                <div className="article-cover">
+                                    <LazyImage src={post.coverImage} alt={post.title} />
+                                </div>
+                            ) : null}
+
+                            <div className="markdown-body" data-testid="article-content">
+                                <Markdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeHighlight]}
+                                    components={{
+                                        h2: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h2 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h2>
+                                            );
+                                        },
+                                        h3: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h3 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h3>
+                                            );
+                                        },
+                                        h4: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h4 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h4>
+                                            );
+                                        },
+                                        img: ({ node, alt, ...props }) => (
+                                            <figure>
+                                                <div className="article-cover" style={{ margin: 0 }}>
+                                                    <LazyImage {...props} src={props.src || ''} alt={alt} />
+                                                </div>
+                                                {alt ? <figcaption>{alt}</figcaption> : null}
+                                            </figure>
+                                        ),
+                                    }}
+                                >
+                                    {post.content}
+                                </Markdown>
+                            </div>
+
+                            <div className="panel">
+                                <div className="panel-body" style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    <div style={{ display: 'grid', gap: '0.35rem' }}>
+                                        <strong>这篇文章对你有帮助吗？</strong>
+                                        <span className="muted">点赞会帮助我判断哪些主题值得继续深入。</span>
                                     </div>
-                                ),
-                                blockquote: ({ node, ...props }) => (
-                                    <blockquote style={{
-                                        borderLeft: '4px solid var(--accent-purple)',
-                                        background: 'rgba(189, 0, 255, 0.05)',
-                                        padding: '1rem',
-                                        margin: '1.5rem 0',
-                                        color: 'var(--text-secondary)'
-                                    }} {...props} />
-                                )
-                            }}
-                        >
-                            {post.content}
-                        </Markdown>
-                    </div>
+                                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                        <button type="button" className="btn btn-primary" data-testid="article-like-button" onClick={handleLike} disabled={liking}>
+                                            {liking ? '处理中...' : `点赞 ${post.meta?.likes || 0}`}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary"
+                                            data-testid="article-copy-link-button"
+                                            onClick={() => navigator.clipboard.writeText(articleUrl)}
+                                        >
+                                            复制链接
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div style={{
-                        marginTop: 'var(--space-3xl)',
-                        paddingTop: 'var(--space-lg)',
-                        borderTop: '1px solid var(--border-dim)',
-                        textAlign: 'center',
-                        color: 'var(--text-muted)',
-                    }}>
-                        <div style={{ marginBottom: '2rem' }}>
-                            <button
-                                onClick={handleLike}
-                                disabled={liking}
-                                className="btn"
-                                style={{
-                                    background: 'var(--bg-secondary)',
-                                    border: '1px solid var(--accent-pink)',
-                                    color: 'var(--accent-pink)',
-                                    fontSize: '1.2rem',
-                                    padding: '0.5rem 2rem',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '10px'
-                                }}
-                            >
-                                <span>❤️</span>
-                                <span>{post.meta?.likes || 0}</span>
-                            </button>
+                            {queueCount > 0 ? (
+                                <div className="panel">
+                                    <div className="panel-body">
+                                        <span className="badge" data-testid="pending-comment-badge" style={{ color: 'var(--accent-emerald)' }}>
+                                            已新增 {queueCount} 条待审核评论
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)' }}>*** 传输结束 ***</div>
-                    </div>
 
-                    <Comments
-                        postId={post.id}
-                        comments={comments}
-                        onCommentAdded={handleCommentAdded}
-                    />
-                </article>
-            </div>
-        </div>
+                        <Comments postId={post.id} comments={comments} onCommentAdded={handleCommentAdded} />
+
+                        {post.relatedPosts?.length ? (
+                            <section className="section-tight">
+                                <div style={{ display: 'grid', gap: '1rem' }}>
+                                    <div>
+                                        <div className="eyebrow">Related Reading</div>
+                                        <h3 style={{ marginTop: '1rem', fontSize: '1.8rem' }}>继续阅读</h3>
+                                    </div>
+                                    <div className="two-grid">
+                                        {post.relatedPosts.map((item) => (
+                                            <Link key={item.id} to={`/blog/${item.slug}`} className="panel">
+                                                <div className="panel-body" style={{ display: 'grid', gap: '0.75rem' }}>
+                                                    <strong>{item.title}</strong>
+                                                    <span className="muted">{item.excerpt}</span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </section>
+                        ) : null}
+                    </article>
+
+                    <aside className="article-sidebar">
+                        {post.toc?.length ? (
+                            <div className="panel">
+                                <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                                    <strong className="mono">目录</strong>
+                                    <div className="toc-list" data-testid="post-toc">
+                                        {post.toc.map((item) => (
+                                            <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
+                                                {item.text}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
+
+                        <div className="panel">
+                            <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                                <strong className="mono">导航</strong>
+                                {post.previousPost ? (
+                                    <Link to={`/blog/${post.previousPost.slug}`} className="muted">
+                                        ← {post.previousPost.title}
+                                    </Link>
+                                ) : null}
+                                {post.nextPost ? (
+                                    <Link to={`/blog/${post.nextPost.slug}`} className="muted">
+                                        → {post.nextPost.title}
+                                    </Link>
+                                ) : null}
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        </>
     );
 }

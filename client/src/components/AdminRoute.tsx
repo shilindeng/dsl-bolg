@@ -1,44 +1,50 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchCurrentUser } from '../api/client';
 
 export default function AdminRoute() {
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
-        const checkAdmin = async () => {
+        let cancelled = false;
+
+        async function verifyAdmin() {
             const token = localStorage.getItem('auth_token');
             if (!token) {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
                 return;
             }
 
             try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-
-                if (res.ok) {
-                    const user = await res.json();
-                    if (user.role === 'admin') {
-                        setIsAdmin(true);
-                    }
+                const user = await fetchCurrentUser();
+                if (!cancelled) {
+                    setIsAdmin(user.role === 'admin');
                 }
-            } catch (error) {
-                console.error('Admin check failed:', error);
+            } catch {
+                if (!cancelled) {
+                    setIsAdmin(false);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
+        }
 
-            setLoading(false);
+        verifyAdmin();
+        return () => {
+            cancelled = true;
         };
-
-        checkAdmin();
     }, []);
 
-    if (loading) return (
-        <div style={{ padding: '50px', textAlign: 'center', color: 'var(--accent-cyan)' }}>
-            [ VERIFYING_BIOMETRICS... ]
-        </div>
-    );
+    if (loading) {
+        return (
+            <div className="container page-shell">
+                <div className="empty-state">正在验证管理员权限...</div>
+            </div>
+        );
+    }
 
     return isAdmin ? <Outlet /> : <Navigate to="/login" replace />;
 }

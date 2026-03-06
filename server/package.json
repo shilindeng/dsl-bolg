@@ -2,15 +2,18 @@
   "name": "dsl-blog-server",
   "version": "1.0.0",
   "description": "Backend API for DSL personal blog",
-  "main": "src/index.ts",
+  "main": "dist/src/index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "start:prod": "node dist/src/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.888.0",
     "@prisma/client": "^6.3.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",

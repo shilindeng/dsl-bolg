@@ -1,117 +1,149 @@
-# 高级部署手册
+# 部署手册
 
-本手册提供两种核心部署路径，可根据你的资源选择。
+当前推荐架构：
 
-| 方案 | 前端 | 后端 | 数据库 | 适用场景 |
-| :--- | :--- | :--- | :--- | :--- |
-| **推荐方案 (混合)** | Cloudflare Pages | 阿里云 ECS | SQLite (本地文件) | 简单、低成本、数据完全自控 |
-| **进阶方案 (云原生)** | Cloudflare Pages | 阿里云 ECS / Railway | **Supabase (PostgreSQL)** | 高可靠、数据云端备份、易扩展 |
+- 前端：Cloudflare Pages
+- API：独立 Linux 服务器 + PM2 + Nginx
+- 域名：主站 `your-domain.com`，API `api.your-domain.com`
+- 图片：优先 Cloudflare R2
 
----
+## 1. 架构说明
 
-## 方案一：混合部署 (SQLite 版)
+- 主域名承载静态站点、前端路由、根域名 SEO 文件：
+  - `/robots.txt`
+  - `/sitemap.xml`
+  - `/rss.xml`
+- API 域名承载数据接口、登录、评论、上传、动态 feed/sitemap 能力
+- 生产主链路优先使用前端构建产物里的根域名 SEO 文件；API 侧保留动态版本作为补充能力
 
-*保持原有架构，数据库文件在阿里云服务器本地。*
+## 2. Cloudflare Pages 部署前端
 
-### 1. 后端部署 (阿里云 ECS)
-1. 连接服务器并安装 Node.js (v18+) & PM2。
-2. 上传代码至 `/var/www/dsl-blog`。
-3. 安装依赖并启动：
-   ```bash
-   cd server
-   npm install
-   npx prisma migrate deploy
-   pm2 start src/index.ts --name "dsl-blog-api"
-   ```
-4. 配置 Nginx 反代 (参考下文 Nginx 配置)。
+### Pages 项目配置
 
-### 2. 前端部署 (Cloudflare Pages)
-1. 在 GitHub 仓库连接 Cloudflare Pages。
-2. 构建命令: `npm run build`，输出目录: `dist`，根目录: `client`。
-3. 环境变量 `VITE_API_URL`: `https://api.your-domain.com/api` (指向你的阿里云后端)。
+- Root directory: `client`
+- Build command: `npm run build`
+- Output directory: `dist`
 
----
+仓库已经包含：
 
-## 方案二：Supabase 方案 (PostgreSQL 版) 🌟
+- `client/public/_redirects`
+- `client/public/_headers`
 
-*使用 Supabase 托管数据库，数据更安全，后端只负责逻辑。*
+它们用于：
 
-### 1. 准备 Supabase 数据库
-1. 登录 [Supabase](https://supabase.com/) 创建新项目。
-2. 获取 **Connection String** (URI)，例如：`postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres`。
-3. 记得保存你的数据库密码！
+- 解决 SPA 深链刷新 404
+- 下发基础安全头和静态资源缓存策略
 
-### 2. 修改项目配置 (切换到 PostgreSQL)
-在本地代码中进行调整：
+### 前端环境变量
 
-1. 修改 `server/prisma/schema.prisma`：
-   ```prisma
-   datasource db {
-     provider = "postgresql" // 👈 将 sqlite 改为 postgresql
-     url      = env("DATABASE_URL")
-   }
-   ```
-2. 修改 `server/.env` (或在服务器环境变量中设置)：
-   ```env
-   DATABASE_URL="postgresql://postgres:password@db.xxx.supabase.co:5432/postgres"
-   ```
-3. 生成新的迁移文件 (本地执行)：
-   ```bash
-   # 注意：这会生成适用于 PG 的新迁移文件
-   rm -rf prisma/migrations
-   npx prisma migrate dev --name init_postgres
-   ```
+```env
+VITE_API_BASE=https://api.your-domain.com/api
+VITE_SITE_URL=https://your-domain.com
+VITE_TURNSTILE_SITE_KEY=your-turnstile-site-key
+```
 
-### 3. 部署后端 (阿里云 / Railway / Render)
-如果是**阿里云**：步骤同方案一，但在启动前设置环境变量 `DATABASE_URL` 为 Supabase 的链接。
+## 3. 服务器部署 API
+
+服务器准备：
+
+- Node.js 20+
+- PM2
+- Nginx
+- Git
+
+### 部署步骤
 
 ```bash
-# 在服务器上
-export DATABASE_URL="postgresql://..."
-npx prisma migrate deploy # 将表结构推送到 Supabase
-pm2 restart dsl-blog-api --update-env
+git clone <your-repo>
+cd dsl-bolg/server
+npm install
+npm run db:generate
+npx prisma db push
+npm run db:seed
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save
 ```
 
-### 4. 前端部署
-同方案一，部署到 Cloudflare Pages。
+仓库已提供：
 
----
+- [ecosystem.config.cjs](/D:/vibe-coding/dsl-bolg/server/ecosystem.config.cjs)
 
-## Nginx 配置 (阿里云后端)
+生产启动脚本：
 
-无论哪种方案，阿里云通过 Nginx 暴露 API 都是最佳实践。
-
-`/etc/nginx/sites-available/dsl-blog-api`:
-```nginx
-server {
-    listen 80;
-    server_name api.your-domain.com; 
-
-    location / {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-    }
-    
-    # 图片上传 (如果用了 Supabase，建议图片也存 Supabase Storage，但目前代码是用本地存)
-    location /uploads/ {
-        alias /var/www/dsl-blog/server/uploads/;
-    }
-}
+```bash
+npm run start:prod
 ```
 
-## 图片存储注意事项
+### 服务端环境变量示例
 
-当前代码使用 `multer` 将图片保存在后端服务器本地 (`server/uploads`)。
-*   **阿里云部署**：没问题，文件存磁盘。
-*   **Serverless (Vercel/Railway)**：**不推荐**直接使用当前代码，因为 Serverless 文件系统是临时的。
-*   **改进建议**：如果部署到 Serverless 平台，建议改造 `server/src/middleware/upload.ts`，使用 Supabase Storage 或 AWS S3 存储图片。
+```env
+PORT=3001
+JWT_SECRET=replace-with-a-long-random-secret
+SITE_NAME=DSL Blog
+SITE_URL=https://your-domain.com
+API_URL=https://api.your-domain.com
+ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
+TURNSTILE_SECRET_KEY=your-turnstile-secret
+UPLOAD_MODE=r2
+R2_ACCOUNT_ID=your-account-id
+R2_BUCKET_NAME=your-bucket-name
+R2_ACCESS_KEY_ID=your-access-key
+R2_SECRET_ACCESS_KEY=your-secret-key
+R2_PUBLIC_URL=https://pub-xxxxxxxx.r2.dev
+```
 
----
+## 4. Nginx 反向代理
 
-## 总结
+仓库已提供示例配置：
 
-- 如果你有服务器且想省事 -> **方案一 (SQLite)**
-- 如果你想数据更安全、支持多节点扩展 -> **方案二 (Supabase)**
+- [deploy/nginx/dsl-blog-api.conf.example](/D:/vibe-coding/dsl-bolg/deploy/nginx/dsl-blog-api.conf.example)
+
+建议放到：
+
+- `/etc/nginx/sites-available/dsl-blog-api`
+
+启用后执行：
+
+```bash
+sudo ln -s /etc/nginx/sites-available/dsl-blog-api /etc/nginx/sites-enabled/dsl-blog-api
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+如果仍使用本地上传目录而不是 R2，需要保留 API 服务对 `/uploads` 的暴露能力。
+
+## 5. Cloudflare 配置建议
+
+- Pages 绑定主域名 `your-domain.com`
+- `api.your-domain.com` 通过 DNS 指向你的服务器
+- SSL 使用 `Full (strict)`
+- 登录和评论表单启用 Turnstile
+- 图片迁移到 R2 后，把 `R2_PUBLIC_URL` 配到服务端环境变量
+
+## 6. 生产建议
+
+- 当前 Prisma schema 仍以 SQLite 作为本地默认值；生产建议迁移到 PostgreSQL
+- 如果切 PostgreSQL，建议单独处理 provider、migration 和数据迁移，不要直接在线上手改
+- 图片尽早迁移到 R2，避免本地磁盘变成长期负担
+- 上线前至少验证：
+  - 登录
+  - 发文
+  - 评论提交与审核
+  - 图片上传
+  - `robots.txt`
+  - `sitemap.xml`
+  - `rss.xml`
+  - Pages 深链刷新是否正常
+
+## 7. 最终上线核对清单
+
+- Cloudflare Pages 构建成功，根域名可访问
+- `api.your-domain.com/api/health` 返回正常
+- `your-domain.com/robots.txt` 返回前端构建产物
+- `your-domain.com/sitemap.xml` 返回前端构建产物
+- `your-domain.com/rss.xml` 返回前端构建产物
+- Turnstile 已分别在前端和服务端配置
+- `ALLOWED_ORIGINS` 已包含实际域名
+- PM2 进程已持久化并开机自启
+- Nginx 配置校验通过

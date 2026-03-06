@@ -1,227 +1,286 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { fetchPost, createPost, updatePost, uploadImage, fetchTags, type Tag } from '../api/client';
+import {
+    createPost,
+    fetchCategories,
+    fetchPost,
+    fetchTags,
+    updatePost,
+    uploadImage,
+    type Category,
+    type Tag,
+} from '../api/client';
+import SEO from '../components/SEO';
 import { useToast } from '../hooks/useToast';
 
+const DRAFT_VERSION = 'v2';
+
+interface DraftState {
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    coverImage: string;
+    published: boolean;
+    featured: boolean;
+    tags: string;
+    categoryId: string;
+}
+
+const emptyDraft: DraftState = {
+    title: '',
+    slug: '',
+    excerpt: '',
+    content: '',
+    coverImage: '',
+    published: false,
+    featured: false,
+    tags: '',
+    categoryId: '',
+};
+
 export default function Editor() {
-    const { slug } = useParams<{ slug: string }>();
+    const { slug: editingSlug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
     const { showToast } = useToast();
-
+    const [draft, setDraft] = useState<DraftState>(emptyDraft);
     const [id, setId] = useState<number | null>(null);
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [excerpt, setExcerpt] = useState('');
-    const [coverImage, setCoverImage] = useState('');
-    const [published, setPublished] = useState(false);
-    const [tags, setTags] = useState<string>('');
-
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const [previewMode, setPreviewMode] = useState(false);
+    const [previewMode, setPreviewMode] = useState(true);
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+    const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+    const [ready, setReady] = useState(false);
+    const storageKey = `dsl-blog-editor:${DRAFT_VERSION}:${editingSlug || 'new'}`;
 
     useEffect(() => {
-        fetchTags().then(setAvailableTags).catch(console.error);
+        let cancelled = false;
 
-        if (slug) {
-            setLoading(true);
-            fetchPost(slug)
-                .then(post => {
+        Promise.all([fetchTags(), fetchCategories()])
+            .then(([tags, categories]) => {
+                if (cancelled) return;
+                setAvailableTags(tags);
+                setAvailableCategories(categories);
+            })
+            .catch(() => undefined);
+
+        async function bootstrap() {
+            if (!editingSlug) {
+                const localDraft = localStorage.getItem(storageKey);
+                if (localDraft) {
+                    try {
+                        const parsed = JSON.parse(localDraft) as DraftState;
+                        if (!cancelled) setDraft(parsed);
+                    } catch {
+                        localStorage.removeItem(storageKey);
+                    }
+                }
+            }
+
+            if (editingSlug) {
+                try {
+                    const post = await fetchPost(editingSlug);
+                    if (cancelled) return;
                     setId(post.id);
-                    setTitle(post.title);
-                    setContent(post.content);
-                    setExcerpt(post.excerpt);
-                    setCoverImage(post.coverImage || '');
-                    setPublished(post.published);
-                    setTags(post.tags.map(t => t.name).join(', '));
-                })
-                .catch(() => showToast('文章未找到', 'error'))
-                .finally(() => setLoading(false));
-        }
-    }, [slug]);
+                    setDraft({
+                        title: post.title,
+                        slug: post.slug,
+                        excerpt: post.excerpt,
+                        content: post.content,
+                        coverImage: post.coverImage || '',
+                        published: post.published,
+                        featured: post.featured,
+                        tags: post.tags.map((tag) => tag.name).join(', '),
+                        categoryId: post.category?.id ? String(post.category.id) : '',
+                    });
+                } catch {
+                    showToast('文章加载失败。', 'error');
+                }
+            }
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.length) return;
+            if (!cancelled) {
+                setReady(true);
+            }
+        }
+
+        bootstrap();
+        return () => {
+            cancelled = true;
+        };
+    }, [editingSlug, showToast, storageKey]);
+
+    useEffect(() => {
+        if (!ready) return;
+        localStorage.setItem(storageKey, JSON.stringify(draft));
+    }, [draft, ready, storageKey]);
+
+    const handleChange = <K extends keyof DraftState>(key: K, value: DraftState[K]) => {
+        setDraft((current) => ({ ...current, [key]: value }));
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!event.target.files?.length) return;
         setUploading(true);
         try {
-            const { url } = await uploadImage(e.target.files[0]);
-            const imageMarkdown = `\n![image](${url})\n`;
-            setContent(prev => prev + imageMarkdown);
-            showToast('图片上传成功', 'success');
+            const result = await uploadImage(event.target.files[0]);
+            setDraft((current) => ({
+                ...current,
+                content: `${current.content}\n\n![图片说明](${result.url})\n`,
+            }));
+            showToast(`图片上传成功，已存储到 ${result.storage.toUpperCase()}。`, 'success');
         } catch (error) {
-            console.error('Upload Error Details:', error);
-            showToast('图片上传失败: ' + (error instanceof Error ? error.message : '未知错误'), 'error');
+            showToast(error instanceof Error ? error.message : '图片上传失败。', 'error');
         } finally {
             setUploading(false);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title || !content) {
-            showToast('标题和内容不能为空', 'error');
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+
+        if (!draft.title.trim() || !draft.content.trim()) {
+            showToast('标题和正文不能为空。', 'error');
             return;
         }
 
         setLoading(true);
-        try {
-            const postData = {
-                title,
-                content,
-                excerpt,
-                coverImage,
-                published,
-                tags: tags.split(/[,，]/).map(t => t.trim()).filter(Boolean)
-            };
+        const payload = {
+            title: draft.title.trim(),
+            slug: draft.slug.trim() || undefined,
+            excerpt: draft.excerpt.trim(),
+            content: draft.content,
+            coverImage: draft.coverImage.trim() || null,
+            published: draft.published,
+            featured: draft.featured,
+            tags: draft.tags.split(',').map((item) => item.trim()).filter(Boolean),
+            categoryId: draft.categoryId ? Number(draft.categoryId) : null,
+        };
 
-            if (id) {
-                await updatePost(id, postData);
-                showToast('文章更新成功', 'success');
-            } else {
-                await createPost(postData);
-                showToast('文章创建成功', 'success');
-                navigate('/blog');
-            }
+        try {
+            const post = id ? await updatePost(id, payload) : await createPost(payload);
+            localStorage.removeItem(storageKey);
+            showToast(id ? '文章已更新。' : '文章已创建。', 'success');
+            navigate(`/blog/${post.slug}`);
         } catch (error) {
-            showToast(id ? '更新失败' : '创建失败', 'error');
+            showToast(error instanceof Error ? error.message : '保存失败。', 'error');
         } finally {
             setLoading(false);
         }
     };
 
+    const wordCount = draft.content.trim().split(/\s+/).filter(Boolean).length;
+    const estimatedReadTime = Math.max(1, Math.ceil(wordCount / 220));
+
     return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
-                <h1 className="gradient-text" style={{ fontSize: '2rem' }}>
-                    {id ? '✏️ 编辑文章' : '✨ 新建文章'}
-                </h1>
-                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                    <button
-                        type="button"
-                        className={`btn ${previewMode ? 'btn-primary' : 'btn-ghost'}`}
-                        onClick={() => setPreviewMode(!previewMode)}
-                    >
-                        {previewMode ? '编辑模式' : '预览模式'}
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        className="btn btn-primary"
-                        disabled={loading}
-                    >
-                        {loading ? '保存中...' : '💾 保存文章'}
-                    </button>
-                </div>
-            </div>
+        <>
+            <SEO title={id ? '编辑文章' : '新建文章'} description="管理员内容编辑器。" />
 
-            <div style={{ display: 'grid', gridTemplateColumns: previewMode ? '1fr 1fr' : '1fr', gap: 'var(--space-lg)' }}>
-                {/* 编辑区 */}
-                <div style={{ display: previewMode ? 'none' : 'block' }}>
-                    <div style={{ marginBottom: 'var(--space-md)' }}>
-                        <label style={{ display: 'block', marginBottom: 'var(--space-xs)' }}>标题</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            style={inputStyle}
-                            placeholder="输入文章标题..."
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: 'var(--space-md)' }}>
-                        <label style={{ display: 'block', marginBottom: 'var(--space-xs)' }}>摘要</label>
-                        <textarea
-                            value={excerpt}
-                            onChange={e => setExcerpt(e.target.value)}
-                            style={{ ...inputStyle, minHeight: '80px' }}
-                            placeholder="输入文章摘要（可选）..."
-                        />
-                    </div>
-
-                    <div style={{ marginBottom: 'var(--space-md)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-xs)' }}>
-                            <label>内容 (Markdown)</label>
-                            <label style={{ cursor: 'pointer', fontSize: '0.8rem', color: 'var(--accent-primary)' }}>
-                                {uploading ? '上传中...' : '📷 上传图片'}
-                                <input type="file" onChange={handleImageUpload} style={{ display: 'none' }} accept="image/*" />
-                            </label>
-                        </div>
-                        <textarea
-                            value={content}
-                            onChange={e => setContent(e.target.value)}
-                            style={{ ...inputStyle, minHeight: '500px', fontFamily: 'var(--font-mono)' }}
-                            placeholder="# 开始写作..."
-                        />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+            <section className="section">
+                <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: 'var(--space-xs)' }}>标签 (逗号分隔)</label>
-                            <input
-                                type="text"
-                                value={tags}
-                                onChange={e => setTags(e.target.value)}
-                                style={inputStyle}
-                                placeholder="例如: React, Vibe Coding..."
-                            />
-                            <div style={{ marginTop: '5px', fontSize: '0.8em', color: 'var(--text-muted)' }}>
-                                常用标签: {availableTags.slice(0, 5).map(t => t.name).join(', ')}
+                            <div className="eyebrow">Publishing Console</div>
+                            <h1 className="section-title" style={{ marginTop: '1rem' }}>{id ? '编辑文章' : '新建文章'}</h1>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                            <button type="button" className="btn btn-ghost" onClick={() => setPreviewMode((current) => !current)}>
+                                {previewMode ? '隐藏预览' : '显示预览'}
+                            </button>
+                            <button type="submit" form="editor-form" className="btn btn-primary" disabled={loading}>
+                                {loading ? '保存中...' : '保存文章'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="split-grid">
+                        <form id="editor-form" onSubmit={handleSubmit} className="panel">
+                            <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                                <label className="form-field">
+                                    <span className="form-label">标题</span>
+                                    <input className="form-input" value={draft.title} onChange={(event) => handleChange('title', event.target.value)} />
+                                </label>
+
+                                <div className="two-grid">
+                                    <label className="form-field">
+                                        <span className="form-label">自定义 slug</span>
+                                        <input className="form-input mono" value={draft.slug} onChange={(event) => handleChange('slug', event.target.value)} placeholder="可留空，后台自动生成" />
+                                    </label>
+                                    <label className="form-field">
+                                        <span className="form-label">分类</span>
+                                        <select className="form-select" value={draft.categoryId} onChange={(event) => handleChange('categoryId', event.target.value)}>
+                                            <option value="">未分类</option>
+                                            {availableCategories.map((category) => (
+                                                <option key={category.id} value={category.id}>{category.name}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <label className="form-field">
+                                    <span className="form-label">摘要</span>
+                                    <textarea className="form-textarea" style={{ minHeight: 120 }} value={draft.excerpt} onChange={(event) => handleChange('excerpt', event.target.value)} placeholder="为列表页和 SEO 准备一段摘要..." />
+                                </label>
+
+                                <label className="form-field">
+                                    <span className="form-label">正文（Markdown）</span>
+                                    <textarea className="form-textarea mono" style={{ minHeight: 440 }} value={draft.content} onChange={(event) => handleChange('content', event.target.value)} placeholder="# 开始写作" />
+                                </label>
+
+                                <div className="two-grid">
+                                    <label className="form-field">
+                                        <span className="form-label">封面图地址</span>
+                                        <input className="form-input" value={draft.coverImage} onChange={(event) => handleChange('coverImage', event.target.value)} placeholder="https://..." />
+                                    </label>
+
+                                    <label className="form-field">
+                                        <span className="form-label">标签（逗号分隔）</span>
+                                        <input className="form-input" value={draft.tags} onChange={(event) => handleChange('tags', event.target.value)} placeholder={availableTags.map((tag) => tag.name).slice(0, 4).join(', ')} />
+                                    </label>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
+                                    <label className="chip">
+                                        <input type="checkbox" checked={draft.published} onChange={(event) => handleChange('published', event.target.checked)} />
+                                        公开发布
+                                    </label>
+                                    <label className="chip">
+                                        <input type="checkbox" checked={draft.featured} onChange={(event) => handleChange('featured', event.target.checked)} />
+                                        设为精选
+                                    </label>
+                                    <label className="btn btn-secondary" style={{ cursor: uploading ? 'wait' : 'pointer' }}>
+                                        {uploading ? '上传中...' : '插入图片'}
+                                        <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
+                                    </label>
+                                </div>
+
+                                <div className="panel" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                    <div className="panel-body" style={{ padding: '1rem 1.1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                        <span className="command-hint">字数 {wordCount}</span>
+                                        <span className="command-hint">预计阅读 {estimatedReadTime} 分钟</span>
+                                        <span className="command-hint">草稿自动保存</span>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: 'var(--space-xs)' }}>封面图 URL</label>
-                            <input
-                                type="text"
-                                value={coverImage}
-                                onChange={e => setCoverImage(e.target.value)}
-                                style={inputStyle}
-                                placeholder="https://..."
-                            />
-                        </div>
-                    </div>
+                        </form>
 
-                    <div style={{ marginBottom: 'var(--space-md)' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', cursor: 'pointer' }}>
-                            <input
-                                type="checkbox"
-                                checked={published}
-                                onChange={e => setPublished(e.target.checked)}
-                            />
-                            直接发布
-                        </label>
+                        {previewMode ? (
+                            <div className="panel">
+                                <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                                    <div className="eyebrow">Preview</div>
+                                    <div className="markdown-body">
+                                        <h1>{draft.title || '文章标题预览'}</h1>
+                                        {draft.coverImage ? <img src={draft.coverImage} alt={draft.title || 'cover'} style={{ borderRadius: 24 }} /> : null}
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content || '正文预览会出现在这里。'}</ReactMarkdown>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
-
-                {/* 预览区 */}
-                <div style={{
-                    display: previewMode ? 'block' : 'none',
-                    padding: 'var(--space-lg)',
-                    background: 'var(--bg-glass)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-glass)',
-                    height: 'fit-content'
-                }}>
-                    <div className="markdown-body">
-                        <h1>{title}</h1>
-                        {coverImage && <img src={coverImage} alt="Cover" style={{ width: '100%', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-md)' }} />}
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </section>
+        </>
     );
 }
-
-const inputStyle = {
-    width: '100%',
-    padding: 'var(--space-sm)',
-    background: 'var(--bg-glass)',
-    border: '1px solid var(--border-glass)',
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--text-primary)',
-    fontSize: '0.9rem',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-};

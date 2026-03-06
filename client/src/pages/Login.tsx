@@ -1,143 +1,89 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login } from '../api/client';
+import SEO from '../components/SEO';
+import TurnstileWidget from '../components/TurnstileWidget';
 import { useToast } from '../hooks/useToast';
 
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+
 export default function Login() {
+    const navigate = useNavigate();
+    const { showToast } = useToast();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
-    const { showToast } = useToast();
+    const [turnstileToken, setTurnstileToken] = useState('');
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
         setLoading(true);
 
         try {
-            const res = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                showToast(data.error || '登录失败', 'error');
-                setLoading(false);
-                return;
-            }
-
-            // Store token and user info
-            localStorage.setItem('auth_token', data.token);
-            localStorage.setItem('auth_user', JSON.stringify(data.user));
-
-            showToast('Welcome back, Netrunner.', 'success');
-            // Dispatch custom event so Navbar can update
+            const result = await login({ email, password, turnstileToken: turnstileToken || undefined });
+            localStorage.setItem('auth_token', result.token);
+            localStorage.setItem('auth_user', JSON.stringify(result.user));
             window.dispatchEvent(new Event('auth-change'));
-            navigate('/blog');
+            showToast('管理员登录成功。', 'success');
+            navigate('/admin/dashboard');
         } catch (error) {
-            showToast('网络错误', 'error');
+            showToast(error instanceof Error ? error.message : '登录失败。', 'error');
+        } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '80vh',
-            animation: 'fadeIn 0.5s ease-out'
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '400px',
-                padding: 'var(--space-xl)',
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--border-glass)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: '0 0 20px rgba(0, 255, 242, 0.1)',
-                position: 'relative',
-                overflow: 'hidden'
-            }}>
-                {/* Cyberpunk decoration */}
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '2px',
-                    background: 'linear-gradient(90deg, transparent, var(--accent-primary), transparent)',
-                    animation: 'scanline 2s linear infinite'
-                }} />
+        <>
+            <SEO title="登录" description="管理员登录入口。" />
 
-                <h1 className="gradient-text" style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
-                    SYSTEM ACCESS
-                </h1>
+            <section className="section">
+                <div className="container" style={{ display: 'grid', placeItems: 'center' }}>
+                    <div className="panel" style={{ width: 'min(520px, 100%)' }}>
+                        <div className="panel-body" style={{ display: 'grid', gap: '1.2rem' }}>
+                            <div className="eyebrow">Admin Access</div>
+                            <div style={{ display: 'grid', gap: '0.8rem' }}>
+                                <h1 className="section-title" style={{ fontSize: '2.4rem' }}>管理员登录</h1>
+                                <p className="muted" style={{ margin: 0 }}>
+                                    这是内容发布和评论审核入口，不对公开访客开放。
+                                </p>
+                            </div>
 
-                <form onSubmit={handleLogin}>
-                    <div style={{ marginBottom: 'var(--space-md)' }}>
-                        <label style={{ display: 'block', marginBottom: 'var(--space-xs)', color: 'var(--text-secondary)' }}>
-                            IDENTITY (EMAIL)
-                        </label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            style={inputStyle}
-                            placeholder="user@net.com"
-                            required
-                        />
+                            <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }} data-testid="login-form">
+                                <label className="form-field">
+                                    <span className="form-label">邮箱</span>
+                                    <input
+                                        className="form-input"
+                                        data-testid="login-email-input"
+                                        type="email"
+                                        value={email}
+                                        onChange={(event) => setEmail(event.target.value)}
+                                        required
+                                    />
+                                </label>
+
+                                <label className="form-field">
+                                    <span className="form-label">密码</span>
+                                    <input
+                                        className="form-input"
+                                        data-testid="login-password-input"
+                                        type="password"
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                        required
+                                    />
+                                </label>
+
+                                <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+
+                                <button type="submit" className="btn btn-primary" data-testid="login-submit-button" disabled={loading}>
+                                    {loading ? '验证中...' : '进入控制台'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-
-                    <div style={{ marginBottom: 'var(--space-lg)' }}>
-                        <label style={{ display: 'block', marginBottom: 'var(--space-xs)', color: 'var(--text-secondary)' }}>
-                            passcode
-                        </label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={inputStyle}
-                            placeholder="••••••••"
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        style={{ width: '100%' }}
-                        disabled={loading}
-                    >
-                        {loading ? 'AUTHENTICATING...' : 'JACK IN'}
-                    </button>
-                </form>
-
-                <div style={{ marginTop: 'var(--space-md)', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Unauthorized access is a federal crime.
                 </div>
-            </div>
-
-            <style>{`
-                @keyframes scanline {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-                }
-            `}</style>
-        </div>
+            </section>
+        </>
     );
 }
-
-const inputStyle = {
-    width: '100%',
-    padding: 'var(--space-sm)',
-    background: 'rgba(0, 0, 0, 0.3)',
-    border: '1px solid var(--border-glass)',
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--text-primary)',
-    fontFamily: 'var(--font-mono)',
-    outline: 'none',
-    transition: 'all 0.3s ease'
-};

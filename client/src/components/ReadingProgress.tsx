@@ -5,35 +5,26 @@ export default function ReadingProgress() {
 
     useEffect(() => {
         const updateProgress = () => {
-            const currentProgress = window.scrollY;
+            const scrollTop = window.scrollY;
             const scrollHeight = document.body.scrollHeight - window.innerHeight;
-            if (scrollHeight) {
-                setProgress(Number((currentProgress / scrollHeight).toFixed(2)) * 100);
-            }
+            setProgress(scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0);
         };
 
-        window.addEventListener('scroll', updateProgress);
+        updateProgress();
+        window.addEventListener('scroll', updateProgress, { passive: true });
         return () => window.removeEventListener('scroll', updateProgress);
     }, []);
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '2px',
-            zIndex: 9999,
-            background: 'transparent',
-            pointerEvents: 'none',
-        }}>
-            <div style={{
-                width: `${progress}%`,
-                height: '100%',
-                background: 'var(--accent-pink)',
-                boxShadow: '0 0 10px var(--accent-pink)',
-                transition: 'width 0.1s ease-out',
-            }} />
+        <div style={{ position: 'fixed', inset: '0 0 auto 0', zIndex: 1100, pointerEvents: 'none' }}>
+            <div
+                style={{
+                    width: `${progress}%`,
+                    height: 3,
+                    background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-blue))',
+                    boxShadow: 'var(--shadow-glow)',
+                }}
+            />
         </div>
     );
 }

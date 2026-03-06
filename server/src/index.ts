@@ -15,30 +15,48 @@ import { uploadRouter } from './middleware/upload.js';
 import sitemapRouter from './routes/sitemap.js';
 import analyticsRouter from './routes/analytics.js';
 import authRouter from './routes/auth.js';
+import { isR2Enabled, siteConfig } from './lib/site.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 全局限流
+app.set('trust proxy', 1);
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
-    message: { error: '请求过于频繁，请稍后再试' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
 });
 
-// Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:3000'], credentials: true }));
+app.use(
+    cors({
+        origin(origin, callback) {
+            if (!origin || siteConfig.allowedOrigins.includes(origin)) {
+                callback(null, true);
+                return;
+            }
+
+            callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        },
+        credentials: true,
+    }),
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(limiter);
+app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    next();
+});
 
-// Static files — uploaded images
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+if (!isR2Enabled) {
+    app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+}
 
-// API Routes
 app.use('/api/auth', authRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/projects', projectsRouter);
@@ -50,13 +68,16 @@ app.use('/api', uploadRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/', sitemapRouter);
 
-// Health check
 app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        storage: isR2Enabled ? 'r2' : 'local',
+    });
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`Server running at http://localhost:${PORT}`);
 });
 
 export default app;

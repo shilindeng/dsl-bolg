@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchProjects, type Project } from '../api/client';
 import ProjectCard from '../components/ProjectCard';
-import TypewriterText from '../components/TypewriterText';
-import ScrollReveal from '../components/ScrollReveal';
+import SEO from '../components/SEO';
 
 export default function Projects() {
     const [projects, setProjects] = useState<Project[]>([]);
@@ -11,41 +10,55 @@ export default function Projects() {
     useEffect(() => {
         fetchProjects()
             .then(setProjects)
-            .catch(console.error)
+            .catch(() => setProjects([]))
             .finally(() => setLoading(false));
     }, []);
 
     return (
-        <div className="container" style={{ paddingTop: 'var(--space-3xl)', paddingBottom: 'var(--space-3xl)' }}>
-            <ScrollReveal className="animate-fade-in-up" style={{ marginBottom: 'var(--space-2xl)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
-                    <span style={{ color: 'var(--accent-cyan)', fontSize: '2rem' }}>$</span>
-                    <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
-                        ls <span style={{ color: 'var(--accent-purple)' }}>~/projects</span>
-                    </h1>
-                </div>
-                <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', paddingLeft: '32px' }}>
-                    // 列出目录中... 发现 {projects.length} 个可执行文件。
-                    // 正在列出目录... 发现 {projects.length} 个项目。
-                </p>
-            </ScrollReveal>
+        <>
+            <SEO title="项目" description="代表项目、方法论和技术方向总览。" />
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: 'var(--space-3xl)', color: 'var(--text-muted)' }}>
-                    <div style={{ marginBottom: '1rem', fontSize: '2rem' }} className="animate-pulse">⌛</div>
-                    <TypewriterText text="编译资源中..." speed={50} />
+            <section className="section">
+                <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
+                    <div style={{ display: 'grid', gap: '1rem' }}>
+                        <div className="eyebrow">Selected Work</div>
+                        <h1 className="section-title">项目与实验</h1>
+                        <p className="lead">
+                            这里展示的不是项目数量，而是我选择长期打磨、能够代表能力边界和判断力的作品。
+                        </p>
+                    </div>
+
+                    <div className="panel">
+                        <div className="panel-body" style={{ display: 'grid', gap: '1rem' }}>
+                            <strong>我更关注什么类型的项目？</strong>
+                            <div className="three-grid">
+                                <div className="metric-card">
+                                    <span className="muted mono">Content Systems</span>
+                                    <strong>内容产品、结构化写作与发布工作流</strong>
+                                </div>
+                                <div className="metric-card">
+                                    <span className="muted mono">Interface Craft</span>
+                                    <strong>设计系统、前端体验与品牌感表达</strong>
+                                </div>
+                                <div className="metric-card">
+                                    <span className="muted mono">AI Workflow</span>
+                                    <strong>用 AI 提升研发与内容生产效率</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <div className="empty-state">正在读取项目列表...</div>
+                    ) : (
+                        <div className="three-grid">
+                            {projects.map((project) => (
+                                <ProjectCard key={project.id} project={project} />
+                            ))}
+                        </div>
+                    )}
                 </div>
-            ) : (
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-                    gap: 'var(--space-lg)',
-                }}>
-                    {projects.map((project, i) => (
-                        <ProjectCard key={project.id} project={project} index={i} />
-                    ))}
-                </div>
-            )}
-        </div>
+            </section>
+        </>
     );
 }

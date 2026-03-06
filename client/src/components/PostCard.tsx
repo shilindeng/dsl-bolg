@@ -1,105 +1,33 @@
 import { Link } from 'react-router-dom';
 import type { Post } from '../api/client';
-import { useSound } from '../hooks/useSound';
+import { formatShortDate } from '../lib/format';
 
-export default function PostCard({ post, index }: { post: Post; index: number }) {
-    const { play } = useSound();
-    const date = new Date(post.createdAt).toLocaleDateString('zh-CN', {
-        year: 'numeric', month: '2-digit', day: '2-digit'
-    }).replace(/\//g, '.');
-
+export default function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
     return (
-        <Link
-            to={`/blog/${post.slug}`}
-            className="cyber-card animate-fade-in-up"
-            onMouseEnter={() => play('hover')}
-            style={{
-                display: 'block',
-                textDecoration: 'none',
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0,
-                cursor: 'pointer',
-                overflow: 'hidden',
-                position: 'relative',
-                paddingLeft: '4px', // Space for neon strip
-            }}
-        >
-            {/* Neon Strip */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '4px',
-                height: '100%',
-                background: 'var(--accent-cyan)',
-                boxShadow: 'var(--glow-cyan)',
-                transition: 'all 0.3s ease',
-            }} className="neon-strip" />
-
-            <div style={{ padding: 'var(--space-xl)' }}>
-                {/* ID / Date Meta */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                    fontFamily: 'var(--font-mono)',
-                    marginBottom: 'var(--space-md)',
-                    borderBottom: '1px dashed var(--border-dim)',
-                    paddingBottom: '8px'
-                }}>
-                    <span>ID: {post.id.toString().padStart(4, '0')}</span>
-                    <span>{date}</span>
+        <Link to={`/blog/${post.slug}`} className="panel" style={{ display: 'block', height: '100%' }} data-testid={`post-card-${post.slug}`}>
+            <div className="panel-body" style={{ display: 'grid', gap: '1rem', minHeight: featured ? 320 : 260 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                    {post.featured ? (
+                        <span className="badge" style={{ color: 'var(--accent-gold)' }}>
+                            Featured
+                        </span>
+                    ) : null}
+                    {post.category ? <span className="chip">{post.category.name}</span> : null}
+                    <span className="chip mono">{formatShortDate(post.publishedAt || post.createdAt)}</span>
                 </div>
 
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap', marginBottom: 'var(--space-md)' }}>
-                    {post.tags.map(tag => (
+                <div style={{ display: 'grid', gap: '0.85rem' }}>
+                    <h3 style={{ fontSize: featured ? '2rem' : '1.45rem' }}>{post.title}</h3>
+                    <p className="muted" style={{ margin: 0 }}>{post.excerpt}</p>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center', marginTop: 'auto' }}>
+                    {post.tags.slice(0, featured ? 4 : 3).map((tag) => (
                         <span key={tag.id} className="tag">{tag.name}</span>
                     ))}
-                </div>
-
-                <h3 style={{
-                    fontSize: '1.25rem',
-                    marginBottom: 'var(--space-md)',
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.3,
-                    transition: 'color 0.2s ease',
-                }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-pink)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                >
-                    {post.title}
-                </h3>
-
-                <p style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.9rem',
-                    lineHeight: 1.6,
-                    marginBottom: 'var(--space-lg)',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    fontFamily: 'var(--font-mono)', // Tech feel description
-                }}>{post.excerpt}</p>
-
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '0.8rem',
-                    color: 'var(--accent-cyan)',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                }}>
-                    <span>[ 读取日志 ]</span>
-                    <span style={{
-                        display: 'inline-block',
-                        width: '10px',
-                        height: '10px',
-                        background: 'var(--accent-cyan)',
-                        animation: 'blink 1s infinite'
-                    }} />
+                    <span className="command-hint" style={{ marginLeft: 'auto' }}>
+                        Read
+                    </span>
                 </div>
             </div>
         </Link>

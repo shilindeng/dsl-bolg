@@ -1,87 +1,44 @@
 import type { Project } from '../api/client';
-import { useSound } from '../hooks/useSound';
+import { splitTechStack } from '../lib/content';
 
-export default function ProjectCard({ project, index }: { project: Project; index: number }) {
-    const { play } = useSound();
-    const techList = project.techStack ? project.techStack.split(',').map(t => t.trim()) : [];
+export default function ProjectCard({ project }: { project: Project }) {
+    const techStack = splitTechStack(project.techStack);
 
     return (
-        <div
-            className="cyber-card animate-fade-in-up"
-            onMouseEnter={() => play('hover')}
-            style={{
-                animationDelay: `${index * 0.1}s`,
-                opacity: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-            }}
-        >
-            {/* Terminal Header */}
-            <div className="cyber-header-bar" style={{ justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    <div className="cyber-dot" />
-                    <div className="cyber-dot" />
-                    <div className="cyber-dot" />
+        <article id={project.slug} className="panel" data-testid={`project-card-${project.slug}`}>
+            <div className="panel-body" style={{ display: 'grid', gap: '1rem', height: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'start' }}>
+                    <div style={{ display: 'grid', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                            {project.featured ? <span className="badge" style={{ color: 'var(--accent-gold)' }}>代表项目</span> : null}
+                            <span className="chip mono">#{project.order.toString().padStart(2, '0')}</span>
+                        </div>
+                        <h3 style={{ fontSize: '1.5rem' }}>{project.name}</h3>
+                    </div>
                 </div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {project.featured ? '⭐ 精选' : '后台任务'}
-                </div>
-            </div>
 
-            <div style={{ padding: 'var(--space-xl)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{
-                    fontSize: '1.25rem',
-                    marginBottom: 'var(--space-sm)',
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-display)',
-                }}>
-                    {project.name}
-                </h3>
+                <p className="muted" style={{ margin: 0 }}>{project.summary || project.description}</p>
+                <p style={{ margin: 0 }}>{project.description}</p>
 
-                <div style={{
-                    marginBottom: 'var(--space-lg)',
-                    height: '2px',
-                    width: '50px',
-                    background: 'var(--accent-purple)'
-                }} />
-
-                <p style={{
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.9rem',
-                    lineHeight: 1.6,
-                    marginBottom: 'var(--space-lg)',
-                    flex: 1,
-                }}>{project.description}</p>
-
-                <div style={{
-                    display: 'flex',
-                    gap: 'var(--space-sm)',
-                    flexWrap: 'wrap',
-                    marginBottom: 'var(--space-xl)',
-                }}>
-                    {techList.slice(0, 4).map(tech => (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
+                    {techStack.slice(0, 5).map((tech) => (
                         <span key={tech} className="tag">{tech}</span>
                     ))}
                 </div>
 
-                <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-                    {project.liveUrl && (
-                        <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="btn"
-                            onClick={() => play('click')}
-                            style={{ fontSize: '0.8rem', padding: '8px 16px', flex: 1, textAlign: 'center' }}>
-                            启动 &gt;
+                <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', marginTop: 'auto' }}>
+                    {project.liveUrl ? (
+                        <a className="btn btn-primary" href={project.liveUrl} target="_blank" rel="noreferrer">
+                            查看站点
                         </a>
-                    )}
-                    {project.repoUrl && (
-                        <a href={project.repoUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost"
-                            onClick={() => play('click')}
-                            style={{ fontSize: '0.8rem', padding: '8px 16px', flex: 1, textAlign: 'center' }}>
-                            源代码
+                    ) : null}
+                    {project.repoUrl ? (
+                        <a className="btn btn-secondary" href={project.repoUrl} target="_blank" rel="noreferrer">
+                            查看代码
                         </a>
-                    )}
+                    ) : null}
                 </div>
             </div>
-        </div>
+        </article>
     );
 }

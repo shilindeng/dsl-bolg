@@ -26,5 +26,11 @@ logs
 *.log
 npm-debug.log*
 
+# Playwright
+client/playwright-artifacts
+client/test-results
+client/blob-report
+client/playwright-report
+
 # System
 thumbs.db

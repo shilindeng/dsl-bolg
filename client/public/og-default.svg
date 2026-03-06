@@ -1,0 +1,30 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#07111F"/>
+  <circle cx="932" cy="112" r="220" fill="#67E6FF" fill-opacity="0.08"/>
+  <circle cx="1028" cy="588" r="210" fill="#7B8CFF" fill-opacity="0.1"/>
+  <rect x="54" y="54" width="1092" height="522" rx="28" fill="url(#paint0_linear)" fill-opacity="0.08" stroke="url(#paint1_linear)" stroke-opacity="0.3"/>
+  <text fill="#67E6FF" font-family="IBM Plex Mono, monospace" font-size="28" letter-spacing="0.18em">
+    <tspan x="90" y="126">DSL_BLOG / PROFESSIONAL PERSONAL BLOG</tspan>
+  </text>
+  <text fill="#F4F7FB" font-family="Space Grotesk, sans-serif" font-size="78" font-weight="700" letter-spacing="-0.04em">
+    <tspan x="88" y="248">技术写作、项目复盘、</tspan>
+    <tspan x="88" y="336">AI 工作流与数字审美</tspan>
+  </text>
+  <text fill="#C4D0DF" font-family="Space Grotesk, sans-serif" font-size="32" font-weight="500">
+    <tspan x="90" y="422">把博客做成长期资产，而不是一次性的展示页。</tspan>
+  </text>
+  <rect x="90" y="468" width="270" height="60" rx="30" fill="#67E6FF"/>
+  <text fill="#07111F" font-family="IBM Plex Mono, monospace" font-size="24" font-weight="600" letter-spacing="0.08em">
+    <tspan x="136" y="506">DSL BLOG / 2026</tspan>
+  </text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="74" y1="60" x2="1120" y2="574" gradientUnits="userSpaceOnUse">
+      <stop stop-color="white" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="white" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="paint1_linear" x1="90" y1="54" x2="1100" y2="576" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67E6FF"/>
+      <stop offset="1" stop-color="#7B8CFF"/>
+    </linearGradient>
+  </defs>
+</svg>

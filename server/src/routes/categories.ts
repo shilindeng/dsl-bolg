@@ -1,11 +1,10 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import slugify from 'slugify';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-// GET /api/categories — 分类列表 (含文章数)
 router.get('/', async (_req: Request, res: Response) => {
     try {
         const categories = await prisma.category.findMany({
@@ -13,26 +12,24 @@ router.get('/', async (_req: Request, res: Response) => {
             orderBy: { name: 'asc' },
         });
 
-        const formatted = categories.map(cat => ({
-            id: cat.id,
-            name: cat.name,
-            slug: cat.slug,
-            _count: { posts: cat._count.posts },
-        }));
-
-        res.json(formatted);
+        res.json(
+            categories.map((category) => ({
+                id: category.id,
+                name: category.name,
+                slug: category.slug,
+                _count: { posts: category._count.posts },
+            })),
+        );
     } catch (error) {
         console.error('Error fetching categories:', error);
-        res.status(500).json({ error: '获取分类失败' });
+        res.status(500).json({ error: 'Failed to fetch categories' });
     }
 });
 
-// POST /api/categories — 创建分类 (需认证)
-router.post('/', authMiddleware, async (req: Request, res: Response) => {
+router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const { name } = req.body;
-        const slug = slugify(name, { lower: true, strict: true });
-
+        const slug = slugify(name, { lower: true, strict: true }) || `category-${Date.now()}`;
         const category = await prisma.category.create({
             data: { name, slug },
         });
@@ -40,7 +37,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         res.status(201).json(category);
     } catch (error) {
         console.error('Error creating category:', error);
-        res.status(500).json({ error: '创建分类失败' });
+        res.status(500).json({ error: 'Failed to create category' });
     }
 });
 
