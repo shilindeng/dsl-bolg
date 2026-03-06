@@ -50,7 +50,7 @@ export default function ParticleBackground() {
         let pointerX = 0;
         let pointerY = 0;
         let palette = readParticlePalette();
-        const particleCount = 95;
+        const particleCount = 34;
         const depth = 900;
         const particles: Particle[] = [];
 
@@ -63,9 +63,9 @@ export default function ParticleBackground() {
             particle.x = Math.random() * width - width / 2;
             particle.y = Math.random() * height - height / 2;
             particle.z = fresh ? Math.random() * depth : depth;
-            particle.speed = 2 + Math.random() * 3.6;
-            particle.alpha = 0.18 + Math.random() * 0.5;
-            particle.size = 0.8 + Math.random() * 2.4;
+            particle.speed = 0.8 + Math.random() * 1.6;
+            particle.alpha = 0.08 + Math.random() * 0.2;
+            particle.size = 0.45 + Math.random() * 1.4;
         };
 
         const resize = () => {
@@ -103,8 +103,8 @@ export default function ParticleBackground() {
                 }
 
                 const perspective = depth / particle.z;
-                const screenX = centerX + particle.x * perspective + pointerX * 22 * (1 - particle.z / depth);
-                const screenY = centerY + particle.y * perspective + pointerY * 18 * (1 - particle.z / depth);
+                const screenX = centerX + particle.x * perspective + pointerX * 10 * (1 - particle.z / depth);
+                const screenY = centerY + particle.y * perspective + pointerY * 8 * (1 - particle.z / depth);
                 const radius = particle.size * perspective;
 
                 if (screenX < -40 || screenX > width + 40 || screenY < -40 || screenY > height + 40) {
@@ -114,7 +114,7 @@ export default function ParticleBackground() {
 
                 context.beginPath();
                 context.fillStyle = withAlpha(palette.color, particle.alpha);
-                context.shadowBlur = 18;
+                context.shadowBlur = 10;
                 context.shadowColor = palette.glow;
                 context.arc(screenX, screenY, Math.max(0.35, radius), 0, Math.PI * 2);
                 context.fill();
@@ -148,7 +148,7 @@ export default function ParticleBackground() {
             <div className="particle-haze" />
             <canvas
                 ref={canvasRef}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.96 }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.54 }}
             />
         </div>
     );

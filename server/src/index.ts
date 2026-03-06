@@ -15,6 +15,7 @@ import { uploadRouter } from './middleware/upload.js';
 import sitemapRouter from './routes/sitemap.js';
 import analyticsRouter from './routes/analytics.js';
 import authRouter from './routes/auth.js';
+import openRouter from './routes/open.js';
 import { isR2Enabled, siteConfig } from './lib/site.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,6 +60,7 @@ if (!isR2Enabled) {
 }
 
 app.use('/api/auth', authRouter);
+app.use('/api/open', openRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/tags', tagsRouter);

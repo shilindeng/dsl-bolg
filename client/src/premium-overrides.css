@@ -1226,6 +1226,175 @@ input[type='checkbox'] {
   }
 }
 
+.display-title {
+  font-size: clamp(2.8rem, 8vw, 5rem);
+  max-width: 11ch;
+}
+
+.section-title {
+  font-size: clamp(1.85rem, 4.2vw, 3.1rem);
+  max-width: 16ch;
+}
+
+.page-hero .section-title,
+.admin-page-title {
+  font-size: clamp(1.9rem, 3.8vw, 2.9rem);
+}
+
+.admin-page-lead,
+.page-hero .lead,
+.hero-copy .lead {
+  max-width: 56ch;
+  font-size: clamp(0.98rem, 1.9vw, 1.08rem);
+}
+
+.hero-shell {
+  min-height: clamp(24rem, 52vw, 36rem);
+}
+
+.hero-scanline {
+  opacity: 0.22;
+}
+
+.cyber-header-bar {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.hero-preview-panel,
+.chart-panel {
+  overflow: hidden;
+}
+
+.hero-side-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2.2vw, 1.8rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.hero-preview-card,
+.activity-list,
+.legend-list,
+.api-key-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.hero-preview-card p,
+.stat-panel p,
+.activity-row .muted {
+  margin: 0;
+}
+
+.hero-preview-meta,
+.legend-item,
+.activity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.post-card-body p,
+.project-card-copy p,
+.project-card-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-card-body p {
+  -webkit-line-clamp: 3;
+}
+
+.project-card-summary {
+  -webkit-line-clamp: 2;
+}
+
+.project-card-copy p:last-child {
+  -webkit-line-clamp: 4;
+}
+
+.post-card-cover,
+.project-card-cover {
+  aspect-ratio: 1.6 / 1;
+}
+
+.post-card-cover.is-featured {
+  aspect-ratio: 1.85 / 1;
+}
+
+.admin-dashboard-shell,
+.analytics-grid,
+.analytics-grid-secondary,
+.admin-lower-grid {
+  gap: 1.25rem;
+}
+
+.analytics-grid {
+  grid-template-columns: 1.35fr 1fr;
+}
+
+.analytics-grid-secondary {
+  grid-template-columns: 0.9fr 1.1fr;
+}
+
+.admin-lower-grid {
+  grid-template-columns: 1.15fr 0.85fr;
+}
+
+.chart-shell {
+  width: 100%;
+  min-height: 260px;
+}
+
+.donut-chart-shell {
+  align-items: center;
+}
+
+.legend-item {
+  justify-content: flex-start;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.activity-row {
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+.activity-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.api-key-panel .api-key-value {
+  overflow-wrap: anywhere;
+}
+
+.compact-cover-preview img {
+  min-height: 180px;
+  object-fit: cover;
+}
+
+.compact-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1080px) {
+  .analytics-grid,
+  .analytics-grid-secondary,
+  .admin-lower-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

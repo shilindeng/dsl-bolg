@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,7 @@ import {
 } from '../api/client';
 import SEO from '../components/SEO';
 import { useToast } from '../hooks/useToast';
+import { validateImageFile } from '../lib/uploads';
 
 const DRAFT_VERSION = 'v3';
 
@@ -50,6 +51,7 @@ export default function Editor() {
     const [loading, setLoading] = useState(false);
     const [uploadingInline, setUploadingInline] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
+    const [uploadHint, setUploadHint] = useState('支持 JPG / PNG / GIF / WebP / SVG，单张不超过 5MB。');
     const [previewMode, setPreviewMode] = useState(true);
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
     const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
@@ -125,13 +127,17 @@ export default function Editor() {
         if (!event.target.files?.length) return;
         setUploadingInline(true);
         try {
-            const result = await uploadImage(event.target.files[0]);
+            const file = event.target.files[0];
+            validateImageFile(file);
+            const result = await uploadImage(file);
             setDraft((current) => ({
                 ...current,
                 content: `${current.content}\n\n![图片说明](${result.url})\n`,
             }));
+            setUploadHint(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`);
             showToast(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`, 'success');
         } catch (error) {
+            setUploadHint(error instanceof Error ? error.message : '正文图片上传失败，请重试。');
             showToast(error instanceof Error ? error.message : '正文图片上传失败。', 'error');
         } finally {
             setUploadingInline(false);
@@ -143,13 +149,17 @@ export default function Editor() {
         if (!event.target.files?.length) return;
         setUploadingCover(true);
         try {
-            const result = await uploadImage(event.target.files[0]);
+            const file = event.target.files[0];
+            validateImageFile(file);
+            const result = await uploadImage(file);
             setDraft((current) => ({
                 ...current,
                 coverImage: result.url,
             }));
+            setUploadHint(`封面上传成功，已保存到 ${result.storage.toUpperCase()}。`);
             showToast(`封面上传成功，已保存到 ${result.storage.toUpperCase()}。`, 'success');
         } catch (error) {
+            setUploadHint(error instanceof Error ? error.message : '封面上传失败，请重试。');
             showToast(error instanceof Error ? error.message : '封面上传失败。', 'error');
         } finally {
             setUploadingCover(false);
@@ -262,13 +272,17 @@ export default function Editor() {
                                     <div className="editor-upload-actions">
                                         <label className="btn btn-secondary" style={{ cursor: uploadingCover ? 'wait' : 'pointer' }}>
                                             {uploadingCover ? '上传封面中...' : '上传封面'}
-                                            <input type="file" accept="image/*" onChange={handleCoverUpload} style={{ display: 'none' }} />
+                                            <input type="file" accept="image/*" onChange={handleCoverUpload} style={{ display: 'none' }} disabled={uploadingCover} data-testid="editor-cover-upload-input" />
                                         </label>
                                         <label className="btn btn-ghost" style={{ cursor: uploadingInline ? 'wait' : 'pointer' }}>
                                             {uploadingInline ? '插图上传中...' : '插入正文图片'}
-                                            <input type="file" accept="image/*" onChange={handleInlineImageUpload} style={{ display: 'none' }} />
+                                            <input type="file" accept="image/*" onChange={handleInlineImageUpload} style={{ display: 'none' }} disabled={uploadingInline} data-testid="editor-inline-upload-input" />
                                         </label>
                                     </div>
+                                </div>
+
+                                <div className="editor-side-note">
+                                    <span className="command-hint">{uploadHint}</span>
                                 </div>
 
                                 <label className="form-field">

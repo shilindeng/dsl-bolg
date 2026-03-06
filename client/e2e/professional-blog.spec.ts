@@ -99,12 +99,21 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
 
     await expect(page).toHaveURL(/\/admin\/dashboard$/);
     await expect(page.getByTestId('pending-comments-panel')).toBeVisible();
+    await expect(page.getByTestId('dashboard-trend-chart')).toBeVisible();
+    await expect(page.getByTestId('dashboard-top-posts-chart')).toBeVisible();
+    await expect(page.getByTestId('dashboard-comment-chart')).toBeVisible();
 
     const pendingComment = page.locator('[data-testid^="pending-comment-"]').filter({ hasText: commentBody }).first();
     await expect(pendingComment).toBeVisible();
     await pendingComment.locator('[data-testid^="approve-comment-"]').click();
     await expect(pendingComment).toHaveCount(0);
     await saveScreenshot(page, testInfo, 'dashboard');
+
+    await page.goto('/editor');
+    await page.getByTestId('editor-cover-upload-input').setInputFiles(path.join(process.cwd(), 'public', 'og-default.svg'));
+    await expect(page.locator('.editor-cover-preview img')).toBeVisible();
+
+    await page.goto('/admin/dashboard');
 
     await page.getByTestId('project-name-input').fill('Playwright Project');
     await page.getByTestId('project-slug-input').fill(projectSlug);
@@ -119,11 +128,49 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
 
     const createdProject = page.getByTestId(`project-row-${projectSlug}`);
     await expect(createdProject).toBeVisible();
+
+    await page.getByRole('button', { name: '创建 API Key' }).click();
+    await expect(page.locator('.latest-key-card')).toBeVisible();
+    const apiKey = (await page.locator('.api-key-value').textContent())?.trim();
+    expect(apiKey).toBeTruthy();
+
+    const mediaUpload = await page.request.post('/api/open/v1/media', {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        multipart: {
+            image: {
+                name: 'og-default.svg',
+                mimeType: 'image/svg+xml',
+                buffer: fs.readFileSync(path.join(process.cwd(), 'public', 'og-default.svg')),
+            },
+        },
+    });
+    expect(mediaUpload.ok()).toBeTruthy();
+    const mediaPayload = await mediaUpload.json();
+
+    const openApiSlug = `playwright-open-api-${commentSuffix}`;
+    const publishResponse = await page.request.put(`/api/open/v1/posts/playwright/${commentSuffix}`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        data: {
+            title: `Playwright Open API ${commentSuffix}`,
+            content: '# Playwright Open API\n\nThis post validates external publishing.',
+            excerpt: 'Open API smoke test',
+            coverImage: mediaPayload.url,
+            published: true,
+            featured: false,
+            tags: ['Playwright', 'Open API'],
+            slug: openApiSlug,
+        },
+    });
+    expect(publishResponse.ok()).toBeTruthy();
+
     await page.getByTestId(`delete-project-${projectSlug}`).click();
     await expect(createdProject).toHaveCount(0);
 
     await page.goto(articleUrl);
-    await expect(page.getByTestId('public-comments-section')).toContainText(commentBody);
+    await expect(page.locator('body')).toContainText(commentBody);
+
+    await page.goto(`/blog/${openApiSlug}`);
+    await expect(page.getByTestId('article-content')).toContainText('Playwright Open API');
 });
 
 test('mobile smoke covers hero rendering and article navigation', async ({ page }, testInfo) => {

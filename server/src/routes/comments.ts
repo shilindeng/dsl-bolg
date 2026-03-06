@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, requireAdmin } from '../middleware/auth.js';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
+import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
 
 const router = Router();
 
@@ -69,6 +70,11 @@ router.post('/', async (req: Request, res: Response) => {
             },
         });
 
+        await recordAnalyticsEvent({
+            type: analyticsEventTypes.comment,
+            postId: parseInt(String(postId), 10),
+        });
+
         res.status(201).json({
             message: 'Comment submitted and awaiting review',
             comment,
@@ -116,6 +122,12 @@ router.patch('/:id/status', authMiddleware, requireAdmin, async (req: Request, r
         const comment = await prisma.comment.update({
             where: { id },
             data: { status },
+        });
+
+        await recordAnalyticsEvent({
+            type: analyticsEventTypes.commentReview,
+            postId: comment.postId,
+            metadata: { commentId: comment.id, status },
         });
 
         res.json(comment);

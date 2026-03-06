@@ -1,61 +1,12 @@
 import { Prisma } from '@prisma/client';
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
-import slugify from 'slugify';
 import { authMiddleware, getOptionalUser, requireAdmin } from '../middleware/auth.js';
-import { createExcerpt, estimateReadTime, extractHeadings } from '../lib/content.js';
+import { estimateReadTime, extractHeadings } from '../lib/content.js';
+import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
+import { createPostRecord, formatPost, includePostRelations, updatePostRecord } from '../lib/posts.js';
 
 const router = Router();
-
-const includePostRelations = {
-    tags: { include: { tag: true } },
-    category: true,
-    meta: true,
-    series: true,
-} satisfies Prisma.PostInclude;
-
-const formatPost = <T extends { tags: Array<{ tag: unknown }> }>(post: T) => ({
-    ...post,
-    tags: post.tags.map((item) => item.tag),
-});
-
-async function resolveUniquePostSlug(input: string, excludeId?: number) {
-    const base = slugify(input, { lower: true, strict: true }) || `post-${Date.now()}`;
-    let candidate = base;
-    let counter = 1;
-
-    while (true) {
-        const existing = await prisma.post.findUnique({ where: { slug: candidate } });
-        if (!existing || existing.id === excludeId) {
-            return candidate;
-        }
-
-        candidate = `${base}-${counter}`;
-        counter += 1;
-    }
-}
-
-async function upsertTags(tags: string[]) {
-    const pairs = [];
-
-    for (const rawName of tags) {
-        const name = rawName.trim();
-        if (!name) {
-            continue;
-        }
-
-        const tagSlug: string = slugify(name, { lower: true, strict: true }) || `tag-${Date.now()}-${pairs.length}`;
-        const tagRecord = await prisma.tag.upsert({
-            where: { slug: tagSlug },
-            update: { name },
-            create: { name, slug: tagSlug },
-        });
-
-        pairs.push({ tagId: tagRecord.id });
-    }
-
-    return pairs;
-}
 
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -173,6 +124,10 @@ router.get('/:slug', async (req: Request, res: Response) => {
             },
         });
 
+        if (post.published) {
+            await recordAnalyticsEvent({ type: analyticsEventTypes.view, postId: post.id });
+        }
+
         const comments = await prisma.comment.findMany({
             where: { postId: post.id, status: 'approved', parentId: null },
             include: {
@@ -241,6 +196,8 @@ router.post('/:slug/like', async (req: Request, res: Response) => {
             create: { postId: post.id, likes: 1, readTime: estimateReadTime(post.content) },
         });
 
+        await recordAnalyticsEvent({ type: analyticsEventTypes.like, postId: post.id });
+
         res.json({ likes: meta.likes });
     } catch (error) {
         console.error('Error liking post:', error);
@@ -261,29 +218,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
             tags?: string[];
             categoryId?: number | null;
         };
-        const postSlug = await resolveUniquePostSlug(slug || title);
-        const cleanExcerpt = excerpt?.trim() || createExcerpt(content);
-        const readTime = estimateReadTime(content);
-        const tagPairs = Array.isArray(tags) ? await upsertTags(tags) : [];
-
-        const post = await prisma.post.create({
-            data: {
-                title,
-                slug: postSlug,
-                content,
-                excerpt: cleanExcerpt,
-                coverImage: coverImage || null,
-                published: Boolean(published),
-                featured: Boolean(featured),
-                publishedAt: published ? new Date() : null,
-                categoryId: categoryId || null,
-                meta: {
-                    create: { readTime },
-                },
-                tags: tagPairs.length ? { create: tagPairs } : undefined,
-            },
-            include: includePostRelations,
-        });
+        const post = await createPostRecord({ title, slug, content, excerpt, coverImage, published, featured, tags, categoryId }, 'admin');
 
         res.status(201).json(formatPost(post));
     } catch (error) {
@@ -295,13 +230,6 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
 router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id), 10);
-        const existing = await prisma.post.findUnique({ where: { id } });
-
-        if (!existing) {
-            res.status(404).json({ error: 'Post not found' });
-            return;
-        }
-
         const { title, slug, content, excerpt, coverImage, published, featured, tags, categoryId } = req.body as {
             title?: string;
             slug?: string;
@@ -313,58 +241,11 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
             tags?: string[];
             categoryId?: number | null;
         };
-        const nextContent = content ?? existing.content;
-        const readTime = estimateReadTime(nextContent);
-        const updates: Record<string, unknown> = {};
-
-        if (title !== undefined) updates.title = title;
-        if (coverImage !== undefined) updates.coverImage = coverImage || null;
-        if (categoryId !== undefined) updates.categoryId = categoryId || null;
-        if (featured !== undefined) updates.featured = Boolean(featured);
-        if (content !== undefined) updates.content = content;
-        if (excerpt !== undefined) updates.excerpt = excerpt?.trim() || createExcerpt(nextContent);
-
-        if (published !== undefined) {
-            updates.published = Boolean(published);
-            if (published && !existing.publishedAt) {
-                updates.publishedAt = new Date();
-            }
-        }
-
-        if (title !== undefined || slug !== undefined) {
-            updates.slug = await resolveUniquePostSlug(slug || title || existing.title, id);
-        }
-
-        await prisma.post.update({
-            where: { id },
-            data: updates,
-        });
-
-        await prisma.postMeta.upsert({
-            where: { postId: id },
-            update: { readTime },
-            create: { postId: id, readTime },
-        });
-
-        if (Array.isArray(tags)) {
-            await prisma.postTag.deleteMany({ where: { postId: id } });
-            const tagPairs = await upsertTags(tags);
-            if (tagPairs.length) {
-                await prisma.postTag.createMany({
-                    data: tagPairs.map((pair) => ({ postId: id, tagId: pair.tagId })),
-                });
-            }
-        }
-
-        const post = await prisma.post.findUnique({
-            where: { id },
-            include: includePostRelations,
-        });
-
+        const post = await updatePostRecord(id, { title, slug, content, excerpt, coverImage, published, featured, tags, categoryId }, 'admin');
         res.json(formatPost(post!));
     } catch (error) {
         console.error('Error updating post:', error);
-        res.status(500).json({ error: 'Failed to update post' });
+        res.status(error instanceof Error && error.message === 'POST_NOT_FOUND' ? 404 : 500).json({ error: error instanceof Error && error.message === 'POST_NOT_FOUND' ? 'Post not found' : 'Failed to update post' });
     }
 });
 

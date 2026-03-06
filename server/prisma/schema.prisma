@@ -23,6 +23,7 @@ model Post {
   excerpt     String     @default("")
   content     String
   coverImage  String?
+  sourceUrl   String?
   published   Boolean    @default(false)
   featured    Boolean    @default(false)
   publishedAt DateTime?
@@ -36,6 +37,8 @@ model Post {
   seriesOrder Int?
   series      Series?    @relation(fields: [seriesId], references: [id])
   tags        PostTag[]
+  analyticsEvents AnalyticsEvent[]
+  externalLinks ExternalPostLink[]
 }
 
 model Tag {
@@ -107,4 +110,44 @@ model Project {
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement())
+  postId     Int?
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  type       String
+  source     String   @default("web")
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([postId, createdAt])
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  name       String
+  keyPrefix  String    @unique
+  keyHash    String    @unique
+  scopes     String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model ExternalPostLink {
+  id              Int      @id @default(autoincrement())
+  provider        String
+  externalId      String
+  sourceUrl       String?
+  lastPayloadHash String?
+  postId          Int
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([postId])
 }

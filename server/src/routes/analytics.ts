@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, requireAdmin } from '../middleware/auth.js';
+import { getDashboardAnalytics } from '../lib/analytics.js';
 
 const router = Router();
 
@@ -23,6 +24,17 @@ router.get('/summary', async (_req: Request, res: Response) => {
     } catch (error) {
         console.error('Analytics error:', error);
         res.status(500).json({ error: 'Failed to fetch summary' });
+    }
+});
+
+router.get('/dashboard', async (req: Request, res: Response) => {
+    try {
+        const days = typeof req.query.days === 'string' ? parseInt(req.query.days, 10) : 30;
+        const result = await getDashboardAnalytics(Number.isNaN(days) ? 30 : days);
+        res.json(result);
+    } catch (error) {
+        console.error('Dashboard analytics error:', error);
+        res.status(500).json({ error: 'Failed to fetch dashboard analytics' });
     }
 });
 

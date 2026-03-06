@@ -134,6 +134,56 @@ export interface AnalyticsSummary {
     pendingComments: number;
 }
 
+export interface AnalyticsTrendPoint {
+    date: string;
+    views: number;
+    likes: number;
+    comments: number;
+}
+
+export interface AnalyticsTopPost extends PostLink {
+    id: number;
+    views: number;
+    likes: number;
+    comments: number;
+    score: number;
+}
+
+export interface DashboardActivityItem {
+    type: string;
+    title: string;
+    slug: string;
+    description: string;
+    createdAt: string;
+}
+
+export interface AnalyticsDashboard {
+    summary: AnalyticsSummary;
+    trend: AnalyticsTrendPoint[];
+    topPosts: AnalyticsTopPost[];
+    commentStatus: {
+        pending: number;
+        approved: number;
+        rejected: number;
+    };
+    recentActivity: DashboardActivityItem[];
+    startedAt: string;
+}
+
+export interface ApiKeyRecord {
+    id: number;
+    name: string;
+    keyPrefix: string;
+    scopes: string[];
+    lastUsedAt: string | null;
+    revokedAt: string | null;
+    createdAt: string;
+}
+
+export interface CreatedApiKey extends ApiKeyRecord {
+    key: string;
+}
+
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
     const response = await fetch(input, {
         ...init,
@@ -286,6 +336,17 @@ export async function uploadImage(file: File): Promise<{ url: string; filename: 
     });
 }
 
+export async function uploadOpenApiImage(file: File, apiKey: string): Promise<{ url: string; filename: string; storage: 'local' | 'r2' }> {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    return fetchJson(`${API_BASE}/open/v1/media`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}` },
+        body: formData,
+    });
+}
+
 export async function login(data: { email: string; password: string; turnstileToken?: string }) {
     return fetchJson<{ token: string; user: User }>(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -304,4 +365,25 @@ export async function fetchAnalyticsSummary() {
 
 export async function fetchTopPosts() {
     return fetchJson<Array<PostLink & { id: number; views: number; likes: number }>>(`${API_BASE}/analytics/top-posts`);
+}
+
+export async function fetchAnalyticsDashboard(days = 30) {
+    return fetchJson<AnalyticsDashboard>(`${API_BASE}/analytics/dashboard?days=${days}`);
+}
+
+export async function fetchApiKeys() {
+    return fetchJson<ApiKeyRecord[]>(`${API_BASE}/open/admin/keys`);
+}
+
+export async function createApiKey(data: { name: string; scopes: string[] }) {
+    return fetchJson<CreatedApiKey>(`${API_BASE}/open/admin/keys`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function revokeApiKey(id: number) {
+    return fetchJson<{ id: number; revokedAt: string }>(`${API_BASE}/open/admin/keys/${id}/revoke`, {
+        method: 'POST',
+    });
 }

@@ -101,6 +101,29 @@ export default function Home() {
                     <div className="section-stack">
                         <WeatherCard />
 
+                        <div className="panel panel-body hero-preview-panel">
+                            <div className="section-heading-left">
+                                <div>
+                                    <div className="eyebrow">Editorial Preview</div>
+                                    <h2 className="hero-side-title">先看代表内容，再判断是否值得持续关注</h2>
+                                </div>
+                            </div>
+
+                            {featuredPost ? (
+                                <div className="hero-preview-card">
+                                    <div className="hero-preview-meta">
+                                        <span className="chip">{featuredPost.category?.name || '精选文章'}</span>
+                                        <span className="command-hint">{featuredPost.meta?.readTime || 1} 分钟</span>
+                                    </div>
+                                    <strong>{featuredPost.title}</strong>
+                                    <p>{featuredPost.excerpt}</p>
+                                    <Link to={`/blog/${featuredPost.slug}`} className="btn btn-secondary">阅读这篇代表内容</Link>
+                                </div>
+                            ) : (
+                                <div className="empty-state">代表内容会在发布后出现在这里。</div>
+                            )}
+                        </div>
+
                         <div className="panel panel-body">
                             <div className="section-heading-left">
                                 <div>
