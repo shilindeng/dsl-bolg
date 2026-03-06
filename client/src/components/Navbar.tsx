@@ -30,7 +30,7 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                 <Link to="/" className="site-nav-brand" aria-label="返回首页">
                     <span className="brand-mark mono">DSL</span>
                     <div className="brand-copy">
-                        <strong>Cyber Editorial Lab</strong>
+                        <strong>赛博编辑实验室</strong>
                         <span>{siteConfig.author.role}</span>
                     </div>
                 </Link>
@@ -41,7 +41,7 @@ export default function Navbar({ isAdmin }: NavbarProps) {
 
                 <div className="site-nav-actions">
                     <span className="nav-status mono" aria-hidden="true">
-                        LIVE / WWW.SHILIN.TECH
+                        站点在线 / WWW.SHILIN.TECH
                     </span>
 
                     <span className="command-hint nav-command" aria-hidden="true">
@@ -50,7 +50,10 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                     </span>
 
                     {isAdmin ? (
-                        <Link to="/admin/dashboard" className="btn btn-secondary">控制台</Link>
+                        <>
+                            <Link to="/editor" className="btn btn-ghost">写文章</Link>
+                            <Link to="/admin/dashboard" className="btn btn-secondary">控制台</Link>
+                        </>
                     ) : (
                         <Link to="/login" className="btn btn-ghost">登录</Link>
                     )}

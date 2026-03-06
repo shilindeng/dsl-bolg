@@ -59,9 +59,9 @@ export default function Home() {
                         <ParticleBackground />
                         <div className="hero-scanline" />
                         <div className="hero-content">
-                            <div className="eyebrow">Cyber Editorial System</div>
+                            <div className="eyebrow">赛博编辑系统</div>
                             <div className="hero-copy">
-                                <p className="hero-kicker mono">Independent signal from Shanghai</p>
+                                <p className="hero-kicker mono">来自上海的长期信号</p>
                                 <h1 className="display-title">
                                     写技术、做产品，
                                     <br />
@@ -98,7 +98,7 @@ export default function Home() {
                 <div className="container">
                     <div className="section-heading">
                         <div>
-                            <div className="eyebrow">Core Signals</div>
+                            <div className="eyebrow">核心信号</div>
                             <h2 className="section-title">这个博客为什么存在</h2>
                         </div>
                         <p className="lead">
@@ -123,7 +123,7 @@ export default function Home() {
                     <div className="section-stack">
                         <div className="section-heading section-heading-left">
                             <div>
-                                <div className="eyebrow">Featured Writing</div>
+                                <div className="eyebrow">精选写作</div>
                                 <h2 className="section-title">精选文章</h2>
                             </div>
                             <p className="lead">
@@ -152,7 +152,7 @@ export default function Home() {
                 <div className="container">
                     <div className="section-heading">
                         <div>
-                            <div className="eyebrow">Focus Areas</div>
+                            <div className="eyebrow">关注方向</div>
                             <h2 className="section-title">我的工作重心</h2>
                         </div>
                     </div>
@@ -173,7 +173,7 @@ export default function Home() {
                 <div className="container">
                     <div className="section-heading">
                         <div>
-                            <div className="eyebrow">Selected Projects</div>
+                            <div className="eyebrow">精选项目</div>
                             <h2 className="section-title">代表项目</h2>
                         </div>
                         <p className="lead">
@@ -192,7 +192,7 @@ export default function Home() {
             <section className="section">
                 <div className="container editorial-grid reverse">
                     <div className="feature-panel">
-                        <div className="eyebrow">Operating Principles</div>
+                        <div className="eyebrow">运营原则</div>
                         <h2 className="section-title">我如何经营这座博客</h2>
                         <div className="principle-list">
                             {siteConfig.principles.map((item) => (
@@ -204,12 +204,12 @@ export default function Home() {
                     </div>
 
                     <div className="feature-panel accent-panel">
-                        <div className="eyebrow">About DSL</div>
+                        <div className="eyebrow">关于 DSL</div>
                         <h3>{siteConfig.author.name}</h3>
                         <p className="muted">{siteConfig.author.role}</p>
                         <p>{siteConfig.author.bio}</p>
                         <div className="metric-card">
-                            <span className="muted mono">Current Base</span>
+                            <span className="muted mono">当前所在地</span>
                             <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
                         </div>
                         <Link to="/about" className="btn btn-secondary">了解更多</Link>
@@ -221,7 +221,7 @@ export default function Home() {
                 <div className="container">
                     <div className="cta-shell">
                         <div>
-                            <div className="eyebrow">Contact / Collaboration</div>
+                            <div className="eyebrow">联系 / 合作</div>
                             <h2 className="section-title">如果你也在做认真而长期的东西，可以联系我。</h2>
                             <p className="lead">
                                 适合交流的主题包括：个人品牌站、内容产品、AI 工作流、设计系统、前端体验和独立项目。

@@ -9,6 +9,26 @@ interface Particle {
     size: number;
 }
 
+const readParticlePalette = () => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+        color: styles.getPropertyValue('--particle-color').trim() || 'rgba(103, 230, 255, 0.72)',
+        glow: styles.getPropertyValue('--particle-glow').trim() || 'rgba(103, 230, 255, 0.2)',
+        hazeA: styles.getPropertyValue('--particle-haze-a').trim() || 'rgba(103, 230, 255, 0.08)',
+        hazeB: styles.getPropertyValue('--particle-haze-b').trim() || 'rgba(123, 140, 255, 0.14)',
+    };
+};
+
+const withAlpha = (value: string, alpha: number) => {
+    const match = value.match(/rgba?\(([^)]+)\)/);
+    if (!match) {
+        return value;
+    }
+
+    const parts = match[1].split(',').slice(0, 3).map((item) => item.trim());
+    return `rgba(${parts.join(', ')}, ${alpha})`;
+};
+
 export default function ParticleBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -29,9 +49,15 @@ export default function ParticleBackground() {
         let height = 0;
         let pointerX = 0;
         let pointerY = 0;
+        let palette = readParticlePalette();
         const particleCount = 95;
         const depth = 900;
         const particles: Particle[] = [];
+
+        const observer = new MutationObserver(() => {
+            palette = readParticlePalette();
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
         const resetParticle = (particle: Particle, fresh = false) => {
             particle.x = Math.random() * width - width / 2;
@@ -62,8 +88,8 @@ export default function ParticleBackground() {
             context.clearRect(0, 0, width, height);
 
             const gradient = context.createRadialGradient(width * 0.5, height * 0.3, 0, width * 0.5, height * 0.5, height * 0.85);
-            gradient.addColorStop(0, 'rgba(103, 230, 255, 0.08)');
-            gradient.addColorStop(1, 'rgba(103, 230, 255, 0)');
+            gradient.addColorStop(0, palette.hazeA);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
             context.fillStyle = gradient;
             context.fillRect(0, 0, width, height);
 
@@ -87,9 +113,9 @@ export default function ParticleBackground() {
                 }
 
                 context.beginPath();
-                context.fillStyle = `rgba(103, 230, 255, ${particle.alpha})`;
+                context.fillStyle = withAlpha(palette.color, particle.alpha);
                 context.shadowBlur = 18;
-                context.shadowColor = 'rgba(103, 230, 255, 0.2)';
+                context.shadowColor = palette.glow;
                 context.arc(screenX, screenY, Math.max(0.35, radius), 0, Math.PI * 2);
                 context.fill();
                 context.shadowBlur = 0;
@@ -110,6 +136,7 @@ export default function ParticleBackground() {
         window.addEventListener('pointermove', handlePointer, { passive: true });
 
         return () => {
+            observer.disconnect();
             window.cancelAnimationFrame(animationFrame);
             window.removeEventListener('resize', resize);
             window.removeEventListener('pointermove', handlePointer);
@@ -118,14 +145,7 @@ export default function ParticleBackground() {
 
     return (
         <div data-testid="hero-particles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-            <div
-                style={{
-                    position: 'absolute',
-                    inset: 0,
-                    background:
-                        'linear-gradient(180deg, rgba(103,230,255,0.08), transparent 28%), radial-gradient(circle at bottom, rgba(123,140,255,0.14), transparent 38%)',
-                }}
-            />
+            <div className="particle-haze" />
             <canvas
                 ref={canvasRef}
                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.96 }}

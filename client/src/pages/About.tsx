@@ -9,28 +9,28 @@ export default function About() {
             <section className="section page-hero">
                 <div className="container page-hero-shell">
                     <div>
-                        <div className="eyebrow">About DSL</div>
+                        <div className="eyebrow">关于 DSL</div>
                         <h1 className="section-title">{siteConfig.author.name}</h1>
                         <p className="lead">{siteConfig.author.summary}</p>
                     </div>
-                    <div className="page-hero-badge mono">SYSTEM THINKING / INTERFACE CRAFT / AI WORKFLOW</div>
+                    <div className="page-hero-badge mono">系统思维 / 界面表达 / AI 工作流</div>
                 </div>
             </section>
 
             <section className="section">
                 <div className="container editorial-grid">
                     <div className="feature-panel">
-                        <div className="eyebrow">Profile</div>
+                        <div className="eyebrow">个人简介</div>
                         <h2 className="section-title">我在做什么</h2>
                         <p>{siteConfig.author.bio}</p>
                         <div className="metric-card">
-                            <span className="muted mono">Location</span>
+                            <span className="muted mono">所在地</span>
                             <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
                         </div>
                     </div>
 
                     <div className="feature-panel accent-panel">
-                        <div className="eyebrow">Working Method</div>
+                        <div className="eyebrow">工作方式</div>
                         <h2 className="section-title">我的方法</h2>
                         <div className="principle-list">
                             {siteConfig.principles.map((item) => (
@@ -46,7 +46,7 @@ export default function About() {
             <section className="section section-frame">
                 <div className="container two-grid">
                     <div className="feature-panel">
-                        <div className="eyebrow">Capability</div>
+                        <div className="eyebrow">能力侧重</div>
                         <h2 className="section-title">擅长解决的问题</h2>
                         <div className="principle-list">
                             {siteConfig.aboutCapabilities.map((item) => (
@@ -58,7 +58,7 @@ export default function About() {
                     </div>
 
                     <div className="feature-panel">
-                        <div className="eyebrow">Current Focus</div>
+                        <div className="eyebrow">当前重心</div>
                         <h2 className="section-title">最近持续打磨的方向</h2>
                         <div className="principle-list">
                             {siteConfig.currentFocus.map((item, index) => (

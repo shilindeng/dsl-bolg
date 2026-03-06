@@ -1,4 +1,5 @@
 import type { Project } from '../api/client';
+import LazyImage from './LazyImage';
 import { splitTechStack } from '../lib/content';
 
 export default function ProjectCard({ project }: { project: Project }) {
@@ -6,12 +7,18 @@ export default function ProjectCard({ project }: { project: Project }) {
 
     return (
         <article id={project.slug} className="project-card" data-testid={`project-card-${project.slug}`}>
+            {project.coverImage ? (
+                <div className="project-card-cover">
+                    <LazyImage src={project.coverImage} alt={project.name} />
+                </div>
+            ) : null}
+
             <div className="project-card-head">
                 <div className="project-card-meta">
-                    {project.featured ? <span className="badge badge-gold">Selected</span> : null}
+                    {project.featured ? <span className="badge badge-gold">精选</span> : null}
                     <span className="chip mono">#{project.order.toString().padStart(2, '0')}</span>
                 </div>
-                <span className="project-card-label mono">PROJECT</span>
+                <span className="project-card-label mono">项目</span>
             </div>
 
             <div className="project-card-copy">

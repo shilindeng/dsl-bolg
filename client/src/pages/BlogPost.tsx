@@ -20,6 +20,19 @@ export default function BlogPost() {
     const [loading, setLoading] = useState(true);
     const [liking, setLiking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        const raw = localStorage.getItem('auth_user');
+        if (!raw) return;
+
+        try {
+            const user = JSON.parse(raw) as { role?: string };
+            setIsAdmin(user.role === 'admin');
+        } catch {
+            setIsAdmin(false);
+        }
+    }, []);
 
     useEffect(() => {
         if (!slug) return;
@@ -126,7 +139,7 @@ export default function BlogPost() {
                         <Link to="/blog" className="command-hint article-back-link">
                             返回文章归档
                         </Link>
-                        <div className="eyebrow">Article Transmission</div>
+                        <div className="eyebrow">文章信号</div>
                         <h1 className="article-title">{post.title}</h1>
                         <p className="lead">{post.excerpt}</p>
 
@@ -143,17 +156,28 @@ export default function BlogPost() {
                                 <span key={tag.id} className="tag">{tag.name}</span>
                             ))}
                         </div>
+
+                        {isAdmin ? (
+                            <div className="article-admin-actions">
+                                <Link to={`/editor/${post.slug}`} className="btn btn-secondary">编辑文章</Link>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="article-hero-side">
+                        {post.coverImage ? (
+                            <div className="article-hero-cover">
+                                <LazyImage src={post.coverImage} alt={post.title} />
+                            </div>
+                        ) : null}
                         <div className="article-side-card">
-                            <span className="signal-label mono">ARTICLE STATUS</span>
-                            <strong>Published and maintained</strong>
+                            <span className="signal-label mono">文章状态</span>
+                            <strong>已发布，并持续维护</strong>
                             <p className="muted">这里的文章会持续修订，而不是发布即结束。</p>
                         </div>
                         <div className="article-side-card">
-                            <span className="signal-label mono">READ MODE</span>
-                            <strong>Long-form / Structured / Referencable</strong>
+                            <span className="signal-label mono">阅读模式</span>
+                            <strong>长文 / 结构化 / 可引用</strong>
                         </div>
                     </div>
                 </div>
@@ -162,12 +186,6 @@ export default function BlogPost() {
             <section className="section article-body-section">
                 <div className="container article-layout">
                     <article className="article-main">
-                        {post.coverImage ? (
-                            <div className="article-cover">
-                                <LazyImage src={post.coverImage} alt={post.title} />
-                            </div>
-                        ) : null}
-
                         <div className="markdown-body" data-testid="article-content">
                             <Markdown
                                 remarkPlugins={[remarkGfm]}
@@ -248,14 +266,14 @@ export default function BlogPost() {
                             <section className="section-tight">
                                 <div className="section-heading section-heading-left">
                                     <div>
-                                        <div className="eyebrow">Related Reading</div>
+                                        <div className="eyebrow">相关文章</div>
                                         <h3>继续阅读</h3>
                                     </div>
                                 </div>
                                 <div className="two-grid">
                                     {post.relatedPosts.map((item) => (
                                         <Link key={item.id} to={`/blog/${item.slug}`} className="signal-card">
-                                            <span className="signal-label mono">RELATED</span>
+                                            <span className="signal-label mono">相关文章</span>
                                             <h3>{item.title}</h3>
                                             <p>{item.excerpt}</p>
                                         </Link>

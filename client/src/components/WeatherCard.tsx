@@ -92,7 +92,7 @@ export default function WeatherCard() {
         <aside className="weather-card" data-testid="weather-card">
             <div className="weather-card-head">
                 <div>
-                    <div className="eyebrow">Weather Node</div>
+                    <div className="eyebrow">天气节点</div>
                     <h3>
                         {siteConfig.author.location.city}, {siteConfig.author.location.country}
                     </h3>

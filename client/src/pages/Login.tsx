@@ -40,25 +40,25 @@ export default function Login() {
             <section className="section login-section">
                 <div className="container login-grid">
                     <div className="feature-panel accent-panel">
-                        <div className="eyebrow">Admin Access</div>
+                        <div className="eyebrow">后台入口</div>
                         <h1 className="section-title">控制台登录</h1>
                         <p className="lead">
                             这是内容发布、文章编辑和评论审核入口，不对普通访问者开放。
                         </p>
                         <div className="principle-list">
                             <div className="metric-card">
-                                <span className="muted mono">PERMISSION</span>
-                                <strong>Admin only</strong>
+                                <span className="muted mono">权限</span>
+                                <strong>仅管理员可用</strong>
                             </div>
                             <div className="metric-card">
-                                <span className="muted mono">PROTECTION</span>
-                                <strong>Turnstile verification enabled</strong>
+                                <span className="muted mono">保护</span>
+                                <strong>已启用 Turnstile 验证</strong>
                             </div>
                         </div>
                     </div>
 
                     <div className="login-card">
-                        <div className="eyebrow">Secure Sign In</div>
+                        <div className="eyebrow">安全登录</div>
                         <form onSubmit={handleSubmit} className="comment-form" data-testid="login-form">
                             <label className="form-field">
                                 <span className="form-label">邮箱</span>

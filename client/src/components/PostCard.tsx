@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { Post } from '../api/client';
+import LazyImage from './LazyImage';
 import { formatShortDate } from '../lib/format';
 
 export default function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
@@ -9,9 +10,15 @@ export default function PostCard({ post, featured = false }: { post: Post; featu
             className={`post-card ${featured ? 'post-card-featured' : ''}`}
             data-testid={`post-card-${post.slug}`}
         >
+            {post.coverImage ? (
+                <div className={`post-card-cover ${featured ? 'is-featured' : ''}`}>
+                    <LazyImage src={post.coverImage} alt={post.title} />
+                </div>
+            ) : null}
+
             <div className="post-card-topline">
                 <div className="post-card-meta">
-                    {post.featured ? <span className="badge badge-gold">Featured</span> : null}
+                    {post.featured ? <span className="badge badge-gold">精选</span> : null}
                     {post.category ? <span className="chip">{post.category.name}</span> : null}
                 </div>
                 <span className="chip mono">{formatShortDate(post.publishedAt || post.createdAt)}</span>
@@ -28,7 +35,10 @@ export default function PostCard({ post, featured = false }: { post: Post; featu
                         <span key={tag.id} className="tag">{tag.name}</span>
                     ))}
                 </div>
-                <span className="command-hint">Read Signal</span>
+                <div className="post-card-stats">
+                    {post.meta ? <span className="command-hint">{post.meta.readTime || 1} 分钟</span> : null}
+                    <span className="command-hint">阅读全文</span>
+                </div>
             </div>
         </Link>
     );

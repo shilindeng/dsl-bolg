@@ -11,10 +11,10 @@ export const siteConfig = {
     rssPath: '/rss.xml',
     author: {
         name: 'DSL',
-        role: 'Independent Builder / AI Product Engineer',
+        role: '独立开发者 / AI 产品工程师',
         location: {
-            city: 'Shanghai',
-            country: 'China',
+            city: '上海',
+            country: '中国',
             latitude: 31.2304,
             longitude: 121.4737,
             timezone: 'Asia/Shanghai',
@@ -29,9 +29,9 @@ export const siteConfig = {
         { label: '关于', to: '/about' },
     ],
     socialLinks: [
-        { label: 'Email', href: 'mailto:hello@dsl.blog', external: true },
+        { label: '邮箱', href: 'mailto:hello@dsl.blog', external: true },
         { label: 'RSS', href: '/rss.xml', external: false, router: false },
-        { label: 'Projects', href: '/projects', external: false, router: true },
+        { label: '项目', href: '/projects', external: false, router: true },
     ],
     heroMetrics: [
         { label: '系统角色', value: '博客 / 作品集 / 实验场' },
@@ -46,36 +46,36 @@ export const siteConfig = {
     homeSignals: [
         {
             id: 'signal-01',
-            label: 'Signal 01',
+            label: '信号 01',
             title: '写给能长期判断的人',
             description: '内容围绕方法、决策和复盘展开，不追热闹，也不做无意义堆料。',
         },
         {
             id: 'signal-02',
-            label: 'Signal 02',
+            label: '信号 02',
             title: '前端不是堆组件',
             description: '我更关心界面的情绪、节奏、层级和可读性，而不是把技术标签堆满页面。',
         },
         {
             id: 'signal-03',
-            label: 'Signal 03',
+            label: '信号 03',
             title: 'AI 要接入真实工作流',
             description: '只有能进入写作、开发、发布和部署链路的 AI，才值得投入时间去打磨。',
         },
     ],
     focusAreas: [
         {
-            name: 'Interface Craft',
+            name: '界面表达',
             title: '界面与品牌表达',
             description: '设计系统、前端体验、信息密度控制，以及有辨识度的视觉语言。',
         },
         {
-            name: 'Content Engine',
+            name: '内容系统',
             title: '内容系统与发布机制',
             description: '围绕博客、知识库和 SEO 资产构建可持续的内容生产与沉淀流程。',
         },
         {
-            name: 'AI Workflow',
+            name: 'AI 工作流',
             title: 'AI 参与开发与创作',
             description: '把自动化、代理式工作流和编排能力，真正接到生产链路里。',
         },

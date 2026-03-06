@@ -56,13 +56,13 @@ export default function Blog() {
             <section className="section page-hero">
                 <div className="container page-hero-shell">
                     <div>
-                        <div className="eyebrow">Writing Archive</div>
+                        <div className="eyebrow">文章归档</div>
                         <h1 className="section-title">文章归档</h1>
                         <p className="lead">
                             按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力和可复用经验，而不是追逐热度。
                         </p>
                     </div>
-                    <div className="page-hero-badge mono">SEARCHABLE / FILTERABLE / LONG-FORM</div>
+                    <div className="page-hero-badge mono">可检索 / 可筛选 / 长文优先</div>
                 </div>
             </section>
 
