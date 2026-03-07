@@ -12,7 +12,7 @@ export default function About() {
                         <div>
                             <div className="eyebrow">关于 DSL</div>
                             <h1 className="section-title">{siteConfig.author.name}</h1>
-                            <p className="lead">{siteConfig.author.summary}</p>
+                            <p className="lead">{siteConfig.author.summary} 我更在意把表达、界面和工程能力组织成可持续的长期系统。</p>
                         </div>
 
                         <div className="hero-metrics">
@@ -44,7 +44,7 @@ export default function About() {
 
                     <div className="feature-panel accent-panel">
                         <div className="eyebrow">工作方式</div>
-                        <h2 className="section-title">我的方法</h2>
+                        <h2 className="section-title">我的方法不是堆功能，而是组织秩序</h2>
                         <div className="principle-list">
                             {siteConfig.principles.map((item) => (
                                 <div key={item} className="metric-card">

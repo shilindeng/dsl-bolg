@@ -17,11 +17,14 @@ export default function Home() {
     useEffect(() => {
         let cancelled = false;
 
-        Promise.all([fetchPosts({ limit: 4 }), fetchProjects()])
+        Promise.all([fetchPosts({ limit: 5 }), fetchProjects()])
             .then(([postResponse, projectResponse]) => {
                 if (cancelled) return;
+
+                const featuredProjects = projectResponse.filter((item) => item.featured);
+
                 setPosts(postResponse.data);
-                setProjects(projectResponse.filter((item) => item.featured).slice(0, 3));
+                setProjects((featuredProjects.length ? featuredProjects : projectResponse).slice(0, 3));
             })
             .catch(() => {
                 if (cancelled) return;
@@ -38,7 +41,7 @@ export default function Home() {
     }, []);
 
     const featuredPost = posts[0];
-    const secondaryPosts = posts.slice(1, 4);
+    const railPosts = posts.slice(1, 4);
     const featuredProject = projects[0];
 
     return (
@@ -67,25 +70,25 @@ export default function Home() {
                                 <span className="cyber-dot" />
                                 <span className="cyber-dot" />
                                 <span className="cyber-dot" />
-                                <span className="command-hint">PERSONAL BRAND SYSTEM / LIVE</span>
+                                <span className="command-hint">博客系统 / 长期在线</span>
                             </div>
 
                             <div className="hero-copy home-hero-copy">
-                                <div className="eyebrow">Editorial identity for builders</div>
-                                <p className="hero-kicker mono">写作 / 产品 / 系统 / 审美 / 长期主义</p>
+                                <div className="eyebrow">长期主义的个人品牌主场</div>
+                                <p className="hero-kicker mono">写作 / 产品 / 界面 / AI 工作流 / 发布系统</p>
                                 <h1 className="display-title home-display-title">
-                                    把博客做成真正上线的
+                                    把博客做成真正
                                     <br />
-                                    个人品牌系统。
+                                    能持续经营的作品系统。
                                 </h1>
                                 <p className="lead home-hero-lead">
-                                    这里不是一页“好看”的展示页，而是一套持续发布、持续运营、持续沉淀判断力的内容产品界面。
+                                    这里不只是展示“我做了什么”，而是把内容、项目、审美和部署能力一起组织成可长期累积的个人资产界面。
                                 </p>
                             </div>
 
                             <div className="hero-actions home-hero-actions">
-                                <Link to="/blog" className="btn btn-primary">阅读文章</Link>
-                                <Link to="/projects" className="btn btn-secondary">查看项目</Link>
+                                <Link to="/blog" className="btn btn-primary">进入文章归档</Link>
+                                <Link to="/projects" className="btn btn-secondary">查看代表项目</Link>
                                 <a href={`mailto:${siteConfig.email}`} className="btn btn-ghost">联系合作</a>
                             </div>
 
@@ -102,30 +105,27 @@ export default function Home() {
                         <div className="home-hero-visual-column">
                             <HeroVisual featuredPost={featuredPost} featuredProject={featuredProject} />
 
-                            <div className="home-utility-rail">
+                            <div className="home-utility-rail home-utility-grid">
                                 <WeatherCard />
 
-                                <div className="panel panel-body hero-preview-panel">
+                                <div className="panel panel-body hero-preview-panel utility-note-card">
                                     <div className="section-heading-left">
                                         <div>
-                                            <div className="eyebrow">Latest editorial signal</div>
-                                            <h2 className="hero-side-title">先看代表内容，再决定要不要持续关注</h2>
+                                            <div className="eyebrow">当前主线</div>
+                                            <h2 className="hero-side-title">首页负责建立气质，正文负责建立信任</h2>
                                         </div>
                                     </div>
 
-                                    {featuredPost ? (
-                                        <div className="hero-preview-card">
-                                            <div className="hero-preview-meta">
-                                                <span className="chip">{featuredPost.category?.name || '精选文章'}</span>
-                                                <span className="command-hint">{featuredPost.meta?.readTime || 1} 分钟</span>
+                                    <div className="utility-note-list">
+                                        {siteConfig.currentFocus.map((item, index) => (
+                                            <div key={item} className="utility-note-row">
+                                                <span className="signal-label mono">0{index + 1}</span>
+                                                <p>{item}</p>
                                             </div>
-                                            <strong>{featuredPost.title}</strong>
-                                            <p>{featuredPost.excerpt}</p>
-                                            <Link to={`/blog/${featuredPost.slug}`} className="btn btn-secondary">阅读代表内容</Link>
-                                        </div>
-                                    ) : (
-                                        <div className="empty-state">代表内容会在文章发布后显示在这里。</div>
-                                    )}
+                                        ))}
+                                    </div>
+
+                                    <Link to="/about" className="btn btn-secondary">了解作者方法论</Link>
                                 </div>
                             </div>
                         </div>
@@ -150,11 +150,11 @@ export default function Home() {
                     <div className="container section-stack editorial-home-stage">
                         <div className="section-heading">
                             <div>
-                                <div className="eyebrow">Selected writing</div>
-                                <h2 className="section-title">优先展示最能代表方法和判断力的内容</h2>
+                                <div className="eyebrow">精选文章</div>
+                                <h2 className="section-title">先看到最能代表方法与判断力的内容</h2>
                             </div>
                             <p className="lead">
-                                把文章做成长期资产，而不是一次性的信息堆叠。每篇内容都应该更接近产品，而不是动态。
+                                首页不堆满所有文章，而是优先把最值得建立第一印象的内容推到前面，让读者更快理解这座博客的真正价值。
                             </p>
                         </div>
 
@@ -169,11 +169,30 @@ export default function Home() {
                                 )}
                             </div>
 
-                            <div className="post-stack editorial-home-side">
-                                {secondaryPosts.map((post) => (
-                                    <PostCard key={post.id} post={post} />
-                                ))}
-                            </div>
+                            <aside className="post-stack editorial-home-side home-editorial-rail">
+                                <div className="feature-panel editorial-rail-header">
+                                    <div className="eyebrow">继续阅读</div>
+                                    <h3>归档入口</h3>
+                                    <p className="muted">更轻、更快、更像编辑推荐列表，而不是重复的大卡片堆叠。</p>
+                                </div>
+
+                                {railPosts.length ? (
+                                    railPosts.map((post) => (
+                                        <Link key={post.id} to={`/blog/${post.slug}`} className="signal-card archive-rail-card">
+                                            <div className="archive-rail-meta">
+                                                <span className="chip">{post.category?.name || '文章'}</span>
+                                                <span className="command-hint">{post.meta?.readTime || 1} 分钟</span>
+                                            </div>
+                                            <h3>{post.title}</h3>
+                                            <p>{post.excerpt}</p>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="empty-state">更多文章会在持续发布后显示在这里。</div>
+                                )}
+
+                                <Link to="/blog" className="btn btn-ghost">打开完整归档</Link>
+                            </aside>
                         </div>
                     </div>
                 </section>
@@ -182,8 +201,8 @@ export default function Home() {
                     <div className="container section-stack">
                         <div className="section-heading">
                             <div>
-                                <div className="eyebrow">Focus areas</div>
-                                <h2 className="section-title">把界面、内容和工作流一起做得更像产品</h2>
+                                <div className="eyebrow">聚焦方向</div>
+                                <h2 className="section-title">把界面、内容和工作流做成同一套产品表达</h2>
                             </div>
                         </div>
 
@@ -203,18 +222,33 @@ export default function Home() {
                     <div className="container section-stack">
                         <div className="section-heading">
                             <div>
-                                <div className="eyebrow">Selected projects</div>
-                                <h2 className="section-title">代表项目不是数量，而是长期判断力的横截面</h2>
+                                <div className="eyebrow">代表项目</div>
+                                <h2 className="section-title">项目页承担方法论与落地能力的第二层证明</h2>
                             </div>
                             <p className="lead">
-                                我更在意项目是否能体现结构能力、界面表达、工程质量和长期维护，而不只是做出一个 demo。
+                                文章建立判断力，项目建立可信度。它们共同决定这座博客是否真的像一个成熟品牌，而不是零散内容堆叠。
                             </p>
                         </div>
 
-                        <div className="three-grid home-project-grid">
-                            {projects.map((project) => (
-                                <ProjectCard key={project.id} project={project} />
-                            ))}
+                        <div className="home-project-stage">
+                            <div className="feature-panel home-project-intro">
+                                <div className="eyebrow">项目主叙事</div>
+                                <h3>{featuredProject?.name || '项目不只是附属页，而是品牌证据链的一部分'}</h3>
+                                <p>{featuredProject?.summary || '挑选能代表结构、表达、工程和持续维护能力的项目，而不是把 demo 数量堆满页面。'}</p>
+                                <div className="principle-list compact-principles">
+                                    {siteConfig.principles.map((item) => (
+                                        <div key={item} className="metric-card">
+                                            <strong>{item}</strong>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="three-grid home-project-grid">
+                                {projects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} />
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -222,8 +256,11 @@ export default function Home() {
                 <section className="section">
                     <div className="container editorial-grid reverse">
                         <div className="feature-panel">
-                            <div className="eyebrow">Operating principles</div>
+                            <div className="eyebrow">作者与方法</div>
                             <h2 className="section-title">我如何经营这座博客</h2>
+                            <p className="lead">
+                                目标不是做一个短期漂亮的页面，而是把个人表达做成一个能持续发布、持续校准、持续积累信任的系统界面。
+                            </p>
                             <div className="principle-list">
                                 {siteConfig.principles.map((item) => (
                                     <div key={item} className="metric-card">
@@ -234,15 +271,15 @@ export default function Home() {
                         </div>
 
                         <div className="feature-panel accent-panel about-glance-card">
-                            <div className="eyebrow">About DSL</div>
+                            <div className="eyebrow">关于 DSL</div>
                             <h3>{siteConfig.author.name}</h3>
                             <p className="muted">{siteConfig.author.role}</p>
                             <p>{siteConfig.author.bio}</p>
                             <div className="metric-card">
-                                <span className="muted mono">CURRENT BASE</span>
+                                <span className="muted mono">当前基准城市</span>
                                 <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
                             </div>
-                            <Link to="/about" className="btn btn-secondary">了解更多</Link>
+                            <Link to="/about" className="btn btn-secondary">查看更多</Link>
                         </div>
                     </div>
                 </section>
@@ -251,10 +288,10 @@ export default function Home() {
                     <div className="container">
                         <div className="cta-shell home-cta-shell">
                             <div>
-                                <div className="eyebrow">Contact / Collaboration</div>
-                                <h2 className="section-title">如果你也在做长期主义、内容系统或 AI 工作流，可以和我聊聊。</h2>
+                                <div className="eyebrow">联系与合作</div>
+                                <h2 className="section-title">如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。</h2>
                                 <p className="lead">
-                                    适合交流的方向包括：个人品牌站、内容产品、设计系统、AI 自动化、前端体验与独立项目的长期运营。
+                                    适合交流的方向包括：个人品牌站、内容产品、设计系统、AI 自动化、前端体验，以及把创作链路真正上线的工程实践。
                                 </p>
                             </div>
 

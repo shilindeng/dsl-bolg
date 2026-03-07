@@ -17,8 +17,8 @@ router.get('/summary', async (_req: Request, res: Response) => {
             prisma.postMeta.findMany({ select: { views: true, likes: true } }),
         ]);
 
-        const totalViews = metaData.reduce((sum, item) => sum + item.views, 0);
-        const totalLikes = metaData.reduce((sum, item) => sum + item.likes, 0);
+        const totalViews = metaData.reduce((sum: number, item: { views: number }) => sum + item.views, 0);
+        const totalLikes = metaData.reduce((sum: number, item: { likes: number }) => sum + item.likes, 0);
 
         res.json({ totalPosts, totalViews, totalLikes, totalComments, pendingComments });
     } catch (error) {
@@ -54,12 +54,12 @@ router.get('/top-posts', async (_req: Request, res: Response) => {
 
         res.json(
             posts
-                .map((post) => ({
+                .map((post: { id: number; title: string; slug: string; createdAt: Date; meta: { views: number; likes: number } | null }) => ({
                     ...post,
                     views: post.meta?.views || 0,
                     likes: post.meta?.likes || 0,
                 }))
-                .sort((a, b) => b.views - a.views)
+                .sort((a: { views: number }, b: { views: number }) => b.views - a.views)
                 .slice(0, 5),
         );
     } catch (error) {

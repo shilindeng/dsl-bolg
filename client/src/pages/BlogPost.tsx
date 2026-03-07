@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Children, type ReactNode, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,10 +8,35 @@ import ReadingProgress from '../components/ReadingProgress';
 import Comments from '../components/Comments';
 import SEO from '../components/SEO';
 import LazyImage from '../components/LazyImage';
-import { buildHeadingId } from '../lib/content';
+import { createHeadingIdResolver } from '../lib/content';
 import { formatDate } from '../lib/format';
 import { siteConfig } from '../config/site';
 import 'highlight.js/styles/atom-one-dark.css';
+
+function getNodeText(children: ReactNode) {
+    return Children.toArray(children)
+        .map((child) => (typeof child === 'string' || typeof child === 'number' ? String(child) : ''))
+        .join('')
+        .trim();
+}
+
+function stripLeadingMarkdownTitle(content: string, title: string) {
+    const lines = content.split('\n');
+    const firstMeaningfulIndex = lines.findIndex((line) => line.trim());
+
+    if (firstMeaningfulIndex < 0) {
+        return content;
+    }
+
+    const firstMeaningfulLine = lines[firstMeaningfulIndex].trim();
+    const normalizedTitle = title.trim();
+
+    if (firstMeaningfulLine === `# ${normalizedTitle}` || firstMeaningfulLine === `#${normalizedTitle}`) {
+        return lines.filter((_, index) => index !== firstMeaningfulIndex).join('\n').trim();
+    }
+
+    return content;
+}
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
@@ -118,6 +143,9 @@ export default function BlogPost() {
         url: articleUrl,
     };
 
+    const articleContent = stripLeadingMarkdownTitle(post.content, post.title);
+    const resolveHeadingId = createHeadingIdResolver();
+
     return (
         <>
             <SEO
@@ -134,14 +162,14 @@ export default function BlogPost() {
             <ReadingProgress />
 
             <section className="section article-hero-section">
-                <div className="container article-hero-shell">
+                <div className="container article-hero-shell article-hero-shell-v2">
                     <div className="article-hero-copy">
                         <Link to="/blog" className="command-hint article-back-link">
                             返回文章归档
                         </Link>
-                        <div className="eyebrow">文章信号</div>
+                        <div className="eyebrow">长文阅读</div>
                         <h1 className="article-title">{post.title}</h1>
-                        <p className="lead">{post.excerpt}</p>
+                        <p className="lead article-hero-lead">{post.excerpt}</p>
 
                         <div className="article-meta" data-testid="article-meta">
                             <span>{formatDate(post.publishedAt || post.createdAt)}</span>
@@ -150,50 +178,48 @@ export default function BlogPost() {
                             <span>最后更新于 {formatDate(post.updatedAt)}</span>
                         </div>
 
-                        <div className="tag-list">
+                        <div className="tag-list article-tag-list">
                             {post.category ? <span className="chip">{post.category.name}</span> : null}
                             {post.tags.map((tag) => (
                                 <span key={tag.id} className="tag">{tag.name}</span>
                             ))}
                         </div>
-
-                        {isAdmin ? (
-                            <div className="article-admin-actions">
-                                <Link to={`/editor/${post.slug}`} className="btn btn-secondary">编辑文章</Link>
-                            </div>
-                        ) : null}
                     </div>
 
                     <div className="article-hero-side">
-                        {post.coverImage ? (
-                            <div className="article-hero-cover">
-                                <LazyImage src={post.coverImage} alt={post.title} />
-                            </div>
-                        ) : null}
-                        <div className="article-side-card">
-                            <span className="signal-label mono">文章状态</span>
-                            <strong>已发布，并持续维护</strong>
-                            <p className="muted">这里的文章会持续修订，而不是发布即结束。</p>
+                        <div className="article-hero-cover article-hero-cover-v2">
+                            <LazyImage src={post.coverImage} alt={post.title} fallbackLabel={post.title} fallbackKicker="ARTICLE" />
                         </div>
-                        <div className="article-side-card">
-                            <span className="signal-label mono">阅读模式</span>
-                            <strong>长文 / 结构化 / 可引用</strong>
+
+                        <div className="article-context-grid">
+                            <div className="article-side-card article-context-card">
+                                <span className="signal-label mono">文章状态</span>
+                                <strong>{isAdmin && !post.published ? '草稿预览中' : '已发布，并持续维护'}</strong>
+                                <p className="muted">这篇文章会继续修订，而不是发布即结束。</p>
+                            </div>
+                            <div className="article-side-card article-context-card">
+                                <span className="signal-label mono">阅读模式</span>
+                                <strong>长文 / 结构化 / 可引用</strong>
+                                <p className="muted">正文承担阅读，装饰只做氛围，不干扰信息密度。</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section className="section article-body-section">
-                <div className="container article-layout">
+                <div className="container article-layout article-layout-v2">
                     <article className="article-main">
-                        <div className="markdown-body" data-testid="article-content">
+                        <div className="markdown-body article-prose-shell" data-testid="article-content">
                             <Markdown
                                 remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeHighlight]}
                                 components={{
+                                    h1: () => null,
                                     h2: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
+                                        const text = getNodeText(children);
+                                        const id = resolveHeadingId(text);
+
                                         return (
                                             <h2 id={id}>
                                                 <a href={`#${id}`}>{children}</a>
@@ -201,8 +227,9 @@ export default function BlogPost() {
                                         );
                                     },
                                     h3: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
+                                        const text = getNodeText(children);
+                                        const id = resolveHeadingId(text);
+
                                         return (
                                             <h3 id={id}>
                                                 <a href={`#${id}`}>{children}</a>
@@ -210,25 +237,24 @@ export default function BlogPost() {
                                         );
                                     },
                                     h4: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
+                                        const text = getNodeText(children);
+                                        const id = resolveHeadingId(text);
+
                                         return (
                                             <h4 id={id}>
                                                 <a href={`#${id}`}>{children}</a>
                                             </h4>
                                         );
                                     },
-                                    img: ({ alt, ...props }) => (
-                                        <figure>
-                                            <div className="article-cover article-inline-cover">
-                                                <LazyImage {...props} src={props.src || ''} alt={alt} />
-                                            </div>
+                                    img: ({ src, alt }) => (
+                                        <figure className="article-cover">
+                                            <LazyImage src={typeof src === 'string' ? src : ''} alt={alt || post.title} fallbackLabel={alt || post.title} fallbackKicker="MEDIA" />
                                             {alt ? <figcaption>{alt}</figcaption> : null}
                                         </figure>
                                     ),
                                 }}
                             >
-                                {post.content}
+                                {articleContent}
                             </Markdown>
                         </div>
 
@@ -285,7 +311,7 @@ export default function BlogPost() {
 
                     <aside className="article-sidebar">
                         {post.toc?.length ? (
-                            <div className="article-side-card">
+                            <div className="article-side-card article-toc-card">
                                 <strong className="mono">目录</strong>
                                 <div className="toc-list" data-testid="post-toc">
                                     {post.toc.map((item) => (
@@ -298,7 +324,7 @@ export default function BlogPost() {
                         ) : null}
 
                         <div className="article-side-card">
-                            <strong className="mono">导航</strong>
+                            <strong className="mono">邻近阅读</strong>
                             {post.previousPost ? (
                                 <Link to={`/blog/${post.previousPost.slug}`} className="muted">
                                     上一篇: {post.previousPost.title}

@@ -1,7 +1,6 @@
-import { Prisma } from '@prisma/client';
 import slugify from 'slugify';
 import prisma from './prisma.js';
-import { createExcerpt, estimateReadTime } from './content.js';
+import { estimateReadTime, normalizeExcerpt } from './content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from './analytics.js';
 
 export const includePostRelations = {
@@ -9,10 +8,11 @@ export const includePostRelations = {
     category: true,
     meta: true,
     series: true,
-} satisfies Prisma.PostInclude;
+} as const;
 
-export const formatPost = <T extends { tags: Array<{ tag: unknown }> }>(post: T) => ({
+export const formatPost = <T extends { title: string; excerpt: string; content: string; tags: Array<{ tag: unknown }> }>(post: T) => ({
     ...post,
+    excerpt: normalizeExcerpt(post.excerpt, post.content, post.title),
     tags: post.tags.map((item) => item.tag),
 });
 
@@ -79,7 +79,7 @@ export interface PostPayload {
 
 export async function createPostRecord(payload: PostPayload, source = 'admin') {
     const postSlug = await resolveUniquePostSlug(payload.slug || payload.title);
-    const cleanExcerpt = payload.excerpt?.trim() || createExcerpt(payload.content);
+    const cleanExcerpt = normalizeExcerpt(payload.excerpt, payload.content, payload.title);
     const readTime = estimateReadTime(payload.content);
     const tagPairs = Array.isArray(payload.tags) ? await upsertTags(payload.tags) : [];
     const categoryId = await resolveCategoryId(payload.categoryId);
@@ -113,6 +113,7 @@ export async function updatePostRecord(id: number, payload: Partial<PostPayload>
     }
 
     const nextContent = payload.content ?? existing.content;
+    const nextTitle = payload.title ?? existing.title;
     const readTime = estimateReadTime(nextContent);
     const updates: Record<string, unknown> = {};
 
@@ -122,7 +123,9 @@ export async function updatePostRecord(id: number, payload: Partial<PostPayload>
     if (payload.content !== undefined) updates.content = payload.content;
     if (payload.sourceUrl !== undefined) updates.sourceUrl = payload.sourceUrl || null;
     if (payload.categoryId !== undefined) updates.categoryId = await resolveCategoryId(payload.categoryId);
-    if (payload.excerpt !== undefined) updates.excerpt = payload.excerpt?.trim() || createExcerpt(nextContent);
+    if (payload.excerpt !== undefined || payload.content !== undefined || payload.title !== undefined) {
+        updates.excerpt = normalizeExcerpt(payload.excerpt ?? existing.excerpt, nextContent, nextTitle);
+    }
 
     if (payload.published !== undefined) {
         updates.published = Boolean(payload.published);

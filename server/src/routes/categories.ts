@@ -13,7 +13,7 @@ router.get('/', async (_req: Request, res: Response) => {
         });
 
         res.json(
-            categories.map((category) => ({
+            categories.map((category: { id: number; name: string; slug: string; _count: { posts: number } }) => ({
                 id: category.id,
                 name: category.name,
                 slug: category.slug,

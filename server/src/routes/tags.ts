@@ -13,7 +13,7 @@ router.get('/', async (_req: Request, res: Response) => {
         });
 
         res.json(
-            tags.map((tag) => ({
+            tags.map((tag: { id: number; name: string; slug: string; _count: { posts: number } }) => ({
                 id: tag.id,
                 name: tag.name,
                 slug: tag.slug,

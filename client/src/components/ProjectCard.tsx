@@ -7,11 +7,9 @@ export default function ProjectCard({ project }: { project: Project }) {
 
     return (
         <article id={project.slug} className="project-card" data-testid={`project-card-${project.slug}`}>
-            {project.coverImage ? (
-                <div className="project-card-cover">
-                    <LazyImage src={project.coverImage} alt={project.name} />
-                </div>
-            ) : null}
+            <div className="project-card-cover">
+                <LazyImage src={project.coverImage} alt={project.name} fallbackLabel={project.name} fallbackKicker="PROJECT" />
+            </div>
 
             <div className="project-card-head">
                 <div className="project-card-meta">
@@ -22,6 +20,7 @@ export default function ProjectCard({ project }: { project: Project }) {
             </div>
 
             <div className="project-card-copy">
+                <span className="project-card-kicker mono">项目档案</span>
                 <h3>{project.name}</h3>
                 <p className="project-card-summary">{project.summary || project.description}</p>
                 <p>{project.description}</p>

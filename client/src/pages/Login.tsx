@@ -41,17 +41,17 @@ export default function Login() {
                 <div className="container login-grid">
                     <div className="feature-panel accent-panel">
                         <div className="eyebrow">后台入口</div>
-                        <h1 className="section-title">控制台登录</h1>
+                        <h1 className="section-title">进入内容控制室</h1>
                         <p className="lead">
-                            这是内容发布、文章编辑和评论审核入口，不对普通访问者开放。
+                            这是内容发布、文章编辑、评论审核与项目分发的统一入口，只对管理员开放。
                         </p>
                         <div className="hero-metrics">
                             <div className="metric-card">
-                                <span className="muted mono">ACCESS</span>
+                                <span className="muted mono">权限边界</span>
                                 <strong>仅管理员可进入</strong>
                             </div>
                             <div className="metric-card">
-                                <span className="muted mono">SECURITY</span>
+                                <span className="muted mono">安全策略</span>
                                 <strong>Turnstile + Token</strong>
                             </div>
                         </div>

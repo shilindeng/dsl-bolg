@@ -22,10 +22,10 @@ export default function Projects() {
                 <div className="container page-hero-shell">
                     <div className="section-stack">
                         <div>
-                            <div className="eyebrow">精选项目</div>
-                            <h1 className="section-title">项目与实验</h1>
+                            <div className="eyebrow">项目档案</div>
+                            <h1 className="section-title">项目、实验与长期维护样本</h1>
                             <p className="lead">
-                                这里展示的不是项目数量，而是我选择长期打磨、能够代表方法和判断力边界的作品。
+                                这里展示的不是“做过什么”，而是我选择长期打磨、能够代表方法、表达和工程边界的作品样本。
                             </p>
                         </div>
 
@@ -40,7 +40,7 @@ export default function Projects() {
                             </div>
                         </div>
                     </div>
-                    <div className="page-hero-badge mono">作品集 / 方法论 / 长期维护</div>
+                    <div className="page-hero-badge mono">作品集 / 方法论 / 上线能力</div>
                 </div>
             </section>
 

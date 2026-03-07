@@ -4,27 +4,28 @@ import LazyImage from './LazyImage';
 import { formatShortDate } from '../lib/format';
 
 export default function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
+    const categoryLabel = post.category?.name || '文章';
+
     return (
         <Link
             to={`/blog/${post.slug}`}
             className={`post-card ${featured ? 'post-card-featured' : ''}`}
             data-testid={`post-card-${post.slug}`}
         >
-            {post.coverImage ? (
-                <div className={`post-card-cover ${featured ? 'is-featured' : ''}`}>
-                    <LazyImage src={post.coverImage} alt={post.title} />
-                </div>
-            ) : null}
+            <div className={`post-card-cover ${featured ? 'is-featured' : ''}`}>
+                <LazyImage src={post.coverImage} alt={post.title} fallbackLabel={post.title} fallbackKicker={categoryLabel.toUpperCase()} />
+            </div>
 
             <div className="post-card-topline">
                 <div className="post-card-meta">
                     {post.featured ? <span className="badge badge-gold">精选</span> : null}
-                    {post.category ? <span className="chip">{post.category.name}</span> : null}
+                    <span className="chip">{categoryLabel}</span>
                 </div>
                 <span className="chip mono">{formatShortDate(post.publishedAt || post.createdAt)}</span>
             </div>
 
             <div className="post-card-body">
+                <span className="post-card-kicker mono">{featured ? '代表内容' : '归档阅读'}</span>
                 <h3>{post.title}</h3>
                 <p>{post.excerpt}</p>
             </div>

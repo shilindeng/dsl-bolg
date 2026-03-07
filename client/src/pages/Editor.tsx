@@ -211,16 +211,16 @@ export default function Editor() {
                 <div className="container editor-shell">
                     <div className="editor-header">
                         <div>
-                            <div className="eyebrow">文章编辑器</div>
-                            <h1 className="section-title" style={{ marginTop: '1rem' }}>{id ? '编辑文章' : '新建文章'}</h1>
-                            <p className="lead">封面、正文、标签、分类和发布状态都在一个界面里完成。</p>
+                            <div className="eyebrow">写作工位</div>
+                            <h1 className="section-title" style={{ marginTop: '1rem' }}>{id ? '编辑文章' : '开始一篇新文章'}</h1>
+                            <p className="lead">把标题、封面、正文、标签和发布节奏收进一个界面里，减少切换成本，专注内容完成度。</p>
                             <div className="hero-metrics">
                                 <div className="metric-card">
-                                    <span className="muted mono">PREVIEW</span>
+                                    <span className="muted mono">预览状态</span>
                                     <strong>{previewMode ? '实时预览开启' : '聚焦编辑模式'}</strong>
                                 </div>
                                 <div className="metric-card">
-                                    <span className="muted mono">AUTOSAVE</span>
+                                    <span className="muted mono">自动保存</span>
                                     <strong>草稿自动保存在本地</strong>
                                 </div>
                             </div>

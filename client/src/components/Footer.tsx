@@ -6,15 +6,15 @@ export default function Footer() {
         <footer className="site-footer">
             <div className="container site-footer-grid">
                 <section className="footer-intro">
-                    <div className="eyebrow">页脚信号</div>
+                    <div className="eyebrow">站点尾声</div>
                     <div className="footer-heading">
                         <h2>{siteConfig.name}</h2>
                         <p className="muted">{siteConfig.author.summary}</p>
                     </div>
                     <div className="footer-badges">
-                        <span className="chip mono">赛博 / 编辑 / 工程</span>
-                        <span className="chip mono">上海信号源</span>
-                        <span className="chip mono">Mobile Ready</span>
+                        <span className="chip mono">内容 / 界面 / 工程</span>
+                        <span className="chip mono">长期维护</span>
+                        <span className="chip mono">上海基准时区</span>
                     </div>
                 </section>
 
