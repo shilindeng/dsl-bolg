@@ -6,7 +6,6 @@ import Home from './pages/Home';
 import AdminRoute from './components/AdminRoute';
 import { ThemeProvider } from './hooks/useTheme';
 import { ToastProvider } from './hooks/useToast';
-import CommandPalette from './components/CommandPalette';
 
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
@@ -78,7 +77,6 @@ function App() {
                     </main>
 
                     <Footer />
-                    <CommandPalette isAdmin={isAdmin} />
                 </div>
             </ToastProvider>
         </ThemeProvider>

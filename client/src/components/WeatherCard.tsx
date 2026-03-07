@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { siteConfig } from '../config/site';
 
 interface WeatherSnapshot {
@@ -7,6 +7,15 @@ interface WeatherSnapshot {
     windSpeed: number;
     weatherCode: number;
     isDay: number;
+}
+
+interface VisitorLocation {
+    city: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    timezone: string;
+    source: 'network' | 'fallback';
 }
 
 const weatherMap: Record<number, { label: string; icon: string }> = {
@@ -24,8 +33,83 @@ const weatherMap: Record<number, { label: string; icon: string }> = {
     95: { label: '雷暴', icon: 'STM' },
 };
 
+const fallbackLocation: VisitorLocation = {
+    city: siteConfig.author.location.city,
+    country: siteConfig.author.location.country,
+    latitude: siteConfig.author.location.latitude,
+    longitude: siteConfig.author.location.longitude,
+    timezone: siteConfig.author.location.timezone,
+    source: 'fallback',
+};
+
+const locationCacheKey = 'dsl-blog:visitor-location';
+const locationCacheTtl = 1000 * 60 * 30;
+
+function readCachedLocation() {
+    try {
+        const raw = localStorage.getItem(locationCacheKey);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { location: VisitorLocation; timestamp: number };
+        if (Date.now() - parsed.timestamp > locationCacheTtl) {
+            localStorage.removeItem(locationCacheKey);
+            return null;
+        }
+        return parsed.location;
+    } catch {
+        return null;
+    }
+}
+
+function writeCachedLocation(location: VisitorLocation) {
+    try {
+        localStorage.setItem(locationCacheKey, JSON.stringify({ location, timestamp: Date.now() }));
+    } catch {
+        return;
+    }
+}
+
+async function resolveVisitorLocation(): Promise<VisitorLocation> {
+    const cached = readCachedLocation();
+    if (cached) return cached;
+
+    try {
+        const response = await fetch('https://ipwho.is/', { headers: { Accept: 'application/json' } });
+        if (!response.ok) {
+            throw new Error('Location request failed');
+        }
+
+        const data = (await response.json()) as {
+            success?: boolean;
+            city?: string;
+            country?: string;
+            latitude?: number;
+            longitude?: number;
+            timezone?: { id?: string };
+        };
+
+        if (!data.success || typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
+            throw new Error('Location lookup failed');
+        }
+
+        const location: VisitorLocation = {
+            city: data.city || fallbackLocation.city,
+            country: data.country || fallbackLocation.country,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            timezone: data.timezone?.id || 'auto',
+            source: 'network',
+        };
+
+        writeCachedLocation(location);
+        return location;
+    } catch {
+        return fallbackLocation;
+    }
+}
+
 export default function WeatherCard() {
     const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
+    const [location, setLocation] = useState<VisitorLocation>(fallbackLocation);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -34,11 +118,16 @@ export default function WeatherCard() {
 
         async function fetchWeather() {
             try {
+                const visitorLocation = await resolveVisitorLocation();
+                if (!cancelled) {
+                    setLocation(visitorLocation);
+                }
+
                 const query = new URLSearchParams({
-                    latitude: String(siteConfig.author.location.latitude),
-                    longitude: String(siteConfig.author.location.longitude),
+                    latitude: String(visitorLocation.latitude),
+                    longitude: String(visitorLocation.longitude),
                     current: 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day',
-                    timezone: siteConfig.author.location.timezone,
+                    timezone: visitorLocation.timezone,
                     forecast_days: '1',
                 });
 
@@ -57,9 +146,7 @@ export default function WeatherCard() {
                     };
                 };
 
-                if (cancelled) {
-                    return;
-                }
+                if (cancelled) return;
 
                 setWeather({
                     temperature: data.current.temperature_2m,
@@ -71,7 +158,7 @@ export default function WeatherCard() {
                 setError(null);
             } catch {
                 if (!cancelled) {
-                    setError('天气信号暂时不可用');
+                    setError('天气信息暂时不可用。');
                 }
             } finally {
                 if (!cancelled) {
@@ -92,16 +179,19 @@ export default function WeatherCard() {
         <aside className="weather-card" data-testid="weather-card">
             <div className="weather-card-head">
                 <div>
-                    <div className="eyebrow">天气节点</div>
+                    <div className="eyebrow">实时天气</div>
                     <h3>
-                        {siteConfig.author.location.city}, {siteConfig.author.location.country}
+                        {location.city}, {location.country}
                     </h3>
+                    <p className="muted weather-location-note" data-testid="weather-location-note">
+                        {location.source === 'network' ? '基于访问网络自动定位' : '定位失败时回退到默认城市'}
+                    </p>
                 </div>
                 <span className="weather-code mono">{weatherLabel?.icon || '...'}</span>
             </div>
 
             {loading ? (
-                <div className="muted" data-testid="weather-loading">正在同步天气信号...</div>
+                <div className="muted" data-testid="weather-loading">正在同步你所在位置的天气...</div>
             ) : error || !weather ? (
                 <div className="muted" data-testid="weather-error">{error}</div>
             ) : (
@@ -123,7 +213,7 @@ export default function WeatherCard() {
                     </div>
 
                     <p className="muted">
-                        把实时天气放进首页，不是为了装饰，而是给这个站点多一层正在发生的现场感。
+                        让首页显示访客当下所在城市的天气，比固定上海更有现场感，也更像一个真正在线的个人站点。
                     </p>
                 </>
             )}

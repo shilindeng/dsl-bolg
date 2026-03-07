@@ -9,6 +9,10 @@ interface Particle {
     size: number;
 }
 
+interface ParticleBackgroundProps {
+    variant?: 'hero' | 'page';
+}
+
 const readParticlePalette = () => {
     const styles = getComputedStyle(document.documentElement);
     return {
@@ -29,7 +33,7 @@ const withAlpha = (value: string, alpha: number) => {
     return `rgba(${parts.join(', ')}, ${alpha})`;
 };
 
-export default function ParticleBackground() {
+export default function ParticleBackground({ variant = 'hero' }: ParticleBackgroundProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
@@ -50,7 +54,7 @@ export default function ParticleBackground() {
         let pointerX = 0;
         let pointerY = 0;
         let palette = readParticlePalette();
-        const particleCount = 34;
+        const particleCount = variant === 'page' ? 120 : 34;
         const depth = 900;
         const particles: Particle[] = [];
 
@@ -63,9 +67,9 @@ export default function ParticleBackground() {
             particle.x = Math.random() * width - width / 2;
             particle.y = Math.random() * height - height / 2;
             particle.z = fresh ? Math.random() * depth : depth;
-            particle.speed = 0.8 + Math.random() * 1.6;
-            particle.alpha = 0.08 + Math.random() * 0.2;
-            particle.size = 0.45 + Math.random() * 1.4;
+            particle.speed = variant === 'page' ? 1.4 + Math.random() * 2.4 : 0.8 + Math.random() * 1.6;
+            particle.alpha = variant === 'page' ? 0.14 + Math.random() * 0.34 : 0.08 + Math.random() * 0.2;
+            particle.size = variant === 'page' ? 0.55 + Math.random() * 2 : 0.45 + Math.random() * 1.4;
         };
 
         const resize = () => {
@@ -103,8 +107,9 @@ export default function ParticleBackground() {
                 }
 
                 const perspective = depth / particle.z;
-                const screenX = centerX + particle.x * perspective + pointerX * 10 * (1 - particle.z / depth);
-                const screenY = centerY + particle.y * perspective + pointerY * 8 * (1 - particle.z / depth);
+                const pointerForce = variant === 'page' ? 16 : 10;
+                const screenX = centerX + particle.x * perspective + pointerX * pointerForce * (1 - particle.z / depth);
+                const screenY = centerY + particle.y * perspective + pointerY * pointerForce * 0.8 * (1 - particle.z / depth);
                 const radius = particle.size * perspective;
 
                 if (screenX < -40 || screenX > width + 40 || screenY < -40 || screenY > height + 40) {
@@ -114,7 +119,7 @@ export default function ParticleBackground() {
 
                 context.beginPath();
                 context.fillStyle = withAlpha(palette.color, particle.alpha);
-                context.shadowBlur = 10;
+                context.shadowBlur = variant === 'page' ? 16 : 10;
                 context.shadowColor = palette.glow;
                 context.arc(screenX, screenY, Math.max(0.35, radius), 0, Math.PI * 2);
                 context.fill();
@@ -141,14 +146,14 @@ export default function ParticleBackground() {
             window.removeEventListener('resize', resize);
             window.removeEventListener('pointermove', handlePointer);
         };
-    }, []);
+    }, [variant]);
 
     return (
         <div data-testid="hero-particles" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
             <div className="particle-haze" />
             <canvas
                 ref={canvasRef}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.54 }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: variant === 'page' ? 0.84 : 0.54 }}
             />
         </div>
     );

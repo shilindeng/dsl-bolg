@@ -44,11 +44,6 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                         <span className="nav-status mono" aria-hidden="true">
                             ONLINE / WWW.SHILIN.TECH
                         </span>
-
-                        <span className="command-hint nav-command" aria-hidden="true">
-                            <kbd>Ctrl</kbd>
-                            <kbd>K</kbd>
-                        </span>
                     </div>
 
                     {isAdmin ? (

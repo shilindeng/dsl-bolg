@@ -15,6 +15,21 @@ async function saveScreenshot(page: Page, testInfo: TestInfo, name: string) {
 }
 
 test.beforeEach(async ({ page }) => {
+    await page.route('https://ipwho.is/**', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                success: true,
+                city: 'Shanghai',
+                country: 'China',
+                latitude: 31.2304,
+                longitude: 121.4737,
+                timezone: { id: 'Asia/Shanghai' },
+            }),
+        });
+    });
+
     await page.route('https://api.open-meteo.com/**', async (route) => {
         await route.fulfill({
             status: 200,
@@ -48,12 +63,9 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
     await expect(page.getByTestId('hero-particles')).toBeVisible();
     await expect(page.getByTestId('weather-card')).toBeVisible();
     await expect(page.getByTestId('weather-temperature')).toContainText('22');
+    await expect(page.getByTestId('weather-location-note')).toContainText('自动定位');
     await saveScreenshot(page, testInfo, 'home');
 
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
-    await expect(page.getByTestId('command-palette')).toBeVisible();
-    await expect(page.getByTestId('command-result--blog')).toBeVisible();
-    await page.keyboard.press('Escape');
     await page.goto('/blog');
     await expect(page).toHaveURL(/\/blog$/);
 
@@ -114,6 +126,7 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
     await expect(page.locator('.editor-cover-preview img')).toBeVisible();
 
     await page.goto('/admin/dashboard');
+    await page.getByRole('button', { name: '分发与项目' }).click();
 
     await page.getByTestId('project-name-input').fill('Playwright Project');
     await page.getByTestId('project-slug-input').fill(projectSlug);

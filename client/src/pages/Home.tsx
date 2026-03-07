@@ -6,6 +6,7 @@ import SEO from '../components/SEO';
 import WeatherCard from '../components/WeatherCard';
 import PostCard from '../components/PostCard';
 import ProjectCard from '../components/ProjectCard';
+import LazyImage from '../components/LazyImage';
 import { siteConfig } from '../config/site';
 
 export default function Home() {
@@ -53,10 +54,14 @@ export default function Home() {
                 }}
             />
 
+            <div className="home-page-shell">
+                <div className="home-particle-layer" aria-hidden="true">
+                    <ParticleBackground variant="page" />
+                </div>
+
             <section className="section hero-section" data-testid="home-hero">
                 <div className="container hero-grid">
-                    <div className="hero-shell" data-testid="hero-panel">
-                        <ParticleBackground />
+                    <div className="hero-shell home-hero-shell" data-testid="hero-panel">
                         <div className="hero-scanline" />
 
                         <div className="hero-content">
@@ -98,7 +103,49 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="section-stack">
+                    <div className="section-stack hero-side-stack">
+                        <div className="panel panel-body home-visual-board">
+                            <div className="section-heading-left">
+                                <div>
+                                    <div className="eyebrow">Landing Visual</div>
+                                    <h2 className="hero-side-title">更像品牌落地页，而不是组件堆叠</h2>
+                                </div>
+                            </div>
+
+                            <div className="home-visual-grid">
+                                <div className="home-visual-card home-visual-card-large">
+                                    {featuredPost?.coverImage ? (
+                                        <LazyImage src={featuredPost.coverImage} alt={featuredPost.title} />
+                                    ) : (
+                                        <div className="home-visual-placeholder" />
+                                    )}
+                                    <div className="home-visual-overlay">
+                                        <span className="chip">Featured Story</span>
+                                        <strong>{featuredPost?.title || '代表内容会显示在这里'}</strong>
+                                    </div>
+                                </div>
+
+                                <div className="home-visual-stack">
+                                    <div className="home-visual-card home-visual-card-small">
+                                        {projects[0]?.coverImage ? (
+                                            <LazyImage src={projects[0].coverImage} alt={projects[0].name} />
+                                        ) : (
+                                            <div className="home-visual-placeholder is-alt" />
+                                        )}
+                                        <div className="home-visual-overlay compact">
+                                            <span className="command-hint">Project</span>
+                                            <strong>{projects[0]?.name || 'Project Preview'}</strong>
+                                        </div>
+                                    </div>
+                                    <div className="metric-card home-visual-copy-card">
+                                        <span className="muted mono">POSITIONING</span>
+                                        <strong>内容品牌 / 项目陈列 / 开放发布能力</strong>
+                                        <p className="muted">首页首屏直接传递专业感、可持续更新感和真实可交付能力。</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <WeatherCard />
 
                         <div className="panel panel-body hero-preview-panel">
@@ -286,6 +333,7 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+            </div>
         </>
     );
 }

@@ -37,7 +37,7 @@ export default defineConfig({
     ],
     webServer: [
         {
-            command: 'npm --prefix ../server run start',
+            command: 'powershell.exe -Command "cd ../server; npm run db:push -- --accept-data-loss; npm run db:seed; npm run start"',
             url: 'http://127.0.0.1:3001/api/health',
             reuseExistingServer: true,
             stdout: 'pipe',
