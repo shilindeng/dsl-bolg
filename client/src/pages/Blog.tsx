@@ -59,13 +59,13 @@ export default function Blog() {
             <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的技术写作、产品思考与界面研究。" />
 
             <section className="section page-hero">
-                <div className="container page-hero-shell">
+                <div className="container page-hero-layout">
                     <div className="section-stack">
                         <div>
                             <div className="eyebrow">文章归档</div>
-                            <h1 className="section-title">文章归档</h1>
+                            <h1 className="page-title">给长期阅读者准备的内容档案</h1>
                             <p className="lead">
-                                按主题浏览长文、复盘和设计笔记。这里的内容优先服务于判断力和可复用经验，而不是追逐热度。
+                                这里按主题、标签与关键词组织长文、复盘和设计笔记。目标不是追逐更新频率，而是把可复用的判断力沉淀成长期资产。
                             </p>
                         </div>
 
@@ -85,11 +85,11 @@ export default function Blog() {
                         </div>
                     </div>
 
-                    <div className="panel panel-body">
-                        <div className="eyebrow">检索模式</div>
-                        <h2 className="section-title">可检索 / 可筛选 / 长文优先</h2>
+                    <div className="editorial-panel">
+                        <div className="eyebrow">阅读方式</div>
+                        <h2 className="section-title">先缩小范围，再进入正文</h2>
                         <p className="muted">
-                            这是一个为长期阅读而设计的归档系统，而不是简单的文章列表。先收敛线索，再进入正文。
+                            一次只给你足够少、但足够清晰的内容线索。先确定主题方向，再决定投入阅读时间，体验会比无差别信息流更高级。
                         </p>
                     </div>
                 </div>

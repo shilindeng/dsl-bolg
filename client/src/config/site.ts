@@ -30,6 +30,7 @@ export const siteConfig = {
     ],
     socialLinks: [
         { label: '邮箱', href: 'mailto:hello@dsl.blog', external: true },
+        { label: 'Newsletter', href: '/newsletter', external: false, router: true },
         { label: 'RSS', href: '/rss.xml', external: false, router: false },
         { label: '项目', href: '/projects', external: false, router: true },
     ],

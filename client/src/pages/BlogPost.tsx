@@ -3,11 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { fetchPost, likePost, type Comment, type Post } from '../api/client';
+import { addBookmark, fetchPost, likePost, removeBookmark, type Comment, type Post } from '../api/client';
 import ReadingProgress from '../components/ReadingProgress';
 import Comments from '../components/Comments';
 import SEO from '../components/SEO';
 import LazyImage from '../components/LazyImage';
+import NewsletterSignup from '../components/NewsletterSignup';
+import { useAuth } from '../hooks/useAuth';
 import { buildHeadingId } from '../lib/content';
 import { formatDate } from '../lib/format';
 import { siteConfig } from '../config/site';
@@ -15,24 +17,13 @@ import 'highlight.js/styles/atom-one-dark.css';
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
+    const { isAdmin, isAuthenticated } = useAuth();
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [liking, setLiking] = useState(false);
+    const [bookmarking, setBookmarking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
-    const [isAdmin, setIsAdmin] = useState(false);
-
-    useEffect(() => {
-        const raw = localStorage.getItem('auth_user');
-        if (!raw) return;
-
-        try {
-            const user = JSON.parse(raw) as { role?: string };
-            setIsAdmin(user.role === 'admin');
-        } catch {
-            setIsAdmin(false);
-        }
-    }, []);
 
     useEffect(() => {
         if (!slug) return;
@@ -78,6 +69,21 @@ export default function BlogPost() {
 
     const handleCommentAdded = () => {
         setQueueCount((value) => value + 1);
+    };
+
+    const handleBookmarkToggle = async () => {
+        if (!post || bookmarking || !isAuthenticated) return;
+        setBookmarking(true);
+        try {
+            if (post.viewerState?.bookmarked) {
+                await removeBookmark(post.id);
+            } else {
+                await addBookmark(post.id);
+            }
+            setPost((current) => current ? { ...current, viewerState: { bookmarked: !current.viewerState?.bookmarked } } : current);
+        } finally {
+            setBookmarking(false);
+        }
     };
 
     if (loading) {
@@ -141,7 +147,7 @@ export default function BlogPost() {
                         </Link>
                         <div className="eyebrow">文章信号</div>
                         <h1 className="article-title">{post.title}</h1>
-                        <p className="lead">{post.excerpt}</p>
+                        <p className="lead">{post.deck || post.excerpt}</p>
 
                         <div className="article-meta" data-testid="article-meta">
                             <span>{formatDate(post.publishedAt || post.createdAt)}</span>
@@ -167,7 +173,7 @@ export default function BlogPost() {
                     <div className="article-hero-side">
                         {post.coverImage ? (
                             <div className="article-hero-cover">
-                                <LazyImage src={post.coverImage} alt={post.title} />
+                                <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
                             </div>
                         ) : null}
                         <div className="article-side-card">
@@ -249,6 +255,11 @@ export default function BlogPost() {
                                 >
                                     复制链接
                                 </button>
+                                {isAuthenticated ? (
+                                    <button type="button" className="btn btn-ghost" onClick={() => void handleBookmarkToggle()} disabled={bookmarking}>
+                                        {bookmarking ? '处理中...' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}
+                                    </button>
+                                ) : null}
                             </div>
                         </div>
 
@@ -261,6 +272,12 @@ export default function BlogPost() {
                         ) : null}
 
                         <Comments postId={post.id} comments={comments} onCommentAdded={handleCommentAdded} />
+                        <div className="feature-panel newsletter-inline-panel">
+                            <div className="eyebrow">Newsletter</div>
+                            <h3>喜欢这种长文？订阅后续更新</h3>
+                            <p className="muted">新长文、项目复盘和工作流迭代会优先进入 newsletter。</p>
+                            <NewsletterSignup source={`article:${post.slug}`} compact />
+                        </div>
 
                         {post.relatedPosts?.length ? (
                             <section className="section-tight">

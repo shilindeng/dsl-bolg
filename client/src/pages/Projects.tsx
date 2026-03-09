@@ -19,13 +19,13 @@ export default function Projects() {
             <SEO title="项目" description="代表项目、方法论和技术方向总览。" />
 
             <section className="section page-hero">
-                <div className="container page-hero-shell">
+                <div className="container page-hero-layout">
                     <div className="section-stack">
                         <div>
                             <div className="eyebrow">精选项目</div>
-                            <h1 className="section-title">项目与实验</h1>
+                            <h1 className="page-title">项目与案例</h1>
                             <p className="lead">
-                                这里展示的不是项目数量，而是我选择长期打磨、能够代表方法和判断力边界的作品。
+                                这些项目不是 demo 墙，而是用于证明内容方法、界面表达和工程落地能力的案例切片。
                             </p>
                         </div>
 
@@ -40,7 +40,10 @@ export default function Projects() {
                             </div>
                         </div>
                     </div>
-                    <div className="page-hero-badge mono">作品集 / 方法论 / 长期维护</div>
+                    <div className="editorial-panel">
+                        <strong>Case Studies</strong>
+                        <p className="muted">按案例叙事组织项目，而不是单纯罗列技术栈。</p>
+                    </div>
                 </div>
             </section>
 

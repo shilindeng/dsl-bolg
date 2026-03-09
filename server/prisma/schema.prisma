@@ -4,25 +4,37 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./blog.db"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String   @default("Admin")
-  role      String   @default("admin")
-  createdAt DateTime @default(now())
+  id                 Int                    @id @default(autoincrement())
+  email              String                 @unique
+  password           String?
+  name               String                 @default("Reader")
+  role               String                 @default("reader")
+  avatarUrl          String?
+  bio                String?
+  emailVerifiedAt    DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime               @default(now())
+  comments           Comment[]
+  emailTokens        EmailToken[]
+  bookmarks          Bookmark[]
+  readingHistory     ReadingHistory[]
+  newsletterIssues   NewsletterIssue[]      @relation("NewsletterIssueAuthor")
+  newsletterProfile  NewsletterSubscriber?
 }
 
 model Post {
   id          Int        @id @default(autoincrement())
   title       String
   slug        String     @unique
+  deck        String?
   excerpt     String     @default("")
   content     String
   coverImage  String?
+  coverAlt    String?
   sourceUrl   String?
   published   Boolean    @default(false)
   featured    Boolean    @default(false)
@@ -39,6 +51,8 @@ model Post {
   tags        PostTag[]
   analyticsEvents AnalyticsEvent[]
   externalLinks ExternalPostLink[]
+  bookmarks   Bookmark[]
+  readingHistory ReadingHistory[]
 }
 
 model Tag {
@@ -71,6 +85,8 @@ model Comment {
   email     String?
   postId    Int
   post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    Int?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   parentId  Int?
   parent    Comment?  @relation("Replies", fields: [parentId], references: [id])
   replies   Comment[] @relation("Replies")
@@ -100,9 +116,13 @@ model Project {
   id          Int      @id @default(autoincrement())
   name        String
   slug        String   @unique
+  headline    String?
   summary     String   @default("")
   description String
   techStack   String   @default("")
+  status      String?
+  period      String?
+  role        String?
   liveUrl     String?
   repoUrl     String?
   coverImage  String?
@@ -150,4 +170,108 @@ model ExternalPostLink {
 
   @@unique([provider, externalId])
   @@index([postId])
+}
+
+model EmailToken {
+  id         Int      @id @default(autoincrement())
+  email      String
+  purpose    String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  userId     Int?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([email, purpose, expiresAt])
+}
+
+model NewsletterSubscriber {
+  id             Int                  @id @default(autoincrement())
+  email          String               @unique
+  status         String               @default("pending")
+  source         String               @default("website")
+  confirmedAt    DateTime?
+  unsubscribedAt DateTime?
+  userId         Int?                 @unique
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deliveries     NewsletterDelivery[]
+}
+
+model NewsletterIssue {
+  id           Int                  @id @default(autoincrement())
+  title        String
+  slug         String               @unique
+  subject      String
+  previewText  String               @default("")
+  bodyMarkdown String
+  status       String               @default("draft")
+  sentAt       DateTime?
+  createdById  Int
+  createdBy    User                 @relation("NewsletterIssueAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  deliveries   NewsletterDelivery[]
+}
+
+model NewsletterDelivery {
+  id                Int                  @id @default(autoincrement())
+  issueId           Int
+  issue             NewsletterIssue      @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  subscriberId      Int
+  subscriber        NewsletterSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  status            String               @default("pending")
+  providerMessageId String?
+  errorMessage      String?
+  sentAt            DateTime?
+  createdAt         DateTime             @default(now())
+
+  @@unique([issueId, subscriberId])
+  @@index([status, sentAt])
+}
+
+model Bookmark {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model ReadingHistory {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId       Int
+  post         Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  lastViewedAt DateTime @default(now())
+  viewCount    Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([lastViewedAt])
+}
+
+model HomepageSection {
+  id          Int      @id @default(autoincrement())
+  type        String
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  sourceType  String   @default("manual")
+  eyebrow     String?
+  title       String?
+  description String?
+  ctaLabel    String?
+  ctaHref     String?
+  configJson  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type])
+  @@index([enabled, sortOrder])
 }

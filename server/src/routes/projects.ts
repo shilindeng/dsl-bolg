@@ -54,12 +54,16 @@ router.get('/:slug', async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { name, slug, summary, description, techStack, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+        const { name, slug, headline, summary, description, techStack, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
             name: string;
             slug?: string;
+            headline?: string;
             summary?: string;
             description: string;
             techStack?: string;
+            status?: string | null;
+            period?: string | null;
+            role?: string | null;
             liveUrl?: string | null;
             repoUrl?: string | null;
             coverImage?: string | null;
@@ -71,9 +75,13 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
             data: {
                 name,
                 slug: await resolveProjectSlug(slug || name),
+                headline: headline?.trim() || '',
                 summary: summary?.trim() || '',
                 description,
                 techStack: techStack || '',
+                status: status || null,
+                period: period || null,
+                role: role || null,
                 liveUrl: liveUrl || null,
                 repoUrl: repoUrl || null,
                 coverImage: coverImage || null,
@@ -99,12 +107,16 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
             return;
         }
 
-        const { name, slug, summary, description, techStack, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+        const { name, slug, headline, summary, description, techStack, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
             name?: string;
             slug?: string;
+            headline?: string;
             summary?: string;
             description?: string;
             techStack?: string;
+            status?: string | null;
+            period?: string | null;
+            role?: string | null;
             liveUrl?: string | null;
             repoUrl?: string | null;
             coverImage?: string | null;
@@ -114,9 +126,13 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
         const updates: Record<string, unknown> = {};
 
         if (name !== undefined) updates.name = name;
+        if (headline !== undefined) updates.headline = headline?.trim() || '';
         if (summary !== undefined) updates.summary = summary?.trim() || '';
         if (description !== undefined) updates.description = description;
         if (techStack !== undefined) updates.techStack = techStack;
+        if (status !== undefined) updates.status = status || null;
+        if (period !== undefined) updates.period = period || null;
+        if (role !== undefined) updates.role = role || null;
         if (liveUrl !== undefined) updates.liveUrl = liveUrl || null;
         if (repoUrl !== undefined) updates.repoUrl = repoUrl || null;
         if (coverImage !== undefined) updates.coverImage = coverImage || null;

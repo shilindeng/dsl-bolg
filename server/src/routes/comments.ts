@@ -1,7 +1,6 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
-import { authMiddleware, requireAdmin } from '../middleware/auth.js';
-import { verifyTurnstileToken } from '../lib/turnstile.js';
+import { authMiddleware, getOptionalUser, requireAdmin, type AuthenticatedRequest } from '../middleware/auth.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
 
 const router = Router();
@@ -22,51 +21,67 @@ router.get('/', async (req: Request, res: Response) => {
                 parentId: null,
             },
             include: {
+                user: {
+                    select: { id: true, name: true, avatarUrl: true },
+                },
                 replies: {
                     where: { status: 'approved' },
+                    include: {
+                        user: {
+                            select: { id: true, name: true, avatarUrl: true },
+                        },
+                    },
                     orderBy: { createdAt: 'asc' },
                 },
             },
             orderBy: { createdAt: 'desc' },
         });
 
-        res.json(comments);
+        const currentUser = getOptionalUser(req);
+        res.json(
+            comments.map((comment) => ({
+                ...comment,
+                isOwner: currentUser?.id === comment.userId,
+                replies: comment.replies.map((reply) => ({
+                    ...reply,
+                    isOwner: currentUser?.id === reply.userId,
+                })),
+            })),
+        );
     } catch (error) {
         console.error('Error fetching comments:', error);
         res.status(500).json({ error: 'Failed to fetch comments' });
     }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const { content, author, email, postId, parentId, turnstileToken } = req.body as {
+        const { content, postId, parentId } = req.body as {
             content?: string;
-            author?: string;
-            email?: string;
             postId?: string | number;
             parentId?: string | number;
-            turnstileToken?: string;
         };
+        const user = (req as AuthenticatedRequest).user!;
 
-        if (!content || !author || !postId) {
+        if (!content || !postId) {
             res.status(400).json({ error: 'Missing required fields' });
-            return;
-        }
-
-        const validTurnstile = await verifyTurnstileToken(turnstileToken, req.ip);
-        if (!validTurnstile) {
-            res.status(400).json({ error: 'Turnstile validation failed' });
             return;
         }
 
         const comment = await prisma.comment.create({
             data: {
-                content,
-                author,
-                email: email || null,
+                content: content.trim(),
+                author: user.name || user.email,
+                email: user.email,
                 postId: parseInt(String(postId), 10),
                 parentId: parentId ? parseInt(String(parentId), 10) : null,
+                userId: user.id,
                 status: 'pending',
+            },
+            include: {
+                user: {
+                    select: { id: true, name: true, avatarUrl: true },
+                },
             },
         });
 
@@ -88,11 +103,20 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/admin', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+        const postId = typeof req.query.postId === 'string' ? parseInt(req.query.postId, 10) : undefined;
+        const userId = typeof req.query.userId === 'string' ? parseInt(req.query.userId, 10) : undefined;
         const comments = await prisma.comment.findMany({
-            where: status ? { status } : undefined,
+            where: {
+                ...(status ? { status } : {}),
+                ...(postId ? { postId } : {}),
+                ...(userId ? { userId } : {}),
+            },
             include: {
                 post: {
                     select: { id: true, title: true, slug: true },
+                },
+                user: {
+                    select: { id: true, name: true, email: true, avatarUrl: true },
                 },
                 parent: {
                     select: { id: true, author: true },

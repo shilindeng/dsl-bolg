@@ -7,12 +7,12 @@ export default function About() {
             <SEO title="关于" description="关于 DSL、工作方式，以及正在长期经营的技术与内容系统。" />
 
             <section className="section page-hero">
-                <div className="container page-hero-shell">
+                <div className="container page-hero-layout">
                     <div className="section-stack">
                         <div>
                             <div className="eyebrow">关于 DSL</div>
-                            <h1 className="section-title">{siteConfig.author.name}</h1>
-                            <p className="lead">{siteConfig.author.summary}</p>
+                            <h1 className="page-title">{siteConfig.author.name}</h1>
+                            <p className="lead">{siteConfig.author.bio}</p>
                         </div>
 
                         <div className="hero-metrics">
@@ -26,7 +26,10 @@ export default function About() {
                             </div>
                         </div>
                     </div>
-                    <div className="page-hero-badge mono">系统思维 / 界面表达 / AI 工作流</div>
+                    <div className="editorial-panel">
+                        <strong>Method</strong>
+                        <p className="muted">把内容、界面与工程当成同一套产品表达来经营。</p>
+                    </div>
                 </div>
             </section>
 

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { siteConfig } from '../config/site';
+import NewsletterSignup from './NewsletterSignup';
 
 export default function Footer() {
     return (
@@ -12,9 +13,9 @@ export default function Footer() {
                         <p className="muted">{siteConfig.author.summary}</p>
                     </div>
                     <div className="footer-badges">
-                        <span className="chip mono">赛博 / 编辑 / 工程</span>
-                        <span className="chip mono">上海信号源</span>
-                        <span className="chip mono">Mobile Ready</span>
+                        <span className="chip mono">内容 / 界面 / 工程</span>
+                        <span className="chip mono">长期维护</span>
+                        <span className="chip mono">Newsletter Ready</span>
                     </div>
                 </section>
 
@@ -47,6 +48,12 @@ export default function Footer() {
                         )
                     ))}
                     <a className="footer-link" href="/sitemap.xml">站点地图</a>
+                </section>
+
+                <section className="footer-stack">
+                    <strong className="mono">订阅</strong>
+                    <p className="muted">接收新长文、项目复盘和工作流更新。</p>
+                    <NewsletterSignup source="footer" compact />
                 </section>
             </div>
         </footer>

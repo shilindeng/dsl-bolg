@@ -71,40 +71,8 @@ function writeCachedLocation(location: VisitorLocation) {
 async function resolveVisitorLocation(): Promise<VisitorLocation> {
     const cached = readCachedLocation();
     if (cached) return cached;
-
-    try {
-        const response = await fetch('https://ipwho.is/', { headers: { Accept: 'application/json' } });
-        if (!response.ok) {
-            throw new Error('Location request failed');
-        }
-
-        const data = (await response.json()) as {
-            success?: boolean;
-            city?: string;
-            country?: string;
-            latitude?: number;
-            longitude?: number;
-            timezone?: { id?: string };
-        };
-
-        if (!data.success || typeof data.latitude !== 'number' || typeof data.longitude !== 'number') {
-            throw new Error('Location lookup failed');
-        }
-
-        const location: VisitorLocation = {
-            city: data.city || fallbackLocation.city,
-            country: data.country || fallbackLocation.country,
-            latitude: data.latitude,
-            longitude: data.longitude,
-            timezone: data.timezone?.id || 'auto',
-            source: 'network',
-        };
-
-        writeCachedLocation(location);
-        return location;
-    } catch {
-        return fallbackLocation;
-    }
+    writeCachedLocation(fallbackLocation);
+    return fallbackLocation;
 }
 
 export default function WeatherCard() {
@@ -184,7 +152,7 @@ export default function WeatherCard() {
                         {location.city}, {location.country}
                     </h3>
                     <p className="muted weather-location-note" data-testid="weather-location-note">
-                        {location.source === 'network' ? '基于访问网络自动定位' : '定位失败时回退到默认城市'}
+                        {location.source === 'network' ? '基于访问网络自动定位' : '当前以站点基准城市显示天气'}
                     </p>
                 </div>
                 <span className="weather-code mono">{weatherLabel?.icon || '...'}</span>

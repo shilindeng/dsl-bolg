@@ -12,7 +12,7 @@ export default function PostCard({ post, featured = false }: { post: Post; featu
         >
             {post.coverImage ? (
                 <div className={`post-card-cover ${featured ? 'is-featured' : ''}`}>
-                    <LazyImage src={post.coverImage} alt={post.title} />
+                    <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
                 </div>
             ) : null}
 
@@ -26,7 +26,7 @@ export default function PostCard({ post, featured = false }: { post: Post; featu
 
             <div className="post-card-body">
                 <h3>{post.title}</h3>
-                <p>{post.excerpt}</p>
+                <p>{post.deck || post.excerpt}</p>
             </div>
 
             <div className="post-card-bottom">

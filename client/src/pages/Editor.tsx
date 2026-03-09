@@ -21,9 +21,11 @@ const DRAFT_VERSION = 'v3';
 interface DraftState {
     title: string;
     slug: string;
+    deck: string;
     excerpt: string;
     content: string;
     coverImage: string;
+    coverAlt: string;
     published: boolean;
     featured: boolean;
     tags: string;
@@ -33,9 +35,11 @@ interface DraftState {
 const emptyDraft: DraftState = {
     title: '',
     slug: '',
+    deck: '',
     excerpt: '',
     content: '',
     coverImage: '',
+    coverAlt: '',
     published: false,
     featured: false,
     tags: '',
@@ -90,9 +94,11 @@ export default function Editor() {
                     setDraft({
                         title: post.title,
                         slug: post.slug,
+                        deck: post.deck || '',
                         excerpt: post.excerpt,
                         content: post.content,
                         coverImage: post.coverImage || '',
+                        coverAlt: post.coverAlt || '',
                         published: post.published,
                         featured: post.featured,
                         tags: post.tags.map((tag) => tag.name).join(', '),
@@ -179,9 +185,11 @@ export default function Editor() {
         const payload = {
             title: draft.title.trim(),
             slug: draft.slug.trim() || undefined,
+            deck: draft.deck.trim(),
             excerpt: draft.excerpt.trim(),
             content: draft.content,
             coverImage: draft.coverImage.trim() || null,
+            coverAlt: draft.coverAlt.trim() || null,
             published: draft.published,
             featured: draft.featured,
             tags: draft.tags.split(',').map((item) => item.trim()).filter(Boolean),
@@ -261,6 +269,11 @@ export default function Editor() {
                                 </div>
 
                                 <label className="form-field">
+                                    <span className="form-label">Deck / 导语</span>
+                                    <textarea className="form-textarea" style={{ minHeight: 100 }} value={draft.deck} onChange={(event) => handleChange('deck', event.target.value)} placeholder="用于首页、归档和正文首屏的短导语。" />
+                                </label>
+
+                                <label className="form-field">
                                     <span className="form-label">摘要</span>
                                     <textarea className="form-textarea" style={{ minHeight: 120 }} value={draft.excerpt} onChange={(event) => handleChange('excerpt', event.target.value)} placeholder="这段内容会用于文章列表和 SEO 描述。" />
                                 </label>
@@ -288,6 +301,11 @@ export default function Editor() {
                                 <label className="form-field">
                                     <span className="form-label">封面图片地址</span>
                                     <input className="form-input" value={draft.coverImage} onChange={(event) => handleChange('coverImage', event.target.value)} placeholder="https://... 或使用上方上传" />
+                                </label>
+
+                                <label className="form-field">
+                                    <span className="form-label">封面说明</span>
+                                    <input className="form-input" value={draft.coverAlt} onChange={(event) => handleChange('coverAlt', event.target.value)} placeholder="用于图片替代文本和 fallback 文案" />
                                 </label>
 
                                 {draft.coverImage ? (

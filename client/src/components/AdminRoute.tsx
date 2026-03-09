@@ -1,42 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { fetchCurrentUser } from '../api/client';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AdminRoute() {
-    const [loading, setLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        async function verifyAdmin() {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                if (!cancelled) setLoading(false);
-                return;
-            }
-
-            try {
-                const user = await fetchCurrentUser();
-                if (!cancelled) {
-                    setIsAdmin(user.role === 'admin');
-                }
-            } catch {
-                if (!cancelled) {
-                    setIsAdmin(false);
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
-        }
-
-        verifyAdmin();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    const { loading, isAdmin } = useAuth();
 
     if (loading) {
         return (

@@ -37,10 +37,18 @@ export interface Comment {
     author: string;
     email: string | null;
     postId: number;
+    userId?: number | null;
     parentId: number | null;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: string;
     updatedAt?: string;
+    isOwner?: boolean;
+    user?: {
+        id: number;
+        name: string;
+        avatarUrl?: string | null;
+        email?: string;
+    } | null;
     replies?: Comment[];
     post?: PostLink & { id: number };
     parent?: { id: number; author: string } | null;
@@ -50,9 +58,12 @@ export interface Post {
     id: number;
     title: string;
     slug: string;
+    deck?: string | null;
     excerpt: string;
     content: string;
     coverImage: string | null;
+    coverAlt?: string | null;
+    sourceUrl?: string | null;
     published: boolean;
     featured: boolean;
     publishedAt: string | null;
@@ -66,15 +77,22 @@ export interface Post {
     relatedPosts?: Post[];
     previousPost?: PostLink | null;
     nextPost?: PostLink | null;
+    series?: { id: number; title: string; slug: string; description?: string | null } | null;
+    seriesOrder?: number | null;
+    viewerState?: { bookmarked: boolean };
 }
 
 export interface Project {
     id: number;
     name: string;
     slug: string;
+    headline?: string | null;
     summary: string;
     description: string;
     techStack: string;
+    status?: string | null;
+    period?: string | null;
+    role?: string | null;
     liveUrl: string | null;
     repoUrl: string | null;
     coverImage: string | null;
@@ -89,14 +107,21 @@ export interface User {
     email: string;
     name: string;
     role: string;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    emailVerifiedAt?: string | null;
+    lastLoginAt?: string | null;
+    createdAt?: string;
 }
 
 export interface PostInput {
     title: string;
     slug?: string;
+    deck?: string;
     content: string;
     excerpt: string;
     coverImage: string | null;
+    coverAlt?: string | null;
     published: boolean;
     featured: boolean;
     tags: string[];
@@ -106,14 +131,92 @@ export interface PostInput {
 export interface ProjectInput {
     name: string;
     slug?: string;
+    headline?: string | null;
     summary: string;
     description: string;
     techStack: string;
+    status?: string | null;
+    period?: string | null;
+    role?: string | null;
     liveUrl?: string | null;
     repoUrl?: string | null;
     coverImage?: string | null;
     featured: boolean;
     order: number;
+}
+
+export interface AccountComment extends Comment {
+    post?: PostLink & { id: number };
+}
+
+export interface BookmarkRecord {
+    id: number;
+    createdAt: string;
+    post: Post;
+}
+
+export interface ReadingHistoryRecord {
+    id: number;
+    createdAt: string;
+    lastViewedAt: string;
+    viewCount: number;
+    post: Post;
+}
+
+export interface NewsletterSubscriber {
+    id: number;
+    email: string;
+    status: string;
+    source: string;
+    confirmedAt: string | null;
+    unsubscribedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface NewsletterDelivery {
+    id: number;
+    status: string;
+    providerMessageId: string | null;
+    errorMessage: string | null;
+    sentAt: string | null;
+    createdAt: string;
+}
+
+export interface NewsletterIssue {
+    id: number;
+    title: string;
+    slug: string;
+    subject: string;
+    previewText: string;
+    bodyMarkdown: string;
+    status: string;
+    sentAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    deliveries?: NewsletterDelivery[];
+}
+
+export interface HomepageSection {
+    id: number;
+    type: string;
+    enabled: boolean;
+    sortOrder: number;
+    sourceType: string;
+    eyebrow: string | null;
+    title: string | null;
+    description: string | null;
+    ctaLabel: string | null;
+    ctaHref: string | null;
+    configJson: string | null;
+    config?: {
+        postIds?: number[];
+        projectIds?: number[];
+        limit?: number;
+        autoFill?: boolean;
+        hidden?: boolean;
+    };
+    items?: Array<Post | Project>;
 }
 
 export interface PaginatedResponse<T> {
@@ -271,11 +374,8 @@ export async function fetchComments(postId: number): Promise<Comment[]> {
 
 export async function createComment(data: {
     content: string;
-    author: string;
-    email?: string;
     postId: number;
     parentId?: number;
-    turnstileToken?: string;
 }): Promise<{ message: string; comment: Comment }> {
     return fetchJson(`${API_BASE}/comments`, {
         method: 'POST',
@@ -283,9 +383,11 @@ export async function createComment(data: {
     });
 }
 
-export async function fetchAdminComments(status?: 'pending' | 'approved' | 'rejected') {
+export async function fetchAdminComments(status?: 'pending' | 'approved' | 'rejected', filters?: { postId?: number; userId?: number }) {
     const query = new URLSearchParams();
     if (status) query.set('status', status);
+    if (filters?.postId) query.set('postId', String(filters.postId));
+    if (filters?.userId) query.set('userId', String(filters.userId));
     return fetchJson<Comment[]>(`${API_BASE}/comments/admin?${query.toString()}`);
 }
 
@@ -355,8 +457,149 @@ export async function login(data: { email: string; password: string; turnstileTo
     });
 }
 
+export async function requestLoginCode(data: { email: string; turnstileToken?: string }) {
+    return fetchJson<{ message: string; expiresAt: string; previewCode?: string }>(`${API_BASE}/auth/request-code`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function verifyLoginCode(data: { email: string; code: string }) {
+    return fetchJson<{ token: string; user: User }>(`${API_BASE}/auth/verify-code`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function logout() {
+    return fetchJson<void>(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+    });
+}
+
 export async function fetchCurrentUser() {
     return fetchJson<User>(`${API_BASE}/auth/me`);
+}
+
+export async function fetchAccountProfile() {
+    return fetchJson<User>(`${API_BASE}/account/profile`);
+}
+
+export async function updateAccountProfile(data: { name?: string; avatarUrl?: string | null; bio?: string | null }) {
+    return fetchJson<User>(`${API_BASE}/account/profile`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function fetchAccountComments() {
+    return fetchJson<AccountComment[]>(`${API_BASE}/account/comments`);
+}
+
+export async function fetchBookmarks() {
+    return fetchJson<BookmarkRecord[]>(`${API_BASE}/account/bookmarks`);
+}
+
+export async function addBookmark(postId: number) {
+    return fetchJson<{ id: number }>(`${API_BASE}/account/bookmarks/${postId}`, {
+        method: 'POST',
+    });
+}
+
+export async function removeBookmark(postId: number) {
+    return fetchJson<void>(`${API_BASE}/account/bookmarks/${postId}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function fetchReadingHistory() {
+    return fetchJson<ReadingHistoryRecord[]>(`${API_BASE}/account/history`);
+}
+
+export async function subscribeNewsletter(data: { email: string; turnstileToken?: string; source?: string }) {
+    return fetchJson<{ message: string; expiresAt: string; preview?: { preview?: string } }>(`${API_BASE}/newsletter/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function confirmNewsletter(data: { email: string; token: string }) {
+    return fetchJson<NewsletterSubscriber>(`${API_BASE}/newsletter/confirm`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function unsubscribeNewsletter(data: { email: string }) {
+    return fetchJson<NewsletterSubscriber>(`${API_BASE}/newsletter/unsubscribe`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function fetchNewsletterIssues() {
+    return fetchJson<NewsletterIssue[]>(`${API_BASE}/newsletter/issues`);
+}
+
+export async function fetchNewsletterIssue(slug: string) {
+    return fetchJson<NewsletterIssue>(`${API_BASE}/newsletter/issues/${slug}`);
+}
+
+export async function fetchNewsletterSubscribers() {
+    return fetchJson<NewsletterSubscriber[]>(`${API_BASE}/newsletter/admin/subscribers`);
+}
+
+export async function fetchAdminNewsletterIssues() {
+    return fetchJson<NewsletterIssue[]>(`${API_BASE}/newsletter/admin/issues`);
+}
+
+export async function createNewsletterIssue(data: {
+    title: string;
+    slug?: string;
+    subject: string;
+    previewText?: string;
+    bodyMarkdown: string;
+    status?: string;
+}) {
+    return fetchJson<NewsletterIssue>(`${API_BASE}/newsletter/admin/issues`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateNewsletterIssue(id: number, data: {
+    title?: string;
+    slug?: string;
+    subject?: string;
+    previewText?: string;
+    bodyMarkdown?: string;
+    status?: string;
+}) {
+    return fetchJson<NewsletterIssue>(`${API_BASE}/newsletter/admin/issues/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function sendNewsletterIssue(id: number) {
+    return fetchJson<{ issue: NewsletterIssue; deliveries: NewsletterDelivery[] }>(`${API_BASE}/newsletter/admin/issues/${id}/send`, {
+        method: 'POST',
+    });
+}
+
+export async function fetchHomepage() {
+    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage`);
+}
+
+export async function fetchAdminHomepage() {
+    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage/admin`);
+}
+
+export async function saveAdminHomepage(sections: HomepageSection[]) {
+    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage/admin`, {
+        method: 'PUT',
+        body: JSON.stringify({ sections }),
+    });
 }
 
 export async function fetchAnalyticsSummary() {

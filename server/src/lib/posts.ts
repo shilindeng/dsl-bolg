@@ -1,8 +1,11 @@
 import { Prisma } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 import slugify from 'slugify';
 import prisma from './prisma.js';
 import { createExcerpt, estimateReadTime } from './content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from './analytics.js';
+import { isR2Enabled } from './site.js';
 
 export const includePostRelations = {
     tags: { include: { tag: true } },
@@ -11,8 +14,18 @@ export const includePostRelations = {
     series: true,
 } satisfies Prisma.PostInclude;
 
-export const formatPost = <T extends { tags: Array<{ tag: unknown }> }>(post: T) => ({
+function resolveLocalAsset(assetPath?: string | null) {
+    if (!assetPath || isR2Enabled || !assetPath.startsWith('/uploads/')) {
+        return assetPath ?? null;
+    }
+
+    const absolutePath = path.join(process.cwd(), 'uploads', path.basename(assetPath));
+    return fs.existsSync(absolutePath) ? assetPath : null;
+}
+
+export const formatPost = <T extends { tags: Array<{ tag: unknown }>; coverImage?: string | null }>(post: T) => ({
     ...post,
+    coverImage: resolveLocalAsset(post.coverImage),
     tags: post.tags.map((item) => item.tag),
 });
 
@@ -67,9 +80,11 @@ export async function resolveCategoryId(categoryInput?: number | string | null) 
 export interface PostPayload {
     title: string;
     slug?: string;
+    deck?: string;
     content: string;
     excerpt?: string;
     coverImage?: string | null;
+    coverAlt?: string | null;
     published?: boolean;
     featured?: boolean;
     tags?: string[];
@@ -88,9 +103,11 @@ export async function createPostRecord(payload: PostPayload, source = 'admin') {
         data: {
             title: payload.title,
             slug: postSlug,
+            deck: payload.deck?.trim() || null,
             content: payload.content,
             excerpt: cleanExcerpt,
             coverImage: payload.coverImage || null,
+            coverAlt: payload.coverAlt?.trim() || null,
             sourceUrl: payload.sourceUrl || null,
             published: Boolean(payload.published),
             featured: Boolean(payload.featured),
@@ -117,7 +134,9 @@ export async function updatePostRecord(id: number, payload: Partial<PostPayload>
     const updates: Record<string, unknown> = {};
 
     if (payload.title !== undefined) updates.title = payload.title;
+    if (payload.deck !== undefined) updates.deck = payload.deck?.trim() || null;
     if (payload.coverImage !== undefined) updates.coverImage = payload.coverImage || null;
+    if (payload.coverAlt !== undefined) updates.coverAlt = payload.coverAlt?.trim() || null;
     if (payload.featured !== undefined) updates.featured = Boolean(payload.featured);
     if (payload.content !== undefined) updates.content = payload.content;
     if (payload.sourceUrl !== undefined) updates.sourceUrl = payload.sourceUrl || null;

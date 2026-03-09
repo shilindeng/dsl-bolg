@@ -29,9 +29,13 @@ import { validateImageFile } from '../../lib/uploads';
 const emptyProject = {
     name: '',
     slug: '',
+    headline: '',
     summary: '',
     description: '',
     techStack: '',
+    status: '',
+    period: '',
+    role: '',
     liveUrl: '',
     repoUrl: '',
     coverImage: '',
@@ -225,6 +229,10 @@ export default function Dashboard() {
         try {
             const payload = {
                 ...projectForm,
+                headline: projectForm.headline || null,
+                status: projectForm.status || null,
+                period: projectForm.period || null,
+                role: projectForm.role || null,
                 liveUrl: projectForm.liveUrl || null,
                 repoUrl: projectForm.repoUrl || null,
                 coverImage: projectForm.coverImage || null,
@@ -328,6 +336,8 @@ export default function Dashboard() {
                     </div>
                     <div className="admin-overview-actions">
                         <Link to="/editor" className="btn btn-primary">新建文章</Link>
+                        <Link to="/admin/newsletter" className="btn btn-secondary">Newsletter</Link>
+                        <Link to="/admin/homepage" className="btn btn-secondary">首页编排</Link>
                         <Link to="/" className="btn btn-ghost">查看首页</Link>
                     </div>
                     <div className="admin-summary-strip">
@@ -440,9 +450,15 @@ export default function Dashboard() {
                                     <label className="form-field"><span className="form-label">项目名称</span><input className="form-input" data-testid="project-name-input" value={projectForm.name} onChange={(event) => setProjectForm((current) => ({ ...current, name: event.target.value }))} required /></label>
                                     <label className="form-field"><span className="form-label">项目标识</span><input className="form-input mono" data-testid="project-slug-input" value={projectForm.slug} onChange={(event) => setProjectForm((current) => ({ ...current, slug: event.target.value }))} /></label>
                                 </div>
+                                <label className="form-field"><span className="form-label">案例标题 / Headline</span><input className="form-input" value={projectForm.headline} onChange={(event) => setProjectForm((current) => ({ ...current, headline: event.target.value }))} placeholder="例如：内容系统 / 设计系统 / AI 工作流" /></label>
                                 <label className="form-field"><span className="form-label">一句话摘要</span><input className="form-input" data-testid="project-summary-input" value={projectForm.summary} onChange={(event) => setProjectForm((current) => ({ ...current, summary: event.target.value }))} required /></label>
                                 <label className="form-field"><span className="form-label">详细描述</span><textarea className="form-textarea" data-testid="project-description-input" value={projectForm.description} onChange={(event) => setProjectForm((current) => ({ ...current, description: event.target.value }))} required /></label>
                                 <label className="form-field"><span className="form-label">技术栈</span><input className="form-input" data-testid="project-techstack-input" value={projectForm.techStack} onChange={(event) => setProjectForm((current) => ({ ...current, techStack: event.target.value }))} /></label>
+                                <div className="two-grid">
+                                    <label className="form-field"><span className="form-label">项目状态</span><input className="form-input" value={projectForm.status} onChange={(event) => setProjectForm((current) => ({ ...current, status: event.target.value }))} placeholder="Live / Beta / Internal" /></label>
+                                    <label className="form-field"><span className="form-label">项目周期</span><input className="form-input" value={projectForm.period} onChange={(event) => setProjectForm((current) => ({ ...current, period: event.target.value }))} placeholder="2025 - 2026" /></label>
+                                </div>
+                                <label className="form-field"><span className="form-label">我在项目中的角色</span><input className="form-input" value={projectForm.role} onChange={(event) => setProjectForm((current) => ({ ...current, role: event.target.value }))} placeholder="Product / Design / Frontend" /></label>
                                 <div className="editor-card-head compact-head">
                                     <strong>项目封面</strong>
                                     <label className="btn btn-secondary" style={{ cursor: uploadingProjectCover ? 'wait' : 'pointer' }}>{uploadingProjectCover ? '上传封面中...' : '上传封面'}<input type="file" accept="image/*" onChange={handleProjectCoverUpload} style={{ display: 'none' }} /></label>
@@ -506,9 +522,13 @@ export default function Dashboard() {
                                             setProjectForm({
                                                 name: project.name,
                                                 slug: project.slug,
+                                                headline: project.headline || '',
                                                 summary: project.summary,
                                                 description: project.description,
                                                 techStack: project.techStack,
+                                                status: project.status || '',
+                                                period: project.period || '',
+                                                role: project.role || '',
                                                 liveUrl: project.liveUrl || '',
                                                 repoUrl: project.repoUrl || '',
                                                 coverImage: project.coverImage || '',

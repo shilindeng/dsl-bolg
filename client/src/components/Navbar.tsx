@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 import { siteConfig } from '../config/site';
+import { useAuth } from '../hooks/useAuth';
 
 interface NavbarProps {
     isAdmin: boolean;
+    isAuthenticated: boolean;
 }
 
-export default function Navbar({ isAdmin }: NavbarProps) {
+export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
     const location = useLocation();
     const [open, setOpen] = useState(false);
+    const { user, logout } = useAuth();
 
     useEffect(() => {
         setOpen(false);
@@ -48,8 +51,14 @@ export default function Navbar({ isAdmin }: NavbarProps) {
 
                     {isAdmin ? (
                         <>
+                            <Link to="/account" className="btn btn-ghost">账户</Link>
                             <Link to="/editor" className="btn btn-ghost">写文章</Link>
                             <Link to="/admin/dashboard" className="btn btn-secondary">控制台</Link>
+                        </>
+                    ) : isAuthenticated ? (
+                        <>
+                            <Link to="/account" className="btn btn-ghost">{user?.name || '账户'}</Link>
+                            <button type="button" className="btn btn-secondary" onClick={() => void logout()}>退出</button>
                         </>
                     ) : (
                         <Link to="/login" className="btn btn-ghost">登录</Link>
@@ -78,7 +87,9 @@ export default function Navbar({ isAdmin }: NavbarProps) {
                             <div className="eyebrow">Site Navigation</div>
                             {navLinks}
                             {isAdmin ? <Link to="/editor" className="site-nav-link">新建文章</Link> : null}
-                            {isAdmin ? <Link to="/admin/dashboard" className="site-nav-link">管理后台</Link> : <Link to="/login" className="site-nav-link">管理员登录</Link>}
+                            {isAuthenticated ? <Link to="/account" className="site-nav-link">会员中心</Link> : null}
+                            {isAdmin ? <Link to="/admin/dashboard" className="site-nav-link">管理后台</Link> : <Link to="/login" className="site-nav-link">登录</Link>}
+                            {isAuthenticated ? <button type="button" className="site-nav-link nav-plain-button" onClick={() => void logout()}>退出登录</button> : null}
                             <ThemeToggle />
                             <div className="metric-card">
                                 <span className="muted mono">STATUS</span>

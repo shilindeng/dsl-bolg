@@ -164,6 +164,35 @@ router.get('/:slug', async (req: Request, res: Response) => {
         const currentIndex = publishedPosts.findIndex((item) => item.slug === post.slug);
         const previousPost = currentIndex >= 0 ? publishedPosts[currentIndex + 1] || null : null;
         const nextPost = currentIndex > 0 ? publishedPosts[currentIndex - 1] || null : null;
+        const bookmark = currentUser
+            ? await prisma.bookmark.findUnique({
+                where: {
+                    userId_postId: {
+                        userId: currentUser.id,
+                        postId: post.id,
+                    },
+                },
+            })
+            : null;
+
+        if (currentUser) {
+            await prisma.readingHistory.upsert({
+                where: {
+                    userId_postId: {
+                        userId: currentUser.id,
+                        postId: post.id,
+                    },
+                },
+                update: {
+                    lastViewedAt: new Date(),
+                    viewCount: { increment: 1 },
+                },
+                create: {
+                    userId: currentUser.id,
+                    postId: post.id,
+                },
+            });
+        }
 
         res.json({
             ...formatPost(post),
@@ -173,6 +202,9 @@ router.get('/:slug', async (req: Request, res: Response) => {
             relatedPosts: related.map((item) => formatPost(item)),
             previousPost,
             nextPost,
+            viewerState: {
+                bookmarked: Boolean(bookmark),
+            },
         });
     } catch (error) {
         console.error('Error fetching post:', error);
@@ -207,18 +239,20 @@ router.post('/:slug/like', async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { title, slug, content, excerpt, coverImage, published, featured, tags, categoryId } = req.body as {
+        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId } = req.body as {
             title: string;
             slug?: string;
+            deck?: string;
             content: string;
             excerpt?: string;
             coverImage?: string | null;
+            coverAlt?: string | null;
             published?: boolean;
             featured?: boolean;
             tags?: string[];
             categoryId?: number | null;
         };
-        const post = await createPostRecord({ title, slug, content, excerpt, coverImage, published, featured, tags, categoryId }, 'admin');
+        const post = await createPostRecord({ title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId }, 'admin');
 
         res.status(201).json(formatPost(post));
     } catch (error) {
@@ -230,18 +264,20 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
 router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id), 10);
-        const { title, slug, content, excerpt, coverImage, published, featured, tags, categoryId } = req.body as {
+        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId } = req.body as {
             title?: string;
             slug?: string;
+            deck?: string;
             content?: string;
             excerpt?: string;
             coverImage?: string | null;
+            coverAlt?: string | null;
             published?: boolean;
             featured?: boolean;
             tags?: string[];
             categoryId?: number | null;
         };
-        const post = await updatePostRecord(id, { title, slug, content, excerpt, coverImage, published, featured, tags, categoryId }, 'admin');
+        const post = await updatePostRecord(id, { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId }, 'admin');
         res.json(formatPost(post!));
     } catch (error) {
         console.error('Error updating post:', error);

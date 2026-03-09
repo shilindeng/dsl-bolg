@@ -16,6 +16,9 @@ import sitemapRouter from './routes/sitemap.js';
 import analyticsRouter from './routes/analytics.js';
 import authRouter from './routes/auth.js';
 import openRouter from './routes/open.js';
+import accountRouter from './routes/account.js';
+import newsletterRouter from './routes/newsletter.js';
+import homepageRouter from './routes/homepage.js';
 import { isR2Enabled, siteConfig } from './lib/site.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,7 +63,10 @@ if (!isR2Enabled) {
 }
 
 app.use('/api/auth', authRouter);
+app.use('/api/account', accountRouter);
 app.use('/api/open', openRouter);
+app.use('/api/newsletter', newsletterRouter);
+app.use('/api/homepage', homepageRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/projects', projectsRouter);
 app.use('/api/tags', tagsRouter);

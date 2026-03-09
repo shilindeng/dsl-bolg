@@ -22,10 +22,19 @@ export default function ProjectCard({ project }: { project: Project }) {
             </div>
 
             <div className="project-card-copy">
+                {project.headline ? <span className="signal-label">{project.headline}</span> : null}
                 <h3>{project.name}</h3>
                 <p className="project-card-summary">{project.summary || project.description}</p>
                 <p>{project.description}</p>
             </div>
+
+            {(project.role || project.period || project.status) ? (
+                <div className="project-facts">
+                    {project.role ? <span className="chip">{project.role}</span> : null}
+                    {project.period ? <span className="chip">{project.period}</span> : null}
+                    {project.status ? <span className="chip">{project.status}</span> : null}
+                </div>
+            ) : null}
 
             <div className="tag-list">
                 {techStack.slice(0, 6).map((tech) => (

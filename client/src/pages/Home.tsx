@@ -1,45 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchPosts, fetchProjects, type Post, type Project } from '../api/client';
-import ParticleBackground from '../components/ParticleBackground';
-import HeroVisual from '../components/HeroVisual';
-import SEO from '../components/SEO';
-import WeatherCard from '../components/WeatherCard';
+import { fetchHomepage, type HomepageSection, type Post, type Project } from '../api/client';
+import NewsletterSignup from '../components/NewsletterSignup';
 import PostCard from '../components/PostCard';
 import ProjectCard from '../components/ProjectCard';
+import SEO from '../components/SEO';
+import WeatherCard from '../components/WeatherCard';
 import { siteConfig } from '../config/site';
 
+function getPosts(section?: HomepageSection) {
+    return ((section?.items || []) as Array<Post | Project>).filter((item): item is Post => 'content' in item);
+}
+
+function getProjects(section?: HomepageSection) {
+    return ((section?.items || []) as Array<Post | Project>).filter((item): item is Project => 'techStack' in item);
+}
+
 export default function Home() {
-    const [posts, setPosts] = useState<Post[]>([]);
-    const [projects, setProjects] = useState<Project[]>([]);
+    const [sections, setSections] = useState<HomepageSection[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let cancelled = false;
-
-        Promise.all([fetchPosts({ limit: 4 }), fetchProjects()])
-            .then(([postResponse, projectResponse]) => {
-                if (cancelled) return;
-                setPosts(postResponse.data);
-                setProjects(projectResponse.filter((item) => item.featured).slice(0, 3));
-            })
-            .catch(() => {
-                if (cancelled) return;
-                setPosts([]);
-                setProjects([]);
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-
-        return () => {
-            cancelled = true;
-        };
+        fetchHomepage()
+            .then((response) => setSections(response.sections))
+            .catch(() => setSections([]))
+            .finally(() => setLoading(false));
     }, []);
 
-    const featuredPost = posts[0];
-    const secondaryPosts = posts.slice(1, 4);
-    const featuredProject = projects[0];
+    const sectionMap = useMemo(
+        () => new Map(sections.map((section) => [section.type, section])),
+        [sections],
+    );
+
+    const hero = sectionMap.get('hero');
+    const featuredPostsSection = sectionMap.get('featured_posts');
+    const archiveSection = sectionMap.get('archive_entry');
+    const projectsSection = sectionMap.get('featured_projects');
+    const authorSection = sectionMap.get('author_cta');
+    const newsletterSection = sectionMap.get('newsletter_cta');
+    const weatherSection = sectionMap.get('utility_weather');
+
+    const featuredPosts = getPosts(featuredPostsSection);
+    const leadPost = featuredPosts[0];
+    const restPosts = featuredPosts.slice(1);
+    const featuredProjects = getProjects(projectsSection);
 
     return (
         <>
@@ -55,217 +59,121 @@ export default function Home() {
                 }}
             />
 
-            <div className="home-page-shell">
-                <div className="home-particle-layer" aria-hidden="true">
-                    <ParticleBackground variant="page" />
+            <section className="section home-editorial-hero">
+                <div className="container home-hero-grid">
+                    <div className="home-hero-copy editorial-panel">
+                        <div className="eyebrow">{hero?.eyebrow || '长期主义的个人品牌主场'}</div>
+                        <h1 className="display-title">{hero?.title || '把博客做成真正能持续经营的作品系统。'}</h1>
+                        <p className="lead">{hero?.description || siteConfig.author.bio}</p>
+                        <div className="hero-actions">
+                            <Link to={hero?.ctaHref || '/blog'} className="btn btn-primary">{hero?.ctaLabel || '进入文章归档'}</Link>
+                            <Link to="/projects" className="btn btn-secondary">查看代表项目</Link>
+                            <Link to="/newsletter" className="btn btn-ghost">订阅更新</Link>
+                        </div>
+                        <div className="editorial-meta-strip">
+                            <div className="metric-card"><span className="muted mono">ROLE</span><strong>内容 / 产品 / 工程</strong></div>
+                            <div className="metric-card"><span className="muted mono">MODEL</span><strong>内容优先 / 专业排版</strong></div>
+                            <div className="metric-card"><span className="muted mono">MODE</span><strong>长期维护</strong></div>
+                        </div>
+                    </div>
+
+                    <div className="home-hero-side">
+                        {leadPost ? (
+                            <Link to={`/blog/${leadPost.slug}`} className="hero-story-card">
+                                <span className="signal-label">Lead Story</span>
+                                <h2>{leadPost.title}</h2>
+                                <p>{leadPost.deck || leadPost.excerpt}</p>
+                                <span className="command-hint">阅读代表内容</span>
+                            </Link>
+                        ) : (
+                            <div className="hero-story-card">
+                                <span className="signal-label">Lead Story</span>
+                                <h2>精选内容会由首页编排后台接管</h2>
+                                <p>当前还没有可用于首屏展示的精选文章。</p>
+                            </div>
+                        )}
+                        {weatherSection?.enabled !== false ? <WeatherCard /> : null}
+                    </div>
                 </div>
+            </section>
 
-                <section className="section hero-section" data-testid="home-hero">
-                    <div className="container home-hero-layout">
-                        <div className="home-hero-copy-column" data-testid="hero-panel">
-                            <div className="cyber-header-bar hero-badge-bar">
-                                <span className="cyber-dot" />
-                                <span className="cyber-dot" />
-                                <span className="cyber-dot" />
-                                <span className="command-hint">PERSONAL BRAND SYSTEM / LIVE</span>
-                            </div>
-
-                            <div className="hero-copy home-hero-copy">
-                                <div className="eyebrow">Editorial identity for builders</div>
-                                <p className="hero-kicker mono">写作 / 产品 / 系统 / 审美 / 长期主义</p>
-                                <h1 className="display-title home-display-title">
-                                    把博客做成真正上线的
-                                    <br />
-                                    个人品牌系统。
-                                </h1>
-                                <p className="lead home-hero-lead">
-                                    这里不是一页“好看”的展示页，而是一套持续发布、持续运营、持续沉淀判断力的内容产品界面。
-                                </p>
-                            </div>
-
-                            <div className="hero-actions home-hero-actions">
-                                <Link to="/blog" className="btn btn-primary">阅读文章</Link>
-                                <Link to="/projects" className="btn btn-secondary">查看项目</Link>
-                                <a href={`mailto:${siteConfig.email}`} className="btn btn-ghost">联系合作</a>
-                            </div>
-
-                            <div className="home-summary-strip">
-                                {siteConfig.heroMetrics.map((item) => (
-                                    <div key={item.label} className="metric-card home-summary-card">
-                                        <span className="muted mono">{item.label}</span>
-                                        <strong>{item.value}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="home-hero-visual-column">
-                            <HeroVisual featuredPost={featuredPost} featuredProject={featuredProject} />
-
-                            <div className="home-utility-rail">
-                                <WeatherCard />
-
-                                <div className="panel panel-body hero-preview-panel">
-                                    <div className="section-heading-left">
-                                        <div>
-                                            <div className="eyebrow">Latest editorial signal</div>
-                                            <h2 className="hero-side-title">先看代表内容，再决定要不要持续关注</h2>
-                                        </div>
-                                    </div>
-
-                                    {featuredPost ? (
-                                        <div className="hero-preview-card">
-                                            <div className="hero-preview-meta">
-                                                <span className="chip">{featuredPost.category?.name || '精选文章'}</span>
-                                                <span className="command-hint">{featuredPost.meta?.readTime || 1} 分钟</span>
-                                            </div>
-                                            <strong>{featuredPost.title}</strong>
-                                            <p>{featuredPost.excerpt}</p>
-                                            <Link to={`/blog/${featuredPost.slug}`} className="btn btn-secondary">阅读代表内容</Link>
-                                        </div>
-                                    ) : (
-                                        <div className="empty-state">代表内容会在文章发布后显示在这里。</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+            <section className="section section-tight">
+                <div className="container home-split-stage">
+                    <div className="feature-panel">
+                        <div className="eyebrow">{archiveSection?.eyebrow || '归档入口'}</div>
+                        <h2 className="section-title">{archiveSection?.title || '按主题、标签和关键词进入内容档案'}</h2>
+                        <p>{archiveSection?.description || '从更高密度的归档页里快速判断哪些内容值得继续深入。'}</p>
+                        <Link to={archiveSection?.ctaHref || '/blog'} className="btn btn-secondary">{archiveSection?.ctaLabel || '浏览内容归档'}</Link>
                     </div>
-                </section>
-
-                <section className="section section-tight">
-                    <div className="container">
-                        <div className="home-signal-bar">
-                            {siteConfig.homeSignals.map((signal) => (
-                                <article key={signal.id} className="signal-card signal-card-compact">
-                                    <span className="signal-label mono">{signal.label}</span>
-                                    <h3>{signal.title}</h3>
-                                    <p>{signal.description}</p>
-                                </article>
-                            ))}
-                        </div>
+                    <div className="feature-panel">
+                        <div className="eyebrow">{newsletterSection?.eyebrow || 'Newsletter'}</div>
+                        <h2 className="section-title">{newsletterSection?.title || '订阅长期写作与产品化更新'}</h2>
+                        <p>{newsletterSection?.description || '接收新的长文、项目复盘和工作流迭代记录。'}</p>
+                        <NewsletterSignup source="home_hero" compact />
                     </div>
-                </section>
+                </div>
+            </section>
 
-                <section className="section section-frame">
-                    <div className="container section-stack editorial-home-stage">
-                        <div className="section-heading">
-                            <div>
-                                <div className="eyebrow">Selected writing</div>
-                                <h2 className="section-title">优先展示最能代表方法和判断力的内容</h2>
-                            </div>
-                            <p className="lead">
-                                把文章做成长期资产，而不是一次性的信息堆叠。每篇内容都应该更接近产品，而不是动态。
-                            </p>
+            <section className="section">
+                <div className="container section-stack">
+                    <div className="section-heading">
+                        <div>
+                            <div className="eyebrow">{featuredPostsSection?.eyebrow || '精选文章'}</div>
+                            <h2 className="section-title">{featuredPostsSection?.title || '先看到最能代表方法与判断力的内容'}</h2>
                         </div>
-
-                        <div className="editorial-home-grid">
-                            <div className="editorial-home-main">
-                                {loading ? (
-                                    <div className="empty-state">正在读取代表文章...</div>
-                                ) : featuredPost ? (
-                                    <PostCard post={featuredPost} featured />
-                                ) : (
-                                    <div className="empty-state">暂时还没有公开文章。</div>
-                                )}
-                            </div>
-
-                            <div className="post-stack editorial-home-side">
-                                {secondaryPosts.map((post) => (
+                        <Link to="/blog" className="btn btn-ghost">全部文章</Link>
+                    </div>
+                    {loading ? (
+                        <div className="empty-state">正在读取首页模块...</div>
+                    ) : featuredPosts.length ? (
+                        <div className="home-post-grid">
+                            {leadPost ? <PostCard post={leadPost} featured /> : null}
+                            <div className="post-stack">
+                                {restPosts.map((post) => (
                                     <PostCard key={post.id} post={post} />
                                 ))}
                             </div>
                         </div>
+                    ) : (
+                        <div className="empty-state">还没有可展示的精选文章。</div>
+                    )}
+                </div>
+            </section>
+
+            <section className="section">
+                <div className="container section-stack">
+                    <div className="section-heading">
+                        <div>
+                            <div className="eyebrow">{projectsSection?.eyebrow || '代表项目'}</div>
+                            <h2 className="section-title">{projectsSection?.title || '项目页承担方法论与落地能力的第二层证明'}</h2>
+                        </div>
+                        <Link to="/projects" className="btn btn-ghost">全部项目</Link>
                     </div>
-                </section>
-
-                <section className="section section-frame">
-                    <div className="container section-stack">
-                        <div className="section-heading">
-                            <div>
-                                <div className="eyebrow">Focus areas</div>
-                                <h2 className="section-title">把界面、内容和工作流一起做得更像产品</h2>
-                            </div>
-                        </div>
-
-                        <div className="focus-grid home-focus-grid">
-                            {siteConfig.focusAreas.map((item) => (
-                                <article key={item.name} className="focus-card home-focus-card">
-                                    <span className="signal-label mono">{item.name}</span>
-                                    <h3>{item.title}</h3>
-                                    <p>{item.description}</p>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <section className="section">
-                    <div className="container section-stack">
-                        <div className="section-heading">
-                            <div>
-                                <div className="eyebrow">Selected projects</div>
-                                <h2 className="section-title">代表项目不是数量，而是长期判断力的横截面</h2>
-                            </div>
-                            <p className="lead">
-                                我更在意项目是否能体现结构能力、界面表达、工程质量和长期维护，而不只是做出一个 demo。
-                            </p>
-                        </div>
-
-                        <div className="three-grid home-project-grid">
-                            {projects.map((project) => (
+                    {featuredProjects.length ? (
+                        <div className="three-grid">
+                            {featuredProjects.map((project) => (
                                 <ProjectCard key={project.id} project={project} />
                             ))}
                         </div>
+                    ) : (
+                        <div className="empty-state">还没有配置首页项目模块。</div>
+                    )}
+                </div>
+            </section>
+
+            <section className="section">
+                <div className="container cta-shell editorial-cta">
+                    <div>
+                        <div className="eyebrow">{authorSection?.eyebrow || '作者与合作'}</div>
+                        <h2 className="section-title">{authorSection?.title || '如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。'}</h2>
+                        <p className="lead">{authorSection?.description || siteConfig.author.summary}</p>
                     </div>
-                </section>
-
-                <section className="section">
-                    <div className="container editorial-grid reverse">
-                        <div className="feature-panel">
-                            <div className="eyebrow">Operating principles</div>
-                            <h2 className="section-title">我如何经营这座博客</h2>
-                            <div className="principle-list">
-                                {siteConfig.principles.map((item) => (
-                                    <div key={item} className="metric-card">
-                                        <strong>{item}</strong>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="feature-panel accent-panel about-glance-card">
-                            <div className="eyebrow">About DSL</div>
-                            <h3>{siteConfig.author.name}</h3>
-                            <p className="muted">{siteConfig.author.role}</p>
-                            <p>{siteConfig.author.bio}</p>
-                            <div className="metric-card">
-                                <span className="muted mono">CURRENT BASE</span>
-                                <strong>{siteConfig.author.location.city}, {siteConfig.author.location.country}</strong>
-                            </div>
-                            <Link to="/about" className="btn btn-secondary">了解更多</Link>
-                        </div>
+                    <div className="hero-actions">
+                        <a href={authorSection?.ctaHref || `mailto:${siteConfig.email}`} className="btn btn-primary">{authorSection?.ctaLabel || '发送邮件'}</a>
+                        <Link to="/about" className="btn btn-secondary">了解作者</Link>
                     </div>
-                </section>
-
-                <section className="section">
-                    <div className="container">
-                        <div className="cta-shell home-cta-shell">
-                            <div>
-                                <div className="eyebrow">Contact / Collaboration</div>
-                                <h2 className="section-title">如果你也在做长期主义、内容系统或 AI 工作流，可以和我聊聊。</h2>
-                                <p className="lead">
-                                    适合交流的方向包括：个人品牌站、内容产品、设计系统、AI 自动化、前端体验与独立项目的长期运营。
-                                </p>
-                            </div>
-
-                            <div className="hero-actions home-hero-actions">
-                                <a href={`mailto:${siteConfig.email}`} className="btn btn-primary">发送邮件</a>
-                                <Link to="/blog" className="btn btn-ghost">继续阅读</Link>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
+                </div>
+            </section>
         </>
     );
 }

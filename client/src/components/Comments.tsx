@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createComment, type Comment } from '../api/client';
 import { formatDateTime, getInitials } from '../lib/format';
+import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
-import TurnstileWidget from './TurnstileWidget';
 
 interface CommentsProps {
     postId: number;
@@ -10,22 +11,18 @@ interface CommentsProps {
     onCommentAdded: (comment: Comment) => void;
 }
 
-const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
-
 export default function Comments({ postId, comments, onCommentAdded }: CommentsProps) {
+    const { user, isAuthenticated } = useAuth();
     const { showToast } = useToast();
-    const [author, setAuthor] = useState('');
-    const [email, setEmail] = useState('');
     const [content, setContent] = useState('');
     const [replyTo, setReplyTo] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [turnstileToken, setTurnstileToken] = useState('');
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!author.trim() || !content.trim()) {
-            showToast('请填写昵称和评论内容。', 'error');
+        if (!content.trim()) {
+            showToast('请填写评论内容。', 'error');
             return;
         }
 
@@ -33,18 +30,14 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
         try {
             const response = await createComment({
                 postId,
-                author: author.trim(),
-                email: email.trim() || undefined,
                 content: content.trim(),
                 parentId: replyTo || undefined,
-                turnstileToken: turnstileToken || undefined,
             });
 
             onCommentAdded(response.comment);
             setSubmitted(true);
             setContent('');
             setReplyTo(null);
-            setTurnstileToken('');
             showToast('评论已提交，审核通过后会公开显示。', 'success');
         } catch (error) {
             showToast(error instanceof Error ? error.message : '评论提交失败。', 'error');
@@ -58,16 +51,17 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
             className={`comment-card ${isReply ? 'comment-card-reply' : ''}`}
             data-testid={`comment-item-${comment.id}`}
         >
-            <div className="comment-card-head">
-                <div className="comment-author">
-                    <div className="comment-avatar" aria-hidden="true">
-                        {getInitials(comment.author)}
+                <div className="comment-card-head">
+                    <div className="comment-author">
+                        <div className="comment-avatar" aria-hidden="true">
+                            {getInitials(comment.user?.name || comment.author)}
+                        </div>
+                        <div>
+                            <strong>{comment.user?.name || comment.author}</strong>
+                            {comment.userId ? <div className="muted">会员评论</div> : <div className="muted">Legacy comment</div>}
+                            <div className="muted">{formatDateTime(comment.createdAt)}</div>
+                        </div>
                     </div>
-                    <div>
-                        <strong>{comment.author}</strong>
-                        <div className="muted">{formatDateTime(comment.createdAt)}</div>
-                    </div>
-                </div>
 
                 {!isReply ? (
                     <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}>
@@ -119,57 +113,43 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
                     {submitted ? <span className="badge badge-green">已进入审核</span> : null}
                 </div>
 
-                <form onSubmit={handleSubmit} className="comment-form" data-testid="comment-form">
-                    <div className="two-grid">
+                {isAuthenticated ? (
+                    <form onSubmit={handleSubmit} className="comment-form" data-testid="comment-form">
+                        <div className="metric-card">
+                            <span className="muted mono">CURRENT USER</span>
+                            <strong>{user?.name || user?.email}</strong>
+                        </div>
+
                         <label className="form-field">
-                            <span className="form-label">昵称</span>
-                            <input
-                                className="form-input"
-                                data-testid="comment-author-input"
-                                value={author}
-                                onChange={(event) => setAuthor(event.target.value)}
-                                placeholder="你的名字"
+                            <span className="form-label">评论内容</span>
+                            <textarea
+                                className="form-textarea"
+                                data-testid="comment-content-input"
+                                value={content}
+                                onChange={(event) => setContent(event.target.value)}
+                                placeholder={replyTo ? '写下你的回复...' : '写下你的观点、补充或不同意见...'}
                                 required
                             />
                         </label>
-                        <label className="form-field">
-                            <span className="form-label">邮箱</span>
-                            <input
-                                className="form-input"
-                                data-testid="comment-email-input"
-                                type="email"
-                                value={email}
-                                onChange={(event) => setEmail(event.target.value)}
-                                placeholder="可选，用于联系"
-                            />
-                        </label>
-                    </div>
 
-                    <label className="form-field">
-                        <span className="form-label">评论内容</span>
-                        <textarea
-                            className="form-textarea"
-                            data-testid="comment-content-input"
-                            value={content}
-                            onChange={(event) => setContent(event.target.value)}
-                            placeholder={replyTo ? '写下你的回复...' : '写下你的观点、补充或不同意见...'}
-                            required
-                        />
-                    </label>
-
-                    <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
-
-                    <div className="comment-form-actions">
-                        <button type="submit" className="btn btn-primary" data-testid="comment-submit-button" disabled={submitting}>
-                            {submitting ? '提交中...' : '提交评论'}
-                        </button>
-                        {replyTo ? (
-                            <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(null)}>
-                                取消回复
+                        <div className="comment-form-actions">
+                            <button type="submit" className="btn btn-primary" data-testid="comment-submit-button" disabled={submitting}>
+                                {submitting ? '提交中...' : '提交评论'}
                             </button>
-                        ) : null}
+                            {replyTo ? (
+                                <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(null)}>
+                                    取消回复
+                                </button>
+                            ) : null}
+                        </div>
+                    </form>
+                ) : (
+                    <div className="empty-state">
+                        <p>评论功能已升级为登录后评论优先。</p>
+                        <Link to="/login" className="btn btn-primary">登录后参与讨论</Link>
                     </div>
-                </form>
+                )}
+
             </div>
         </section>
     );
