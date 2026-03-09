@@ -328,7 +328,7 @@ export default function Dashboard() {
             <div className="container admin-shell admin-dashboard-shell admin-dashboard-v2">
                 <header className="feature-panel admin-overview-panel">
                     <div className="admin-overview-copy">
-                        <div className="eyebrow">Operations cockpit</div>
+                        <div className="eyebrow">运营控制室</div>
                         <h1 className="section-title admin-page-title">内容运营与分发总控台</h1>
                         <p className="lead admin-page-lead">
                             用更清晰的运营界面查看增长、审核、项目资产和开放 API，把原来拥挤的一屏拆成真正可用的工作台。
@@ -359,11 +359,11 @@ export default function Dashboard() {
 
                     <div className="admin-side-stack">
                         <div className="feature-panel chart-panel" data-testid="dashboard-top-posts-chart">
-                            <div className="editor-card-head"><strong>文章表现排行</strong><span className="command-hint">TOP POSTS</span></div>
+                            <div className="editor-card-head"><strong>文章表现排行</strong><span className="command-hint">重点内容</span></div>
                             {dashboard.topPosts.length ? <EChart option={topPostsOption} className="echart-canvas" height={260} /> : <div className="empty-state">还没有足够的内容表现数据。</div>}
                         </div>
                         <div className="feature-panel chart-panel" data-testid="dashboard-comment-chart">
-                            <div className="editor-card-head"><strong>评论健康度</strong><span className="command-hint">QUEUE HEALTH</span></div>
+                            <div className="editor-card-head"><strong>评论健康度</strong><span className="command-hint">审核队列</span></div>
                             {(dashboard.commentStatus.pending || dashboard.commentStatus.approved || dashboard.commentStatus.rejected)
                                 ? <EChart option={commentHealthOption} className="echart-canvas" height={260} />
                                 : <div className="empty-state">当前还没有评论审核数据。</div>}
@@ -371,7 +371,7 @@ export default function Dashboard() {
                     </div>
                 </section>
                 <section className="feature-panel">
-                    <div className="editor-card-head"><strong>最近活动</strong><span className="command-hint">RECENT ACTIVITY</span></div>
+                    <div className="editor-card-head"><strong>最近活动</strong><span className="command-hint">近时段动态</span></div>
                     <div className="activity-list activity-grid-list">
                         {dashboard.recentActivity.length ? dashboard.recentActivity.map((item) => (
                             <article key={`${item.type}-${item.createdAt}-${item.title}`} className="activity-tile">
@@ -482,10 +482,10 @@ export default function Dashboard() {
                                 <div className="editor-card-head"><strong>开放 API</strong><span className="command-hint">POSTS + MEDIA</span></div>
                                 <form className="api-key-form" onSubmit={handleCreateApiKey}>
                                     <label className="form-field"><span className="form-label">Key 名称</span><input className="form-input" value={apiKeyName} onChange={(event) => setApiKeyName(event.target.value)} placeholder="Automation Publisher" /></label>
-                                    <div className="metric-card api-scope-card"><span className="muted mono">SCOPES</span><strong>posts:write / media:write</strong></div>
+                                    <div className="metric-card api-scope-card"><span className="muted mono">权限范围</span><strong>posts:write / media:write</strong></div>
                                     <button type="submit" className="btn btn-primary" disabled={creatingApiKey}>{creatingApiKey ? '创建中...' : '创建 API Key'}</button>
                                 </form>
-                                {latestApiKey ? <div className="metric-card latest-key-card"><span className="muted mono">LATEST KEY</span><strong className="mono api-key-value">{latestApiKey}</strong><button type="button" className="btn btn-ghost" onClick={copyLatestApiKey}>复制</button></div> : null}
+                                {latestApiKey ? <div className="metric-card latest-key-card"><span className="muted mono">最新密钥</span><strong className="mono api-key-value">{latestApiKey}</strong><button type="button" className="btn btn-ghost" onClick={copyLatestApiKey}>复制</button></div> : null}
                                 <div className="admin-list compact-admin-list">
                                     {apiKeys.length ? apiKeys.map((key) => (
                                         <div key={key.id} className="admin-row compact-admin-row">

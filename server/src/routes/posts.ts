@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, getOptionalUser, requireAdmin } from '../middleware/auth.js';
@@ -21,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
         const pageNum = Math.max(1, parseInt(page, 10));
         const pageSize = Math.min(50, Math.max(1, parseInt(limit, 10)));
         const skip = (pageNum - 1) * pageSize;
-        const where: Prisma.PostWhereInput = {};
+        const where: Record<string, unknown> = {};
 
         if (isAdmin) {
             if (published === 'true') where.published = true;
@@ -82,7 +81,7 @@ router.get('/', async (req: Request, res: Response) => {
         ]);
 
         res.json({
-            data: posts.map((post) => formatPost(post)),
+            data: posts.map((post: Parameters<typeof formatPost>[0]) => formatPost(post)),
             pagination: {
                 page: pageNum,
                 limit: pageSize,
@@ -139,7 +138,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             orderBy: { createdAt: 'desc' },
         });
 
-        const tagIds = post.tags.map((item) => item.tagId);
+        const tagIds = post.tags.map((item: { tagId: number }) => item.tagId);
         const relatedFilters = [
             ...(post.categoryId ? [{ categoryId: post.categoryId }] : []),
             ...(tagIds.length ? [{ tags: { some: { tagId: { in: tagIds } } } }] : []),
@@ -161,7 +160,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
         });
 
-        const currentIndex = publishedPosts.findIndex((item) => item.slug === post.slug);
+        const currentIndex = publishedPosts.findIndex((item: { slug: string }) => item.slug === post.slug);
         const previousPost = currentIndex >= 0 ? publishedPosts[currentIndex + 1] || null : null;
         const nextPost = currentIndex > 0 ? publishedPosts[currentIndex - 1] || null : null;
         const bookmark = currentUser
@@ -199,7 +198,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             meta,
             comments,
             toc: extractHeadings(post.content),
-            relatedPosts: related.map((item) => formatPost(item)),
+            relatedPosts: related.map((item: Parameters<typeof formatPost>[0]) => formatPost(item)),
             previousPost,
             nextPost,
             viewerState: {

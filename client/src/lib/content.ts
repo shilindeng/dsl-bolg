@@ -1,9 +1,27 @@
 export function buildHeadingId(text: string) {
     return text
+        .normalize('NFKC')
         .toLowerCase()
         .trim()
         .replace(/[^\p{L}\p{N}\s-]/gu, '')
-        .replace(/\s+/g, '-');
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+}
+
+export function createHeadingIdResolver() {
+    const counts = new Map<string, number>();
+    let fallbackIndex = 0;
+
+    return (text: string) => {
+        const base = buildHeadingId(text) || `section-${++fallbackIndex}`;
+        const count = counts.get(base) || 0;
+        const nextCount = count + 1;
+
+        counts.set(base, nextCount);
+
+        return nextCount === 1 ? base : `${base}-${nextCount}`;
+    };
 }
 
 export function splitTechStack(value: string) {

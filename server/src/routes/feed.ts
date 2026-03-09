@@ -15,14 +15,14 @@ router.get('/rss', async (_req: Request, res: Response) => {
 
         const rssItems = posts
             .map(
-                (post) => `
+                (post: { title: string; slug: string; publishedAt: Date | null; createdAt: Date; excerpt: string; tags: Array<{ tag: { name: string } }> }) => `
     <item>
       <title><![CDATA[${post.title}]]></title>
       <link>${siteConfig.siteUrl}/blog/${post.slug}</link>
       <guid>${siteConfig.siteUrl}/blog/${post.slug}</guid>
       <pubDate>${new Date(post.publishedAt || post.createdAt).toUTCString()}</pubDate>
       <description><![CDATA[${post.excerpt || ''}]]></description>
-      ${post.tags.map((item) => `<category>${item.tag.name}</category>`).join('\n      ')}
+      ${post.tags.map((item: { tag: { name: string } }) => `<category>${item.tag.name}</category>`).join('\n      ')}
     </item>`,
             )
             .join('');

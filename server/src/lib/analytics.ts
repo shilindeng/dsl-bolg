@@ -1,5 +1,55 @@
 import prisma from './prisma.js';
 
+interface SummaryMeta {
+    views: number;
+    likes: number;
+}
+
+interface TopPostCandidate {
+    id: number;
+    title: string;
+    slug: string;
+    meta: SummaryMeta | null;
+    comments: Array<{ id: number }>;
+}
+
+interface RecentCommentCandidate {
+    author: string;
+    status: string;
+    updatedAt: Date;
+    post: { title: string; slug: string } | null;
+}
+
+interface RecentPostCandidate {
+    title: string;
+    slug: string;
+    updatedAt: Date;
+    published: boolean;
+}
+
+interface RecentApiPublishCandidate {
+    provider: string;
+    updatedAt: Date;
+    post: { title: string; slug: string };
+}
+
+interface RecentUploadCandidate {
+    source: string;
+    createdAt: Date;
+}
+
+interface RecentActivityItem {
+    type: string;
+    title: string;
+    slug: string;
+    description: string;
+    createdAt: Date;
+}
+
+interface SerializedRecentActivityItem extends Omit<RecentActivityItem, 'createdAt'> {
+    createdAt: string;
+}
+
 export const analyticsEventTypes = {
     view: 'view',
     like: 'like',
@@ -91,8 +141,8 @@ export async function getDashboardAnalytics(days = 30) {
         }),
     ]);
 
-    const totalViews = metaData.reduce((sum, item) => sum + item.views, 0);
-    const totalLikes = metaData.reduce((sum, item) => sum + item.likes, 0);
+    const totalViews = metaData.reduce((sum: number, item: SummaryMeta) => sum + item.views, 0);
+    const totalLikes = metaData.reduce((sum: number, item: SummaryMeta) => sum + item.likes, 0);
 
     const trendMap = new Map<string, { date: string; views: number; likes: number; comments: number }>();
     for (let index = 0; index < safeDays; index += 1) {
@@ -111,7 +161,7 @@ export async function getDashboardAnalytics(days = 30) {
     }
 
     const topPosts = topPostsRaw
-        .map((post) => ({
+        .map((post: TopPostCandidate) => ({
             id: post.id,
             title: post.title,
             slug: post.slug,
@@ -120,32 +170,32 @@ export async function getDashboardAnalytics(days = 30) {
             comments: post.comments.length,
             score: (post.meta?.views || 0) + (post.meta?.likes || 0) * 2 + post.comments.length * 3,
         }))
-        .sort((a, b) => b.score - a.score)
+        .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
         .slice(0, 6);
 
     const recentActivity = [
-        ...recentPosts.map((post) => ({
+        ...recentPosts.map((post: RecentPostCandidate) => ({
             type: post.published ? 'post_update' : 'post_draft',
             title: post.title,
             slug: post.slug,
             description: post.published ? '文章已发布或更新' : '草稿已更新',
             createdAt: post.updatedAt,
         })),
-        ...recentComments.map((comment) => ({
+        ...recentComments.map((comment: RecentCommentCandidate) => ({
             type: 'comment',
             title: comment.post?.title || '评论',
             slug: comment.post?.slug || '',
             description: `${comment.author} 提交了${comment.status === 'pending' ? '待审核' : comment.status === 'approved' ? '已通过' : '已拒绝'}评论`,
             createdAt: comment.updatedAt,
         })),
-        ...recentApiPublishes.map((link) => ({
+        ...recentApiPublishes.map((link: RecentApiPublishCandidate) => ({
             type: 'api_publish',
             title: link.post.title,
             slug: link.post.slug,
             description: `${link.provider} 同步了外部文章`,
             createdAt: link.updatedAt,
         })),
-        ...recentUploads.map((event) => ({
+        ...recentUploads.map((event: RecentUploadCandidate) => ({
             type: 'upload',
             title: '媒体上传',
             slug: '',
@@ -153,9 +203,12 @@ export async function getDashboardAnalytics(days = 30) {
             createdAt: event.createdAt,
         })),
     ]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .sort((a: RecentActivityItem, b: RecentActivityItem) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 8)
-        .map((item) => ({ ...item, createdAt: item.createdAt.toISOString() }));
+        .map((item: RecentActivityItem): SerializedRecentActivityItem => ({
+            ...item,
+            createdAt: item.createdAt.toISOString(),
+        }));
 
     return {
         summary: { totalPosts, totalViews, totalLikes, totalComments, pendingComments },

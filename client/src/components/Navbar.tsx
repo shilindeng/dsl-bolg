@@ -34,7 +34,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     <span className="brand-mark mono">DSL</span>
                     <div className="brand-copy">
                         <strong>{siteConfig.name}</strong>
-                        <span>赛博编辑实验室 · {siteConfig.author.role}</span>
+                        <span>长期主义内容系统 · {siteConfig.author.role}</span>
                     </div>
                 </Link>
 
@@ -45,7 +45,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                 <div className="site-nav-actions">
                     <div className="section-stack nav-status-group">
                         <span className="nav-status mono" aria-hidden="true">
-                            ONLINE / WWW.SHILIN.TECH
+                            在线发布中 · WWW.SHILIN.TECH
                         </span>
                     </div>
 
@@ -84,7 +84,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                 <div className="container nav-drawer-shell">
                     <div className="menu-sheet nav-drawer">
                         <div className="menu-sheet-body">
-                            <div className="eyebrow">Site Navigation</div>
+                            <div className="eyebrow">站点导航</div>
                             {navLinks}
                             {isAdmin ? <Link to="/editor" className="site-nav-link">新建文章</Link> : null}
                             {isAuthenticated ? <Link to="/account" className="site-nav-link">会员中心</Link> : null}
@@ -92,8 +92,8 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                             {isAuthenticated ? <button type="button" className="site-nav-link nav-plain-button" onClick={() => void logout()}>退出登录</button> : null}
                             <ThemeToggle />
                             <div className="metric-card">
-                                <span className="muted mono">STATUS</span>
-                                <strong>移动端进入后自动切换旗舰导航体验</strong>
+                                <span className="muted mono">导航模式</span>
+                                <strong>移动端保持信息集中，桌面端强调品牌识别</strong>
                             </div>
                         </div>
                     </div>

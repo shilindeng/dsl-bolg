@@ -51,7 +51,7 @@ const router = Router();
 router.get('/admin/keys', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
     const keys = await prisma.apiKey.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(
-        keys.map((key) => ({
+        keys.map((key: { id: number; name: string; keyPrefix: string; scopes: string; lastUsedAt: Date | null; revokedAt: Date | null; createdAt: Date }) => ({
             id: key.id,
             name: key.name,
             keyPrefix: key.keyPrefix,

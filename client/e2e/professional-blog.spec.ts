@@ -63,7 +63,7 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
     await expect(page.getByTestId('hero-particles')).toBeVisible();
     await expect(page.getByTestId('weather-card')).toBeVisible();
     await expect(page.getByTestId('weather-temperature')).toContainText('22');
-    await expect(page.getByTestId('weather-location-note')).toContainText('自动定位');
+    await expect(page.getByTestId('weather-location-note')).toContainText('基准城市');
     await saveScreenshot(page, testInfo, 'home');
 
     await page.goto('/blog');
@@ -79,6 +79,8 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
 
     await expect(page.getByTestId('article-meta')).toBeVisible();
     await expect(page.getByTestId('post-toc')).toBeVisible();
+    await page.getByTestId('post-toc').locator('a').first().click();
+    await expect(page).toHaveURL(/#.+/);
 
     const likeButton = page.getByTestId('article-like-button');
     const likeTextBefore = await likeButton.textContent();
@@ -183,7 +185,8 @@ test('desktop flow covers public reading, admin moderation and project CRUD', as
     await expect(page.locator('body')).toContainText(commentBody);
 
     await page.goto(`/blog/${openApiSlug}`);
-    await expect(page.getByTestId('article-content')).toContainText('Playwright Open API');
+    await expect(page.getByRole('heading', { name: new RegExp(`Playwright Open API ${commentSuffix}`) })).toBeVisible();
+    await expect(page.getByTestId('article-content')).toContainText('This post validates external publishing.');
 });
 
 test('mobile smoke covers hero rendering and article navigation', async ({ page }, testInfo) => {
