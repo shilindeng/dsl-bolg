@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import SiteIcon from '../components/SiteIcon';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -13,6 +14,21 @@ interface ToastContextValue {
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
+
+const toastMeta = {
+    success: {
+        label: 'Success',
+        icon: 'check',
+    },
+    error: {
+        label: 'Error',
+        icon: 'close',
+    },
+    info: {
+        label: 'Info',
+        icon: 'spark',
+    },
+} as const;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
@@ -30,39 +46,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <ToastContext.Provider value={{ showToast }}>
             {children}
 
-            <div
-                aria-live="polite"
-                style={{
-                    position: 'fixed',
-                    right: 16,
-                    bottom: 16,
-                    zIndex: 2500,
-                    display: 'grid',
-                    gap: '0.75rem',
-                    width: 'min(360px, calc(100vw - 2rem))',
-                }}
-            >
-                {toasts.map((toast) => (
-                    <div
-                        key={toast.id}
-                        className="panel"
-                        style={{
-                            borderColor:
-                                toast.type === 'error'
-                                    ? 'rgba(255,124,168,0.38)'
-                                    : toast.type === 'success'
-                                        ? 'rgba(126,247,200,0.32)'
-                                        : undefined,
-                        }}
-                    >
-                        <div className="panel-body" style={{ padding: '1rem 1.1rem', display: 'grid', gap: '0.35rem' }}>
-                            <strong style={{ color: toast.type === 'error' ? 'var(--accent-rose)' : toast.type === 'success' ? 'var(--accent-emerald)' : 'var(--accent-cyan)' }}>
-                                {toast.type === 'error' ? 'Error' : toast.type === 'success' ? 'Success' : 'Info'}
-                            </strong>
-                            <span className="muted">{toast.message}</span>
+            <div className="toast-stack" aria-live="polite">
+                {toasts.map((toast) => {
+                    const meta = toastMeta[toast.type];
+
+                    return (
+                        <div key={toast.id} className={`toast-item is-${toast.type}`}>
+                            <span className="toast-icon">
+                                <SiteIcon name={meta.icon} size={14} />
+                            </span>
+                            <div className="toast-copy">
+                                <strong>{meta.label}</strong>
+                                <span>{toast.message}</span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </ToastContext.Provider>
     );

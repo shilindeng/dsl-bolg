@@ -1,11 +1,11 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import Home from './pages/Home';
 import AdminRoute from './components/AdminRoute';
 import AuthenticatedRoute from './components/AuthenticatedRoute';
+import Footer from './components/Footer';
+import Navbar from './components/Navbar';
 import { ThemeProvider } from './hooks/useTheme';
+import Home from './pages/Home';
 import { ToastProvider } from './hooks/useToast';
 import { useAuth } from './hooks/useAuth';
 

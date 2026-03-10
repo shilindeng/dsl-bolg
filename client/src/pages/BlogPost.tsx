@@ -4,20 +4,23 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import { addBookmark, fetchPost, likePost, removeBookmark, type Comment, type Post } from '../api/client';
-import ReadingProgress from '../components/ReadingProgress';
 import Comments from '../components/Comments';
-import SEO from '../components/SEO';
 import LazyImage from '../components/LazyImage';
 import NewsletterSignup from '../components/NewsletterSignup';
+import ReadingProgress from '../components/ReadingProgress';
+import SEO from '../components/SEO';
+import SiteIcon from '../components/SiteIcon';
+import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
+import { useToast } from '../hooks/useToast';
 import { buildHeadingId } from '../lib/content';
 import { formatDate } from '../lib/format';
-import { siteConfig } from '../config/site';
 import 'highlight.js/styles/atom-one-dark.css';
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
     const { isAdmin, isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -80,9 +83,20 @@ export default function BlogPost() {
             } else {
                 await addBookmark(post.id);
             }
-            setPost((current) => current ? { ...current, viewerState: { bookmarked: !current.viewerState?.bookmarked } } : current);
+            setPost((current) => (current ? { ...current, viewerState: { bookmarked: !current.viewerState?.bookmarked } } : current));
         } finally {
             setBookmarking(false);
+        }
+    };
+
+    const handleCopyLink = async () => {
+        if (!post) return;
+
+        try {
+            await navigator.clipboard.writeText(`${siteConfig.url}/blog/${post.slug}`);
+            showToast('文章链接已复制。', 'success');
+        } catch {
+            showToast('复制链接失败。', 'error');
         }
     };
 
@@ -102,8 +116,9 @@ export default function BlogPost() {
                 <div className="container">
                     <div className="empty-state">
                         <h1 className="section-title">文章不存在</h1>
-                        <Link to="/blog" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-                            返回博客
+                        <Link to="/blog" className="btn btn-primary">
+                            <SiteIcon name="arrow-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                            <span>返回博客</span>
                         </Link>
                     </div>
                 </div>
@@ -139,125 +154,150 @@ export default function BlogPost() {
 
             <ReadingProgress />
 
-            <section className="section article-hero-section">
-                <div className="container article-hero-shell">
-                    <div className="article-hero-copy">
-                        <Link to="/blog" className="command-hint article-back-link">
-                            返回文章归档
+            <section className="section page-compact-hero article-hero">
+                <div className="container article-header-grid">
+                    <div className="article-header-copy">
+                        <Link to="/blog" className="section-link back-link">
+                            <SiteIcon name="chevron-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                            <span>返回文章归档</span>
                         </Link>
-                        <div className="eyebrow">文章信号</div>
-                        <h1 className="article-title">{post.title}</h1>
-                        <p className="lead">{post.deck || post.excerpt}</p>
 
-                        <div className="article-meta" data-testid="article-meta">
-                            <span>{formatDate(post.publishedAt || post.createdAt)}</span>
-                            <span>{post.meta?.readTime || 1} 分钟阅读</span>
-                            <span>{post.meta?.views || 0} 次浏览</span>
-                            <span>最后更新于 {formatDate(post.updatedAt)}</span>
-                        </div>
-
-                        <div className="tag-list">
-                            {post.category ? <span className="chip">{post.category.name}</span> : null}
-                            {post.tags.map((tag) => (
-                                <span key={tag.id} className="tag">{tag.name}</span>
+                        <div className="meta-inline">
+                            {post.category ? (
+                                <span className="chip">
+                                    <SiteIcon name="folder" size={13} />
+                                    <span>{post.category.name}</span>
+                                </span>
+                            ) : null}
+                            {post.tags.slice(0, 3).map((tag) => (
+                                <span key={tag.id} className="tag">
+                                    <SiteIcon name="tag" size={12} />
+                                    <span>{tag.name}</span>
+                                </span>
                             ))}
                         </div>
 
+                        <h1 className="section-title article-title">{post.title}</h1>
+                        <p className="section-copy article-hero-lead">{post.deck || post.excerpt}</p>
+
+                        <div className="article-meta" data-testid="article-meta">
+                            <span className="meta-pill">
+                                <SiteIcon name="calendar" size={13} />
+                                <span>{formatDate(post.publishedAt || post.createdAt)}</span>
+                            </span>
+                            <span className="meta-pill">
+                                <SiteIcon name="clock" size={13} />
+                                <span>{post.meta?.readTime || 1} 分钟阅读</span>
+                            </span>
+                            <span className="meta-pill">
+                                <SiteIcon name="spark" size={13} />
+                                <span>最后更新于 {formatDate(post.updatedAt)}</span>
+                            </span>
+                        </div>
+
                         {isAdmin ? (
-                            <div className="article-admin-actions">
-                                <Link to={`/editor/${post.slug}`} className="btn btn-secondary">编辑文章</Link>
+                            <div className="hero-actions">
+                                <Link to={`/editor/${post.slug}`} className="btn btn-secondary">
+                                    <SiteIcon name="pen" size={14} />
+                                    <span>编辑文章</span>
+                                </Link>
                             </div>
                         ) : null}
                     </div>
 
-                    <div className="article-hero-side">
-                        {post.coverImage ? (
-                            <div className="article-hero-cover">
-                                <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
-                            </div>
-                        ) : null}
-                        <div className="article-side-card">
-                            <span className="signal-label mono">文章状态</span>
-                            <strong>已发布，并持续维护</strong>
-                            <p className="muted">这里的文章会持续修订，而不是发布即结束。</p>
+                    {post.coverImage ? (
+                        <div className="article-cover-card editorial-cover-card">
+                            <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
                         </div>
-                        <div className="article-side-card">
-                            <span className="signal-label mono">阅读模式</span>
-                            <strong>长文 / 结构化 / 可引用</strong>
-                        </div>
-                    </div>
+                    ) : null}
                 </div>
             </section>
 
-            <section className="section article-body-section">
+            <section className="section section-tight">
                 <div className="container article-layout">
                     <article className="article-main">
-                        <div className="markdown-body" data-testid="article-content">
-                            <Markdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeHighlight]}
-                                components={{
-                                    h2: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
-                                        return (
-                                            <h2 id={id}>
-                                                <a href={`#${id}`}>{children}</a>
-                                            </h2>
-                                        );
-                                    },
-                                    h3: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
-                                        return (
-                                            <h3 id={id}>
-                                                <a href={`#${id}`}>{children}</a>
-                                            </h3>
-                                        );
-                                    },
-                                    h4: ({ children }) => {
-                                        const text = String(children);
-                                        const id = buildHeadingId(text);
-                                        return (
-                                            <h4 id={id}>
-                                                <a href={`#${id}`}>{children}</a>
-                                            </h4>
-                                        );
-                                    },
-                                    img: ({ alt, ...props }) => (
-                                        <figure>
-                                            <div className="article-cover article-inline-cover">
-                                                <LazyImage {...props} src={props.src || ''} alt={alt} />
-                                            </div>
-                                            {alt ? <figcaption>{alt}</figcaption> : null}
-                                        </figure>
-                                    ),
-                                }}
-                            >
-                                {post.content}
-                            </Markdown>
+                        <div className="article-prose-shell">
+                            <div className="markdown-body" data-testid="article-content">
+                                <Markdown
+                                    remarkPlugins={[remarkGfm]}
+                                    rehypePlugins={[rehypeHighlight]}
+                                    components={{
+                                        h2: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h2 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h2>
+                                            );
+                                        },
+                                        h3: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h3 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h3>
+                                            );
+                                        },
+                                        h4: ({ children }) => {
+                                            const text = String(children);
+                                            const id = buildHeadingId(text);
+                                            return (
+                                                <h4 id={id}>
+                                                    <a href={`#${id}`}>{children}</a>
+                                                </h4>
+                                            );
+                                        },
+                                        img: ({ alt, ...props }) => (
+                                            <figure>
+                                                <div className="article-inline-media">
+                                                    <LazyImage {...props} src={props.src || ''} alt={alt} />
+                                                </div>
+                                                {alt ? <figcaption>{alt}</figcaption> : null}
+                                            </figure>
+                                        ),
+                                    }}
+                                >
+                                    {post.content}
+                                </Markdown>
+                            </div>
                         </div>
 
                         <div className="article-actions-shell">
                             <div>
                                 <strong>这篇文章对你有帮助吗？</strong>
-                                <p className="muted">点赞会帮助我判断哪些主题值得继续深挖。</p>
+                                <p className="muted">点赞能帮助我判断哪些主题值得继续深挖。</p>
                             </div>
                             <div className="article-actions">
-                                <button type="button" className="btn btn-primary" data-testid="article-like-button" onClick={handleLike} disabled={liking}>
-                                    {liking ? '处理中...' : `点赞 ${post.meta?.likes || 0}`}
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    data-testid="article-like-button"
+                                    onClick={handleLike}
+                                    disabled={liking}
+                                >
+                                    <SiteIcon name="spark" size={14} />
+                                    <span>{liking ? '处理中' : `点赞 ${post.meta?.likes || 0}`}</span>
                                 </button>
                                 <button
                                     type="button"
                                     className="btn btn-secondary"
                                     data-testid="article-copy-link-button"
-                                    onClick={() => navigator.clipboard.writeText(articleUrl)}
+                                    onClick={() => void handleCopyLink()}
                                 >
-                                    复制链接
+                                    <SiteIcon name="copy" size={14} />
+                                    <span>复制链接</span>
                                 </button>
                                 {isAuthenticated ? (
-                                    <button type="button" className="btn btn-ghost" onClick={() => void handleBookmarkToggle()} disabled={bookmarking}>
-                                        {bookmarking ? '处理中...' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}
+                                    <button
+                                        type="button"
+                                        className="btn btn-ghost"
+                                        onClick={() => void handleBookmarkToggle()}
+                                        disabled={bookmarking}
+                                    >
+                                        <SiteIcon name="inbox" size={14} />
+                                        <span>{bookmarking ? '处理中' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}</span>
                                     </button>
                                 ) : null}
                             </div>
@@ -265,34 +305,47 @@ export default function BlogPost() {
 
                         {queueCount > 0 ? (
                             <div className="article-queue-note">
-                                <span className="badge badge-green" data-testid="pending-comment-badge">
-                                    已新增 {queueCount} 条待审核评论
-                                </span>
+                                <span className="badge">新增 {queueCount} 条待审核评论</span>
                             </div>
                         ) : null}
 
                         <Comments postId={post.id} comments={comments} onCommentAdded={handleCommentAdded} />
+
                         <div className="feature-panel newsletter-inline-panel">
-                            <div className="eyebrow">Newsletter</div>
-                            <h3>喜欢这种长文？订阅后续更新</h3>
-                            <p className="muted">新长文、项目复盘和工作流迭代会优先进入 newsletter。</p>
+                            <div className="section-head compact-head">
+                                <div>
+                                    <span className="eyebrow">Newsletter</span>
+                                    <h3>喜欢这种长文？订阅后续更新</h3>
+                                </div>
+                            </div>
+                            <p className="section-copy">新长文、项目复盘和工作流迭代会优先进入 newsletter。</p>
                             <NewsletterSignup source={`article:${post.slug}`} compact />
                         </div>
 
                         {post.relatedPosts?.length ? (
                             <section className="section-tight">
-                                <div className="section-heading section-heading-left">
+                                <div className="section-head compact-head">
                                     <div>
-                                        <div className="eyebrow">相关文章</div>
-                                        <h3>继续阅读</h3>
+                                        <span className="eyebrow">继续阅读</span>
+                                        <h3>相关文章</h3>
                                     </div>
                                 </div>
-                                <div className="two-grid">
+
+                                <div className="stack-grid">
                                     {post.relatedPosts.map((item) => (
-                                        <Link key={item.id} to={`/blog/${item.slug}`} className="signal-card">
-                                            <span className="signal-label mono">相关文章</span>
-                                            <h3>{item.title}</h3>
-                                            <p>{item.excerpt}</p>
+                                        <Link key={item.id} to={`/blog/${item.slug}`} className="related-card">
+                                            <div>
+                                                <span className="meta-pill">
+                                                    <SiteIcon name="book-open" size={13} />
+                                                    <span>相关文章</span>
+                                                </span>
+                                                <strong>{item.title}</strong>
+                                                <p>{item.excerpt}</p>
+                                            </div>
+                                            <span className="section-link">
+                                                <span>继续阅读</span>
+                                                <SiteIcon name="arrow-right" size={14} />
+                                            </span>
                                         </Link>
                                     ))}
                                 </div>
@@ -303,7 +356,7 @@ export default function BlogPost() {
                     <aside className="article-sidebar">
                         {post.toc?.length ? (
                             <div className="article-side-card">
-                                <strong className="mono">目录</strong>
+                                <strong>目录</strong>
                                 <div className="toc-list" data-testid="post-toc">
                                     {post.toc.map((item) => (
                                         <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
@@ -315,17 +368,25 @@ export default function BlogPost() {
                         ) : null}
 
                         <div className="article-side-card">
-                            <strong className="mono">导航</strong>
-                            {post.previousPost ? (
-                                <Link to={`/blog/${post.previousPost.slug}`} className="muted">
-                                    上一篇: {post.previousPost.title}
-                                </Link>
-                            ) : null}
-                            {post.nextPost ? (
-                                <Link to={`/blog/${post.nextPost.slug}`} className="muted">
-                                    下一篇: {post.nextPost.title}
-                                </Link>
-                            ) : null}
+                            <strong>导航</strong>
+                            <div className="stack-grid">
+                                {post.previousPost ? (
+                                    <Link to={`/blog/${post.previousPost.slug}`} className="side-link">
+                                        <SiteIcon name="chevron-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                                        <span>上一篇：{post.previousPost.title}</span>
+                                    </Link>
+                                ) : null}
+                                {post.nextPost ? (
+                                    <Link to={`/blog/${post.nextPost.slug}`} className="side-link">
+                                        <span>下一篇：{post.nextPost.title}</span>
+                                        <SiteIcon name="chevron-right" size={14} />
+                                    </Link>
+                                ) : null}
+                                <button type="button" className="action-chip" onClick={() => void handleCopyLink()}>
+                                    <SiteIcon name="copy" size={14} />
+                                    <span>复制本页链接</span>
+                                </button>
+                            </div>
                         </div>
                     </aside>
                 </div>

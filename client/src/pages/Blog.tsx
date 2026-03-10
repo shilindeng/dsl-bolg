@@ -2,6 +2,7 @@ import { startTransition, useDeferredValue, useEffect, useState } from 'react';
 import { fetchCategories, fetchPosts, fetchTags, type Category, type Post, type Tag } from '../api/client';
 import PostCard from '../components/PostCard';
 import SEO from '../components/SEO';
+import SiteIcon from '../components/SiteIcon';
 
 export default function Blog() {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -16,10 +17,15 @@ export default function Blog() {
     const deferredSearch = useDeferredValue(search);
 
     useEffect(() => {
-        Promise.all([fetchTags(), fetchCategories()]).then(([tagResponse, categoryResponse]) => {
-            setTags(tagResponse);
-            setCategories(categoryResponse);
-        });
+        Promise.all([fetchTags(), fetchCategories()])
+            .then(([tagResponse, categoryResponse]) => {
+                setTags(tagResponse);
+                setCategories(categoryResponse);
+            })
+            .catch(() => {
+                setTags([]);
+                setCategories([]);
+            });
     }, []);
 
     useEffect(() => {
@@ -56,71 +62,72 @@ export default function Blog() {
 
     return (
         <>
-            <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的技术写作、产品思考与界面研究。" />
+            <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的长期写作与案例判断。" />
 
-            <section className="section page-hero">
-                <div className="container page-hero-layout">
-                    <div className="section-stack">
-                        <div>
-                            <div className="eyebrow">文章归档</div>
-                            <h1 className="page-title">给长期阅读者准备的内容档案</h1>
-                            <p className="lead">
-                                这里按主题、标签与关键词组织长文、复盘和设计笔记。目标不是追逐更新频率，而是把可复用的判断力沉淀成长期资产。
-                            </p>
-                        </div>
-
-                        <div className="hero-metrics">
-                            <div className="metric-card">
-                                <span className="muted mono">FILTER MODEL</span>
-                                <strong>搜索 / 分类 / 标签</strong>
-                            </div>
-                            <div className="metric-card">
-                                <span className="muted mono">CATEGORIES</span>
-                                <strong>{categories.length || '--'} 个分类</strong>
-                            </div>
-                            <div className="metric-card">
-                                <span className="muted mono">TAGS</span>
-                                <strong>{tags.length || '--'} 个标签</strong>
-                            </div>
-                        </div>
+            <section className="section page-compact-hero archive-hero">
+                <div className="container archive-hero-shell">
+                    <div>
+                        <span className="eyebrow">文章归档</span>
+                        <h1 className="section-title">给长期阅读者准备的内容档案</h1>
+                        <p className="section-copy">
+                            这里按主题、分类和关键词组织长文、复盘和设计笔记。更像编辑目录，而不是无差别信息流。
+                        </p>
                     </div>
 
-                    <div className="editorial-panel">
-                        <div className="eyebrow">阅读方式</div>
-                        <h2 className="section-title">先缩小范围，再进入正文</h2>
-                        <p className="muted">
-                            一次只给你足够少、但足够清晰的内容线索。先确定主题方向，再决定投入阅读时间，体验会比无差别信息流更高级。
-                        </p>
+                    <div className="hero-fact-rail archive-fact-rail">
+                        <article className="hero-fact-item">
+                            <strong>搜索 / 分类 / 标签</strong>
+                            <p>先确定方向，再决定要不要投入阅读时间。</p>
+                        </article>
+                        <article className="hero-fact-item">
+                            <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
+                            <p>当前公开内容线索都从这里收口。</p>
+                        </article>
                     </div>
                 </div>
             </section>
 
-            <section className="section section-tight">
+            <section className="section section-border section-tight">
                 <div className="container">
-                    <div className="filter-shell">
-                        <label className="form-field">
-                            <span className="form-label">搜索文章</span>
-                            <input
-                                data-testid="blog-search-input"
-                                className="form-input"
-                                value={search}
-                                onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                                placeholder="搜索标题、摘要或关键词..."
-                            />
-                        </label>
+                    <div className="filter-shell archive-filter-shell">
+                        <div className="archive-filter-topline">
+                            <label className="form-field archive-search-field">
+                                <span className="form-label">搜索文章</span>
+                                <div className="input-with-icon">
+                                    <SiteIcon name="search" size={15} />
+                                    <input
+                                        data-testid="blog-search-input"
+                                        className="form-input"
+                                        value={search}
+                                        onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                                        placeholder="搜索标题、摘要或关键词..."
+                                    />
+                                </div>
+                            </label>
 
-                        {activeFilters.length ? (
-                            <div className="tag-list">
-                                {activeFilters.map((item) => (
-                                    <span key={item} className="tag">{item}</span>
-                                ))}
-                            </div>
-                        ) : null}
+                            {activeFilters.length ? (
+                                <div className="tag-list archive-active-tags">
+                                    {activeFilters.map((item) => (
+                                        <span key={item} className="tag">
+                                            <SiteIcon name="spark" size={12} />
+                                            <span>{item}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
 
                         <div className="filter-group">
-                            <span className="filter-label mono">CATEGORY</span>
+                            <span className="filter-label">
+                                <SiteIcon name="folder" size={13} />
+                                <span>分类</span>
+                            </span>
                             <div className="filter-row">
-                                <button type="button" className={`btn ${activeCategory ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveCategory('')}>
+                                <button
+                                    type="button"
+                                    className={`filter-chip ${activeCategory ? '' : 'is-active'}`}
+                                    onClick={() => setActiveCategory('')}
+                                >
                                     全部分类
                                 </button>
                                 {categories.map((category) => (
@@ -128,7 +135,7 @@ export default function Blog() {
                                         key={category.id}
                                         type="button"
                                         data-testid={`category-filter-${category.slug}`}
-                                        className={`btn ${activeCategory === category.slug ? 'btn-secondary' : 'btn-ghost'}`}
+                                        className={`filter-chip ${activeCategory === category.slug ? 'is-active' : ''}`}
                                         onClick={() => setActiveCategory(category.slug)}
                                     >
                                         {category.name}
@@ -138,9 +145,16 @@ export default function Blog() {
                         </div>
 
                         <div className="filter-group">
-                            <span className="filter-label mono">TAG</span>
+                            <span className="filter-label">
+                                <SiteIcon name="tag" size={13} />
+                                <span>标签</span>
+                            </span>
                             <div className="filter-row">
-                                <button type="button" className={`btn ${activeTag ? 'btn-ghost' : 'btn-secondary'}`} onClick={() => setActiveTag('')}>
+                                <button
+                                    type="button"
+                                    className={`filter-chip ${activeTag ? '' : 'is-active'}`}
+                                    onClick={() => setActiveTag('')}
+                                >
                                     全部标签
                                 </button>
                                 {tags.map((tag) => (
@@ -148,7 +162,7 @@ export default function Blog() {
                                         key={tag.id}
                                         type="button"
                                         data-testid={`tag-filter-${tag.slug}`}
-                                        className={`btn ${activeTag === tag.slug ? 'btn-secondary' : 'btn-ghost'}`}
+                                        className={`filter-chip ${activeTag === tag.slug ? 'is-active' : ''}`}
                                         onClick={() => setActiveTag(tag.slug)}
                                     >
                                         {tag.name}
@@ -161,7 +175,7 @@ export default function Blog() {
             </section>
 
             <section className="section">
-                <div className="container" style={{ display: 'grid', gap: '1.5rem' }}>
+                <div className="container section-stack archive-results-shell">
                     {loading ? (
                         <div className="empty-state">正在同步文章归档...</div>
                     ) : posts.length === 0 ? (
@@ -169,9 +183,9 @@ export default function Blog() {
                     ) : (
                         <>
                             {featuredPost ? <PostCard post={featuredPost} featured /> : null}
-                            <div className="two-grid">
+                            <div className="stack-grid archive-results-list">
                                 {restPosts.map((post) => (
-                                    <PostCard key={post.id} post={post} />
+                                    <PostCard key={post.id} post={post} compact />
                                 ))}
                             </div>
                         </>
@@ -179,12 +193,24 @@ export default function Blog() {
 
                     {totalPages > 1 ? (
                         <div className="pagination-shell">
-                            <button type="button" className="btn btn-ghost" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-                                上一页
+                            <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={page <= 1}
+                                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                            >
+                                <SiteIcon name="chevron-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                                <span>上一页</span>
                             </button>
-                            <span className="command-hint">{page} / {totalPages}</span>
-                            <button type="button" className="btn btn-ghost" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
-                                下一页
+                            <span className="meta-pill emphasis">{page} / {totalPages}</span>
+                            <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={page >= totalPages}
+                                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                            >
+                                <span>下一页</span>
+                                <SiteIcon name="chevron-right" size={14} />
                             </button>
                         </div>
                     ) : null}

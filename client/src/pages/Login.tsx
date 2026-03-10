@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, requestLoginCode, verifyLoginCode } from '../api/client';
 import SEO from '../components/SEO';
+import SiteIcon from '../components/SiteIcon';
 import TurnstileWidget from '../components/TurnstileWidget';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
@@ -74,95 +75,136 @@ export default function Login() {
         <>
             <SEO title="登录" description="管理员登录与读者邮箱验证码登录入口。" />
 
-            <section className="section login-section">
-                <div className="container login-grid">
-                    <div className="feature-panel accent-panel">
-                        <div className="eyebrow">Access</div>
+            <section className="section page-compact-hero">
+                <div className="container split-feature">
+                    <div>
+                        <span className="eyebrow">Access</span>
                         <h1 className="section-title">登录 DSL Blog</h1>
-                        <p className="lead">
+                        <p className="section-copy">
                             读者使用邮箱验证码进入会员中心，管理员继续使用密码登录控制台。
                         </p>
-                        <div className="hero-metrics">
-                            <div className="metric-card">
-                                <span className="muted mono">READER</span>
-                                <strong>邮箱验证码登录</strong>
+
+                        <div className="list-block compact-list">
+                            <div className="list-item">
+                                <SiteIcon name="mail" size={15} />
+                                <span>读者使用邮箱验证码，无需长期记住密码。</span>
                             </div>
-                            <div className="metric-card">
-                                <span className="muted mono">ADMIN</span>
-                                <strong>密码 + Turnstile</strong>
+                            <div className="list-item">
+                                <SiteIcon name="grid" size={15} />
+                                <span>管理员继续通过密码 + Turnstile 进入后台。</span>
+                            </div>
+                            <div className="list-item">
+                                <SiteIcon name="check" size={15} />
+                                <span>公开站保持轻量，功能入口只解决登录这一个任务。</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="login-card">
-                        <div className="login-mode-switch">
-                            <button type="button" className={`chip ${mode === 'reader' ? 'is-active' : ''}`} onClick={() => setMode('reader')}>读者登录</button>
-                            <button type="button" className={`chip ${mode === 'admin' ? 'is-active' : ''}`} onClick={() => setMode('admin')}>管理员</button>
+                        <div className="mode-switch">
+                            <button
+                                type="button"
+                                className={`filter-chip ${mode === 'reader' ? 'is-active' : ''}`}
+                                onClick={() => setMode('reader')}
+                            >
+                                <SiteIcon name="mail" size={14} />
+                                <span>读者登录</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={`filter-chip ${mode === 'admin' ? 'is-active' : ''}`}
+                                onClick={() => setMode('admin')}
+                            >
+                                <SiteIcon name="grid" size={14} />
+                                <span>管理员</span>
+                            </button>
                         </div>
 
                         {mode === 'reader' ? (
                             <form onSubmit={codeSent ? handleVerifyCode : handleRequestCode} className="comment-form" data-testid="reader-login-form">
-                                <div className="eyebrow">邮箱验证码</div>
+                                <span className="eyebrow">邮箱验证码</span>
                                 <label className="form-field">
                                     <span className="form-label">邮箱</span>
-                                    <input
-                                        className="form-input"
-                                        type="email"
-                                        value={readerEmail}
-                                        onChange={(event) => setReaderEmail(event.target.value)}
-                                        required
-                                    />
+                                    <div className="input-with-icon">
+                                        <SiteIcon name="mail" size={15} />
+                                        <input
+                                            className="form-input"
+                                            type="email"
+                                            value={readerEmail}
+                                            onChange={(event) => setReaderEmail(event.target.value)}
+                                            required
+                                        />
+                                    </div>
                                 </label>
+
                                 {codeSent ? (
                                     <label className="form-field">
                                         <span className="form-label">验证码</span>
-                                        <input
-                                            className="form-input mono"
-                                            value={readerCode}
-                                            onChange={(event) => setReaderCode(event.target.value)}
-                                            placeholder="6 位验证码"
-                                            required
-                                        />
+                                        <div className="input-with-icon">
+                                            <SiteIcon name="check" size={15} />
+                                            <input
+                                                className="form-input mono"
+                                                value={readerCode}
+                                                onChange={(event) => setReaderCode(event.target.value)}
+                                                placeholder="6 位验证码"
+                                                required
+                                            />
+                                        </div>
                                     </label>
                                 ) : (
                                     <TurnstileWidget siteKey={turnstileSiteKey} onToken={setReaderTurnstileToken} />
                                 )}
+
                                 <button type="submit" className="btn btn-primary" disabled={loading}>
-                                    {loading ? '处理中...' : codeSent ? '验证并登录' : '发送验证码'}
+                                    <SiteIcon name="send" size={14} />
+                                    <span>{loading ? '处理中' : codeSent ? '验证并登录' : '发送验证码'}</span>
                                 </button>
-                                {codeSent ? <button type="button" className="btn btn-ghost" onClick={() => setCodeSent(false)}>重新发送</button> : null}
+
+                                {codeSent ? (
+                                    <button type="button" className="btn btn-ghost" onClick={() => setCodeSent(false)}>
+                                        <SiteIcon name="arrow-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                                        <span>重新发送</span>
+                                    </button>
+                                ) : null}
                             </form>
                         ) : (
                             <form onSubmit={handleAdminSubmit} className="comment-form" data-testid="admin-login-form">
-                                <div className="eyebrow">管理员入口</div>
+                                <span className="eyebrow">管理员入口</span>
                                 <label className="form-field">
                                     <span className="form-label">邮箱</span>
-                                    <input
-                                        className="form-input"
-                                        data-testid="login-email-input"
-                                        type="email"
-                                        value={adminEmail}
-                                        onChange={(event) => setAdminEmail(event.target.value)}
-                                        required
-                                    />
+                                    <div className="input-with-icon">
+                                        <SiteIcon name="mail" size={15} />
+                                        <input
+                                            className="form-input"
+                                            data-testid="login-email-input"
+                                            type="email"
+                                            value={adminEmail}
+                                            onChange={(event) => setAdminEmail(event.target.value)}
+                                            required
+                                        />
+                                    </div>
                                 </label>
 
                                 <label className="form-field">
                                     <span className="form-label">密码</span>
-                                    <input
-                                        className="form-input"
-                                        data-testid="login-password-input"
-                                        type="password"
-                                        value={password}
-                                        onChange={(event) => setPassword(event.target.value)}
-                                        required
-                                    />
+                                    <div className="input-with-icon">
+                                        <SiteIcon name="login" size={15} />
+                                        <input
+                                            className="form-input"
+                                            data-testid="login-password-input"
+                                            type="password"
+                                            value={password}
+                                            onChange={(event) => setPassword(event.target.value)}
+                                            required
+                                        />
+                                    </div>
                                 </label>
 
                                 <TurnstileWidget siteKey={turnstileSiteKey} onToken={setAdminTurnstileToken} />
 
                                 <button type="submit" className="btn btn-primary" data-testid="login-submit-button" disabled={loading}>
-                                    {loading ? '验证中...' : '进入控制台'}
+                                    <SiteIcon name="login" size={14} />
+                                    <span>{loading ? '验证中' : '进入控制台'}</span>
                                 </button>
                             </form>
                         )}

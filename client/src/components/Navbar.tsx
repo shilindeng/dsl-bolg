@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
+import SiteIcon from './SiteIcon';
+import ThemeToggle from './ThemeToggle';
 
 interface NavbarProps {
     isAdmin: boolean;
@@ -18,14 +19,27 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
         setOpen(false);
     }, [location.pathname]);
 
-    const navLinks = siteConfig.navigation.map((item) => {
-        const active = item.to === '/' ? location.pathname === item.to : location.pathname.startsWith(item.to);
-        return (
-            <Link key={item.to} to={item.to} className={`site-nav-link ${active ? 'is-active' : ''}`}>
-                {item.label}
-            </Link>
-        );
-    });
+    const navLinks = useMemo(
+        () =>
+            siteConfig.navigation.map((item) => {
+                const active = item.to === '/' ? location.pathname === item.to : location.pathname.startsWith(item.to);
+
+                return (
+                    <Link
+                        key={item.to}
+                        to={item.to}
+                        className={`site-nav-link ${active ? 'is-active' : ''}`}
+                        title={item.description}
+                    >
+                        <SiteIcon name={item.icon} size={15} />
+                        <span>{item.label}</span>
+                    </Link>
+                );
+            }),
+        [location.pathname],
+    );
+
+    const accountLabel = user?.name || '账户';
 
     return (
         <header className={`site-nav ${open ? 'is-open' : ''}`}>
@@ -34,46 +48,63 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     <span className="brand-mark mono">DSL</span>
                     <div className="brand-copy">
                         <strong>{siteConfig.name}</strong>
-                        <span>长期主义内容系统 · {siteConfig.author.role}</span>
+                        <span>{siteConfig.author.role}</span>
                     </div>
                 </Link>
 
-                <nav className="site-nav-links" aria-label="主导航">
+                <nav className="site-nav-links" aria-label="主导航" data-testid="primary-nav">
                     {navLinks}
                 </nav>
 
                 <div className="site-nav-actions">
-                    <div className="section-stack nav-status-group">
-                        <span className="nav-status mono" aria-hidden="true">
-                            在线发布中 · WWW.SHILIN.TECH
-                        </span>
-                    </div>
+                    <span className="nav-status desktop-only">
+                        <SiteIcon name="spark" size={14} />
+                        <span>作品系统在线</span>
+                    </span>
 
                     {isAdmin ? (
                         <>
-                            <Link to="/account" className="btn btn-ghost">账户</Link>
-                            <Link to="/editor" className="btn btn-ghost">写文章</Link>
-                            <Link to="/admin/dashboard" className="btn btn-secondary">控制台</Link>
+                            <Link to="/account" className="action-chip desktop-only">
+                                <SiteIcon name="user" size={14} />
+                                <span>{accountLabel}</span>
+                            </Link>
+                            <Link to="/editor" className="action-chip desktop-only">
+                                <SiteIcon name="pen" size={14} />
+                                <span>写文章</span>
+                            </Link>
+                            <Link to="/admin/dashboard" className="action-chip desktop-only">
+                                <SiteIcon name="grid" size={14} />
+                                <span>控制台</span>
+                            </Link>
                         </>
                     ) : isAuthenticated ? (
                         <>
-                            <Link to="/account" className="btn btn-ghost">{user?.name || '账户'}</Link>
-                            <button type="button" className="btn btn-secondary" onClick={() => void logout()}>退出</button>
+                            <Link to="/account" className="action-chip desktop-only">
+                                <SiteIcon name="user" size={14} />
+                                <span>{accountLabel}</span>
+                            </Link>
+                            <button type="button" className="action-chip desktop-only" onClick={() => void logout()}>
+                                <SiteIcon name="close" size={14} />
+                                <span>退出</span>
+                            </button>
                         </>
                     ) : (
-                        <Link to="/login" className="btn btn-ghost">登录</Link>
+                        <Link to="/login" className="action-chip desktop-only">
+                            <SiteIcon name="login" size={14} />
+                            <span>登录</span>
+                        </Link>
                     )}
 
                     <ThemeToggle />
 
                     <button
                         type="button"
-                        className="icon-button mobile-only mobile-menu-toggle"
-                        aria-label="切换移动端菜单"
+                        className="icon-button mobile-only"
+                        aria-label={open ? '关闭导航菜单' : '打开导航菜单'}
                         aria-expanded={open}
                         onClick={() => setOpen((value) => !value)}
                     >
-                        <span className="mono">{open ? 'CLOSE' : 'MENU'}</span>
+                        <SiteIcon name={open ? 'close' : 'menu'} size={16} />
                     </button>
                 </div>
             </div>
@@ -82,19 +113,49 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
 
             {open ? (
                 <div className="container nav-drawer-shell">
-                    <div className="menu-sheet nav-drawer">
-                        <div className="menu-sheet-body">
-                            <div className="eyebrow">站点导航</div>
+                    <div className="nav-drawer">
+                        <div className="drawer-head">
+                            <span className="eyebrow">Navigation</span>
+                            <p className="muted">从这里进入文章、项目与作者页。</p>
+                        </div>
+
+                        <nav className="drawer-links" aria-label="移动端导航">
                             {navLinks}
-                            {isAdmin ? <Link to="/editor" className="site-nav-link">新建文章</Link> : null}
-                            {isAuthenticated ? <Link to="/account" className="site-nav-link">会员中心</Link> : null}
-                            {isAdmin ? <Link to="/admin/dashboard" className="site-nav-link">管理后台</Link> : <Link to="/login" className="site-nav-link">登录</Link>}
-                            {isAuthenticated ? <button type="button" className="site-nav-link nav-plain-button" onClick={() => void logout()}>退出登录</button> : null}
-                            <ThemeToggle />
-                            <div className="metric-card">
-                                <span className="muted mono">导航模式</span>
-                                <strong>移动端保持信息集中，桌面端强调品牌识别</strong>
-                            </div>
+                        </nav>
+
+                        <div className="drawer-actions">
+                            {isAdmin ? (
+                                <>
+                                    <Link to="/account" className="action-chip">
+                                        <SiteIcon name="user" size={14} />
+                                        <span>{accountLabel}</span>
+                                    </Link>
+                                    <Link to="/editor" className="action-chip">
+                                        <SiteIcon name="pen" size={14} />
+                                        <span>写文章</span>
+                                    </Link>
+                                    <Link to="/admin/dashboard" className="action-chip">
+                                        <SiteIcon name="grid" size={14} />
+                                        <span>控制台</span>
+                                    </Link>
+                                </>
+                            ) : isAuthenticated ? (
+                                <>
+                                    <Link to="/account" className="action-chip">
+                                        <SiteIcon name="user" size={14} />
+                                        <span>{accountLabel}</span>
+                                    </Link>
+                                    <button type="button" className="action-chip" onClick={() => void logout()}>
+                                        <SiteIcon name="close" size={14} />
+                                        <span>退出登录</span>
+                                    </button>
+                                </>
+                            ) : (
+                                <Link to="/login" className="action-chip">
+                                    <SiteIcon name="login" size={14} />
+                                    <span>登录</span>
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { subscribeNewsletter } from '../api/client';
 import { useToast } from '../hooks/useToast';
+import SiteIcon from './SiteIcon';
 import TurnstileWidget from './TurnstileWidget';
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
@@ -44,18 +45,24 @@ export default function NewsletterSignup({ source = 'website', compact = false }
         <form className={`newsletter-form ${compact ? 'is-compact' : ''}`} onSubmit={handleSubmit}>
             <label className="form-field newsletter-field">
                 <span className="form-label">邮箱订阅</span>
-                <input
-                    className="form-input"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="name@example.com"
-                    required
-                />
+                <div className="input-with-icon">
+                    <SiteIcon name="mail" size={15} />
+                    <input
+                        className="form-input"
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="name@example.com"
+                        required
+                    />
+                </div>
             </label>
+
             <TurnstileWidget siteKey={turnstileSiteKey} onToken={setTurnstileToken} />
+
             <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? '提交中...' : '订阅更新'}
+                <SiteIcon name={loading ? 'spark' : 'send'} size={15} />
+                <span>{loading ? '提交中' : '订阅更新'}</span>
             </button>
         </form>
     );

@@ -1,58 +1,69 @@
 import { Link } from 'react-router-dom';
 import { siteConfig } from '../config/site';
 import NewsletterSignup from './NewsletterSignup';
+import SiteIcon from './SiteIcon';
 
 export default function Footer() {
     return (
         <footer className="site-footer">
             <div className="container site-footer-grid">
                 <section className="footer-intro">
-                    <div className="eyebrow">页脚信号</div>
-                    <div className="footer-heading">
-                        <h2>{siteConfig.name}</h2>
-                        <p className="muted">{siteConfig.author.summary}</p>
-                    </div>
+                    <span className="eyebrow">Public System</span>
+                    <h2>{siteConfig.name}</h2>
+                    <p>{siteConfig.author.summary}</p>
                     <div className="footer-badges">
-                        <span className="chip mono">内容 / 界面 / 工程</span>
-                        <span className="chip mono">长期维护</span>
-                        <span className="chip mono">Newsletter Ready</span>
+                        <span className="chip">
+                            <SiteIcon name="pen" size={13} />
+                            <span>内容</span>
+                        </span>
+                        <span className="chip">
+                            <SiteIcon name="grid" size={13} />
+                            <span>界面</span>
+                        </span>
+                        <span className="chip">
+                            <SiteIcon name="code" size={13} />
+                            <span>工程</span>
+                        </span>
                     </div>
                 </section>
 
                 <section className="footer-stack">
-                    <strong className="mono">导航</strong>
+                    <strong>导航</strong>
                     {siteConfig.navigation.map((item) => (
-                        <Link key={item.to} to={item.to} className="footer-link">
-                            {item.label}
+                        <Link key={item.to} to={item.to} className="footer-link" title={item.description}>
+                            <SiteIcon name={item.icon} size={14} />
+                            <span>{item.label}</span>
                         </Link>
                     ))}
                 </section>
 
                 <section className="footer-stack">
-                    <strong className="mono">链接</strong>
-                    {siteConfig.socialLinks.map((item) => (
+                    <strong>链接</strong>
+                    {siteConfig.socialLinks.map((item) =>
                         item.href.startsWith('/') && item.router !== false ? (
-                            <Link key={item.label} to={item.href} className="footer-link">
-                                {item.label}
+                            <Link key={item.label} to={item.href} className="footer-link" title={item.description}>
+                                <SiteIcon name={item.icon} size={14} />
+                                <span>{item.label}</span>
                             </Link>
                         ) : (
                             <a
                                 key={item.label}
                                 href={item.href}
                                 className="footer-link"
+                                title={item.description}
                                 target={item.external ? '_blank' : undefined}
-                                rel="noreferrer"
+                                rel={item.external ? 'noreferrer' : undefined}
                             >
-                                {item.label}
+                                <SiteIcon name={item.icon} size={14} />
+                                <span>{item.label}</span>
                             </a>
-                        )
-                    ))}
-                    <a className="footer-link" href="/sitemap.xml">站点地图</a>
+                        ),
+                    )}
                 </section>
 
-                <section className="footer-stack">
-                    <strong className="mono">订阅</strong>
-                    <p className="muted">接收新长文、项目复盘和工作流更新。</p>
+                <section className="footer-stack footer-subscribe">
+                    <strong>订阅更新</strong>
+                    <p>接收新的长文、项目复盘和工作流迭代记录。</p>
                     <NewsletterSignup source="footer" compact />
                 </section>
             </div>

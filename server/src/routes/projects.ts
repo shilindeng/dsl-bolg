@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import slugify from 'slugify';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, requireAdmin } from '../middleware/auth.js';
+import { formatPublicProject, isPublicProjectReady } from '../lib/publicPresentation.js';
 
 const router = Router();
 
@@ -27,7 +28,7 @@ router.get('/', async (_req: Request, res: Response) => {
             orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
         });
 
-        res.json(projects);
+        res.json(projects.map((project) => formatPublicProject(project)).filter((project) => isPublicProjectReady(project)));
     } catch (error) {
         console.error('Error fetching projects:', error);
         res.status(500).json({ error: 'Failed to fetch projects' });
@@ -45,7 +46,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             return;
         }
 
-        res.json(project);
+        res.json(formatPublicProject(project));
     } catch (error) {
         console.error('Error fetching project:', error);
         res.status(500).json({ error: 'Failed to fetch project' });

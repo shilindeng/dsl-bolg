@@ -1,11 +1,9 @@
 import { Prisma } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
 import slugify from 'slugify';
 import prisma from './prisma.js';
 import { createExcerpt, estimateReadTime } from './content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from './analytics.js';
-import { isR2Enabled } from './site.js';
+import { formatPublicPost } from './publicPresentation.js';
 
 export const includePostRelations = {
     tags: { include: { tag: true } },
@@ -14,20 +12,18 @@ export const includePostRelations = {
     series: true,
 } satisfies Prisma.PostInclude;
 
-function resolveLocalAsset(assetPath?: string | null) {
-    if (!assetPath || isR2Enabled || !assetPath.startsWith('/uploads/')) {
-        return assetPath ?? null;
-    }
-
-    const absolutePath = path.join(process.cwd(), 'uploads', path.basename(assetPath));
-    return fs.existsSync(absolutePath) ? assetPath : null;
-}
-
-export const formatPost = <T extends { tags: Array<{ tag: unknown }>; coverImage?: string | null }>(post: T) => ({
-    ...post,
-    coverImage: resolveLocalAsset(post.coverImage),
-    tags: post.tags.map((item) => item.tag),
-});
+export const formatPost = <
+    T extends {
+        title: string;
+        excerpt: string;
+        content: string;
+        deck?: string | null;
+        tags: Array<{ tag: unknown }>;
+        coverImage?: string | null;
+    },
+>(
+    post: T,
+) => formatPublicPost(post);
 
 export async function resolveUniquePostSlug(input: string, excludeId?: number) {
     const base = slugify(input, { lower: true, strict: true }) || `post-${Date.now()}`;

@@ -1,5 +1,6 @@
 import prisma from './prisma.js';
 import { formatPost, includePostRelations } from './posts.js';
+import { formatPublicProject, isPublicPostReady, isPublicProjectReady } from './publicPresentation.js';
 
 export interface HomepageSectionConfig {
     postIds?: number[];
@@ -125,7 +126,7 @@ async function loadSelectedPosts(config: HomepageSectionConfig) {
         const sorted = config.postIds
             .map((id) => posts.find((post) => post.id === id))
             .filter(Boolean);
-        return sorted.map((post) => formatPost(post!));
+        return sorted.map((post) => formatPost(post!)).filter((post) => isPublicPostReady(post));
     }
 
     const posts = await prisma.post.findMany({
@@ -135,7 +136,7 @@ async function loadSelectedPosts(config: HomepageSectionConfig) {
         take: limit,
     });
 
-    return posts.map((post) => formatPost(post));
+    return posts.map((post) => formatPost(post)).filter((post) => isPublicPostReady(post));
 }
 
 async function loadSelectedProjects(config: HomepageSectionConfig) {
@@ -147,13 +148,17 @@ async function loadSelectedProjects(config: HomepageSectionConfig) {
         });
         return config.projectIds
             .map((id) => projects.find((project) => project.id === id))
-            .filter(Boolean);
+            .filter(Boolean)
+            .map((project) => formatPublicProject(project!))
+            .filter((project) => isPublicProjectReady(project));
     }
 
-    return prisma.project.findMany({
+    const projects = await prisma.project.findMany({
         orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
         take: limit,
     });
+
+    return projects.map((project) => formatPublicProject(project)).filter((project) => isPublicProjectReady(project));
 }
 
 export async function getPublicHomepage() {

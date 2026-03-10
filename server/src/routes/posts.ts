@@ -4,6 +4,7 @@ import { authMiddleware, getOptionalUser, requireAdmin } from '../middleware/aut
 import { estimateReadTime, extractHeadings } from '../lib/content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
 import { createPostRecord, formatPost, includePostRelations, updatePostRecord } from '../lib/posts.js';
+import { isPublicPostReady, sanitizePostContent } from '../lib/publicPresentation.js';
 
 const router = Router();
 
@@ -81,7 +82,9 @@ router.get('/', async (req: Request, res: Response) => {
         ]);
 
         res.json({
-            data: posts.map((post: Parameters<typeof formatPost>[0]) => formatPost(post)),
+            data: posts
+                .map((post: Parameters<typeof formatPost>[0]) => formatPost(post))
+                .filter((post) => isPublicPostReady(post)),
             pagination: {
                 page: pageNum,
                 limit: pageSize,
@@ -109,7 +112,8 @@ router.get('/:slug', async (req: Request, res: Response) => {
             return;
         }
 
-        const readTime = estimateReadTime(post.content);
+        const sanitizedContent = sanitizePostContent(post.content);
+        const readTime = estimateReadTime(sanitizedContent);
         const meta = await prisma.postMeta.upsert({
             where: { postId: post.id },
             update: {
@@ -197,8 +201,10 @@ router.get('/:slug', async (req: Request, res: Response) => {
             ...formatPost(post),
             meta,
             comments,
-            toc: extractHeadings(post.content),
-            relatedPosts: related.map((item: Parameters<typeof formatPost>[0]) => formatPost(item)),
+            toc: extractHeadings(sanitizedContent),
+            relatedPosts: related
+                .map((item: Parameters<typeof formatPost>[0]) => formatPost(item))
+                .filter((item) => isPublicPostReady(item)),
             previousPost,
             nextPost,
             viewerState: {

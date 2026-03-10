@@ -14,12 +14,7 @@ const detectPreferredTheme = (): Theme => {
     if (saved === 'light' || saved === 'dark') {
         return saved;
     }
-
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-    }
-
-    return 'light';
+    return 'dark';
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
+import SiteIcon from './SiteIcon';
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     src: string;
     alt?: string;
 }
 
-export default function LazyImage({ src, alt, style, ...props }: LazyImageProps) {
+export default function LazyImage({ src, alt, className, style, ...props }: LazyImageProps) {
     const [loaded, setLoaded] = useState(false);
-    const [imageSource, setImageSource] = useState<string>('');
+    const [imageSource, setImageSource] = useState('');
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
         setLoaded(false);
         setFailed(false);
+
         const image = new Image();
         image.src = src;
         image.onload = () => {
@@ -26,42 +28,19 @@ export default function LazyImage({ src, alt, style, ...props }: LazyImageProps)
     }, [src]);
 
     return (
-        <div
-            style={{
-                position: 'relative',
-                overflow: 'hidden',
-                background: 'rgba(255,255,255,0.04)',
-                ...style,
-                }}
-            >
+        <div className="lazy-image-shell" style={style}>
             {!loaded && !failed ? (
-                <div
-                    className="muted mono"
-                    style={{
-                        position: 'absolute',
-                        inset: 0,
-                        display: 'grid',
-                        placeItems: 'center',
-                    }}
-                >
-                    loading asset...
+                <div className="lazy-image-loading muted mono">
+                    <SiteIcon name="spark" size={14} />
+                    <span>loading asset</span>
                 </div>
             ) : null}
+
             {failed ? (
-                <div
-                    className="image-fallback"
-                    style={{
-                        minHeight: 160,
-                        display: 'grid',
-                        placeItems: 'center',
-                        padding: '1rem',
-                        textAlign: 'center',
-                    }}
-                >
-                    <div className="muted">
-                        <strong style={{ display: 'block', marginBottom: 8 }}>资源不可用</strong>
-                        <span>{alt || '图片资源加载失败，已切换到内建占位。'}</span>
-                    </div>
+                <div className="lazy-image-fallback">
+                    <span className="lazy-image-kicker mono">visual placeholder</span>
+                    <strong>{alt || '素材暂不可用'}</strong>
+                    <p className="muted">当前展示默认占位，不再向阅读流程暴露错误资源。</p>
                 </div>
             ) : (
                 <img
@@ -69,11 +48,10 @@ export default function LazyImage({ src, alt, style, ...props }: LazyImageProps)
                     src={imageSource || src}
                     alt={alt}
                     loading="lazy"
+                    className={className}
                     onLoad={() => setLoaded(true)}
                     onError={() => setFailed(true)}
                     style={{
-                        width: '100%',
-                        display: 'block',
                         opacity: loaded ? 1 : 0,
                         transition: 'opacity 220ms ease',
                     }}

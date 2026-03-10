@@ -47,21 +47,18 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
     };
 
     const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
-        <article
-            className={`comment-card ${isReply ? 'comment-card-reply' : ''}`}
-            data-testid={`comment-item-${comment.id}`}
-        >
-                <div className="comment-card-head">
-                    <div className="comment-author">
-                        <div className="comment-avatar" aria-hidden="true">
-                            {getInitials(comment.user?.name || comment.author)}
-                        </div>
-                        <div>
-                            <strong>{comment.user?.name || comment.author}</strong>
-                            {comment.userId ? <div className="muted">会员评论</div> : <div className="muted">Legacy comment</div>}
-                            <div className="muted">{formatDateTime(comment.createdAt)}</div>
-                        </div>
+        <article className={`comment-card ${isReply ? 'comment-card-reply' : ''}`} data-testid={`comment-item-${comment.id}`}>
+            <div className="comment-card-head">
+                <div className="comment-author">
+                    <div className="comment-avatar" aria-hidden="true">
+                        {getInitials(comment.user?.name || comment.author)}
                     </div>
+                    <div>
+                        <strong>{comment.user?.name || comment.author}</strong>
+                        <div className="muted">{comment.userId ? '会员评论' : '公开评论'}</div>
+                        <div className="muted">{formatDateTime(comment.createdAt)}</div>
+                    </div>
+                </div>
 
                 {!isReply ? (
                     <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}>
@@ -86,14 +83,14 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
         <section className="section-tight">
             <div className="section-heading" data-testid="public-comments-section">
                 <div>
-                    <div className="eyebrow">Comment Protocol</div>
+                    <span className="eyebrow">Comment Protocol</span>
                     <h3>公开评论</h3>
                 </div>
                 <span className="command-hint" data-testid="public-comments-count">{comments.length} 条已公开</span>
             </div>
 
             {comments.length === 0 ? (
-                <div className="empty-state">还没有公开评论。欢迎留下你的观点，审核通过后会出现在这里。</div>
+                <div className="empty-state">还没有公开评论。欢迎留下你的观点，审核通过后会显示在这里。</div>
             ) : (
                 <div className="comment-list">
                     {comments.map((comment) => (
@@ -106,17 +103,15 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
                 <div className="comment-form-head">
                     <div>
                         <h4>{replyTo ? '回复评论' : '发送评论'}</h4>
-                        <p className="muted">
-                            所有评论默认进入审核队列，用来过滤广告与低质量内容。
-                        </p>
+                        <p className="muted">所有评论默认进入审核队列，用来过滤广告和低质量内容。</p>
                     </div>
-                    {submitted ? <span className="badge badge-green">已进入审核</span> : null}
+                    {submitted ? <span className="badge">已进入审核</span> : null}
                 </div>
 
                 {isAuthenticated ? (
                     <form onSubmit={handleSubmit} className="comment-form" data-testid="comment-form">
-                        <div className="metric-card">
-                            <span className="muted mono">CURRENT USER</span>
+                        <div className="chip">
+                            <span className="mono">CURRENT USER</span>
                             <strong>{user?.name || user?.email}</strong>
                         </div>
 
@@ -134,7 +129,7 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
 
                         <div className="comment-form-actions">
                             <button type="submit" className="btn btn-primary" data-testid="comment-submit-button" disabled={submitting}>
-                                {submitting ? '提交中...' : '提交评论'}
+                                {submitting ? '提交中' : '提交评论'}
                             </button>
                             {replyTo ? (
                                 <button type="button" className="btn btn-ghost" onClick={() => setReplyTo(null)}>
@@ -145,11 +140,10 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
                     </form>
                 ) : (
                     <div className="empty-state">
-                        <p>评论功能已升级为登录后评论优先。</p>
+                        <p>评论功能已升级为登录后优先。</p>
                         <Link to="/login" className="btn btn-primary">登录后参与讨论</Link>
                     </div>
                 )}
-
             </div>
         </section>
     );
