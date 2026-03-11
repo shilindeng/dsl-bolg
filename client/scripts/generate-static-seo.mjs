@@ -48,12 +48,16 @@ const staticEntries = [
     { path: '/', changefreq: 'daily', priority: '1.0' },
     { path: '/blog', changefreq: 'daily', priority: '0.9' },
     { path: '/projects', changefreq: 'weekly', priority: '0.8' },
+    { path: '/series', changefreq: 'weekly', priority: '0.8' },
     { path: '/newsletter', changefreq: 'weekly', priority: '0.8' },
     { path: '/about', changefreq: 'monthly', priority: '0.7' },
 ];
 
 const postsResponse = await fetchJsonFromCandidates('/posts?limit=100');
 const posts = Array.isArray(postsResponse?.data) ? postsResponse.data : [];
+
+const seriesResponse = await fetchJsonFromCandidates('/series');
+const series = Array.isArray(seriesResponse) ? seriesResponse : [];
 
 const sitemapEntries = [
     ...staticEntries.map((entry) => ({
@@ -67,6 +71,12 @@ const sitemapEntries = [
         lastmod: post.updatedAt || post.publishedAt || new Date().toISOString(),
         changefreq: 'monthly',
         priority: post.featured ? '0.9' : '0.8',
+    })),
+    ...series.map((item) => ({
+        loc: makeAbsoluteUrl(`/series/${item.slug}`),
+        lastmod: item.updatedAt || new Date().toISOString(),
+        changefreq: 'weekly',
+        priority: '0.7',
     })),
 ];
 

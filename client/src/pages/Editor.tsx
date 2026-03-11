@@ -5,11 +5,13 @@ import remarkGfm from 'remark-gfm';
 import {
     createPost,
     fetchCategories,
+    fetchAdminSeries,
     fetchPost,
     fetchTags,
     updatePost,
     uploadImage,
     type Category,
+    type Series,
     type Tag,
 } from '../api/client';
 import SEO from '../components/SEO';
@@ -30,6 +32,8 @@ interface DraftState {
     featured: boolean;
     tags: string;
     categoryId: string;
+    seriesId: string;
+    seriesOrder: string;
 }
 
 const emptyDraft: DraftState = {
@@ -44,6 +48,8 @@ const emptyDraft: DraftState = {
     featured: false,
     tags: '',
     categoryId: '',
+    seriesId: '',
+    seriesOrder: '',
 };
 
 export default function Editor() {
@@ -59,17 +65,19 @@ export default function Editor() {
     const [previewMode, setPreviewMode] = useState(true);
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
     const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+    const [availableSeries, setAvailableSeries] = useState<Series[]>([]);
     const [ready, setReady] = useState(false);
     const storageKey = `dsl-blog-editor:${DRAFT_VERSION}:${editingSlug || 'new'}`;
 
     useEffect(() => {
         let cancelled = false;
 
-        Promise.all([fetchTags(), fetchCategories()])
-            .then(([tags, categories]) => {
+        Promise.all([fetchTags(), fetchCategories(), fetchAdminSeries()])
+            .then(([tags, categories, series]) => {
                 if (cancelled) return;
                 setAvailableTags(tags);
                 setAvailableCategories(categories);
+                setAvailableSeries(series);
             })
             .catch(() => undefined);
 
@@ -103,6 +111,8 @@ export default function Editor() {
                         featured: post.featured,
                         tags: post.tags.map((tag) => tag.name).join(', '),
                         categoryId: post.category?.id ? String(post.category.id) : '',
+                        seriesId: post.series?.id ? String(post.series.id) : '',
+                        seriesOrder: post.seriesOrder ? String(post.seriesOrder) : '',
                     });
                 } catch {
                     showToast('文章加载失败。', 'error');
@@ -194,6 +204,8 @@ export default function Editor() {
             featured: draft.featured,
             tags: draft.tags.split(',').map((item) => item.trim()).filter(Boolean),
             categoryId: draft.categoryId ? Number(draft.categoryId) : null,
+            seriesId: draft.seriesId ? Number(draft.seriesId) : null,
+            seriesOrder: draft.seriesId ? (draft.seriesOrder ? Number(draft.seriesOrder) : null) : null,
         };
 
         try {
@@ -338,6 +350,39 @@ export default function Editor() {
                                 <div className="editor-card-head">
                                     <strong>发布设置</strong>
                                 </div>
+
+                                <label className="form-field">
+                                    <span className="form-label">专栏</span>
+                                    <select
+                                        className="form-select"
+                                        value={draft.seriesId}
+                                        onChange={(event) => {
+                                            const next = event.target.value;
+                                            handleChange('seriesId', next);
+                                            if (!next) {
+                                                handleChange('seriesOrder', '');
+                                            }
+                                        }}
+                                    >
+                                        <option value="">不属于专栏</option>
+                                        {availableSeries.map((series) => (
+                                            <option key={series.id} value={series.id}>{series.title}</option>
+                                        ))}
+                                    </select>
+                                </label>
+
+                                {draft.seriesId ? (
+                                    <label className="form-field">
+                                        <span className="form-label">专栏章节序号（可选）</span>
+                                        <input
+                                            className="form-input mono"
+                                            type="number"
+                                            value={draft.seriesOrder}
+                                            onChange={(event) => handleChange('seriesOrder', event.target.value)}
+                                            placeholder="留空自动排在最后"
+                                        />
+                                    </label>
+                                ) : null}
 
                                 <label className="form-field">
                                     <span className="form-label">标签（逗号分隔）</span>

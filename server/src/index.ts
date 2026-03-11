@@ -19,6 +19,7 @@ import openRouter from './routes/open.js';
 import accountRouter from './routes/account.js';
 import newsletterRouter from './routes/newsletter.js';
 import homepageRouter from './routes/homepage.js';
+import seriesRouter from './routes/series.js';
 import { isR2Enabled, siteConfig } from './lib/site.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,6 +70,7 @@ app.use('/api/newsletter', newsletterRouter);
 app.use('/api/homepage', homepageRouter);
 app.use('/api/posts', postsRouter);
 app.use('/api/projects', projectsRouter);
+app.use('/api/series', seriesRouter);
 app.use('/api/tags', tagsRouter);
 app.use('/api/comments', commentsRouter);
 app.use('/api/categories', categoriesRouter);

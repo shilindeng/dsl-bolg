@@ -98,6 +98,33 @@ create_release_from_repo() {
     printf '%s\n' "$release_dir"
 }
 
+create_release_from_archive() {
+    local archive_path="$1"
+    local release_source="${2:-workspace-upload}"
+    local branch_name="${3:-}"
+    local commit_sha="${4:-}"
+    local release_dir="$RELEASES_DIR/$(timestamp_utc)"
+
+    require_file "$archive_path"
+
+    mkdir -p "$release_dir"
+    tar -xzf "$archive_path" -C "$release_dir"
+
+    [[ -d "$release_dir/server" ]] || fail "Archive did not contain server/"
+    [[ -d "$release_dir/client" ]] || fail "Archive did not contain client/"
+
+    printf '%s\n' "$release_source" > "$release_dir/.source"
+    if [[ -n "$branch_name" ]]; then
+        printf '%s\n' "$branch_name" > "$release_dir/.branch"
+    fi
+    if [[ -n "$commit_sha" ]]; then
+        printf '%s\n' "$commit_sha" > "$release_dir/.commit"
+    fi
+    printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$release_dir/.built-at"
+
+    printf '%s\n' "$release_dir"
+}
+
 create_release_from_legacy_app() {
     local legacy_root="${APP_ROOT}/app"
     local release_dir="$RELEASES_DIR/$(timestamp_utc)"

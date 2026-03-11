@@ -115,6 +115,37 @@ export function isPublicProjectReady<
     );
 }
 
+export function formatPublicSeries<
+    T extends {
+        title: string;
+        summary?: string | null;
+        description?: string | null;
+        coverImage?: string | null;
+    },
+>(series: T) {
+    const description = normalizeText(series.description);
+    const summary = normalizeText(series.summary) || description;
+
+    return {
+        ...series,
+        summary: summary || null,
+        description: description || null,
+        coverImage: resolvePublicAsset(series.coverImage),
+    };
+}
+
+export function isPublicSeriesReady<
+    T extends {
+        title: string;
+        summary?: string | null;
+        description?: string | null;
+    },
+>(series: T) {
+    const summary = normalizeText(series.summary) || normalizeText(series.description);
+
+    return Boolean(normalizeText(series.title) && summary.length >= 12);
+}
+
 export function isPublicPostReady<
     T extends {
         title: string;

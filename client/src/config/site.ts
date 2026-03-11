@@ -56,6 +56,12 @@ export const siteConfig = {
             description: '方法、判断与长期写作归档',
         },
         {
+            label: '专栏',
+            to: '/series',
+            icon: 'link',
+            description: '按主题连续更新的写作系列',
+        },
+        {
             label: '项目',
             to: '/projects',
             icon: 'briefcase',

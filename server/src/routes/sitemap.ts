@@ -16,12 +16,16 @@ Sitemap: ${siteConfig.siteUrl}/sitemap.xml
 
 router.get('/sitemap.xml', async (_req, res) => {
     try {
-        const [posts, projects] = await Promise.all([
+        const [posts, projects, series] = await Promise.all([
             prisma.post.findMany({
                 where: { published: true },
                 select: { slug: true, updatedAt: true },
             }),
             prisma.project.findMany({
+                select: { slug: true, updatedAt: true },
+            }),
+            prisma.series.findMany({
+                where: { posts: { some: { published: true } } },
                 select: { slug: true, updatedAt: true },
             }),
         ]);
@@ -40,6 +44,11 @@ router.get('/sitemap.xml', async (_req, res) => {
     </url>
     <url>
         <loc>${siteConfig.siteUrl}/projects</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
+        <loc>${siteConfig.siteUrl}/series</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -66,6 +75,16 @@ router.get('/sitemap.xml', async (_req, res) => {
         <lastmod>${new Date(project.updatedAt).toISOString()}</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
+    </url>
+`;
+        }
+
+        for (const row of series) {
+            xml += `    <url>
+        <loc>${siteConfig.siteUrl}/series/${row.slug}</loc>
+        <lastmod>${new Date(row.updatedAt).toISOString()}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
     </url>
 `;
         }

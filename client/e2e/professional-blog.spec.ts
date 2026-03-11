@@ -24,6 +24,21 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await expect(page.getByTestId('primary-nav')).toBeVisible();
     await saveScreenshot(page, testInfo, 'home');
 
+    await page.getByTestId('primary-nav').getByRole('link', { name: /专栏/ }).click();
+    await expect(page).toHaveURL(/\/series$/);
+    await expect(page.locator('[data-testid^="series-card-"]').first()).toBeVisible();
+    await saveScreenshot(page, testInfo, 'series');
+
+    await page.locator('[data-testid^="series-card-"]').first().click();
+    await expect(page).toHaveURL(/\/series\/.+/);
+    await expect(page.getByRole('heading', { name: /章节目录/ })).toBeVisible();
+    await expect(page.locator('[data-testid^="series-post-"]').first()).toBeVisible();
+    await saveScreenshot(page, testInfo, 'series-detail');
+
+    await page.locator('[data-testid^="series-post-"]').first().click();
+    await expect(page).toHaveURL(/\/blog\/.+/);
+    await expect(page.getByTestId('series-rail-sidebar')).toBeVisible();
+
     await page.getByTestId('primary-nav').getByRole('link', { name: /博客/ }).click();
     await expect(page).toHaveURL(/\/blog$/);
     await expect(page.getByTestId('blog-search-input')).toBeVisible();
@@ -63,6 +78,18 @@ test('mobile smoke covers menu navigation and article reading', async ({ page },
     await page.goto('/');
     await expect(page.getByTestId('home-hero')).toBeVisible();
     await saveScreenshot(page, testInfo, 'home-mobile');
+
+    await page.getByRole('button', { name: /打开导航菜单/ }).click();
+    await page.getByLabel('移动端导航').getByRole('link', { name: /专栏/ }).click();
+    await expect(page).toHaveURL(/\/series$/);
+    await expect(page.locator('[data-testid^="series-card-"]').first()).toBeVisible();
+
+    await page.locator('[data-testid^="series-card-"]').first().click();
+    await expect(page).toHaveURL(/\/series\/.+/);
+    await expect(page.locator('[data-testid^="series-post-"]').first()).toBeVisible();
+    await page.locator('[data-testid^="series-post-"]').first().click();
+    await expect(page.getByTestId('series-rail-inline')).toBeVisible();
+    await saveScreenshot(page, testInfo, 'series-article-mobile');
 
     await page.getByRole('button', { name: /打开导航菜单/ }).click();
     await page.getByLabel('移动端导航').getByRole('link', { name: /博客/ }).click();

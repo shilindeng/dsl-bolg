@@ -244,7 +244,7 @@ router.post('/:slug/like', async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId } = req.body as {
+        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId, seriesId, seriesOrder } = req.body as {
             title: string;
             slug?: string;
             deck?: string;
@@ -256,20 +256,24 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
             featured?: boolean;
             tags?: string[];
             categoryId?: number | null;
+            seriesId?: number | string | null;
+            seriesOrder?: number | string | null;
         };
-        const post = await createPostRecord({ title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId }, 'admin');
+        const post = await createPostRecord({ title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId, seriesId, seriesOrder }, 'admin');
 
         res.status(201).json(formatPost(post));
     } catch (error) {
         console.error('Error creating post:', error);
-        res.status(500).json({ error: 'Failed to create post' });
+        res.status(error instanceof Error && error.message === 'SERIES_NOT_FOUND' ? 400 : 500).json({
+            error: error instanceof Error && error.message === 'SERIES_NOT_FOUND' ? 'Series not found' : 'Failed to create post',
+        });
     }
 });
 
 router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id), 10);
-        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId } = req.body as {
+        const { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId, seriesId, seriesOrder } = req.body as {
             title?: string;
             slug?: string;
             deck?: string;
@@ -281,12 +285,17 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
             featured?: boolean;
             tags?: string[];
             categoryId?: number | null;
+            seriesId?: number | string | null;
+            seriesOrder?: number | string | null;
         };
-        const post = await updatePostRecord(id, { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId }, 'admin');
+        const post = await updatePostRecord(id, { title, slug, deck, content, excerpt, coverImage, coverAlt, published, featured, tags, categoryId, seriesId, seriesOrder }, 'admin');
         res.json(formatPost(post!));
     } catch (error) {
         console.error('Error updating post:', error);
-        res.status(error instanceof Error && error.message === 'POST_NOT_FOUND' ? 404 : 500).json({ error: error instanceof Error && error.message === 'POST_NOT_FOUND' ? 'Post not found' : 'Failed to update post' });
+        const message = error instanceof Error ? error.message : '';
+        res.status(message === 'POST_NOT_FOUND' ? 404 : message === 'SERIES_NOT_FOUND' ? 400 : 500).json({
+            error: message === 'POST_NOT_FOUND' ? 'Post not found' : message === 'SERIES_NOT_FOUND' ? 'Series not found' : 'Failed to update post',
+        });
     }
 });
 

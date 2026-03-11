@@ -77,7 +77,16 @@ export interface Post {
     relatedPosts?: Post[];
     previousPost?: PostLink | null;
     nextPost?: PostLink | null;
-    series?: { id: number; title: string; slug: string; description?: string | null } | null;
+    series?: {
+        id: number;
+        title: string;
+        slug: string;
+        summary?: string | null;
+        description?: string | null;
+        coverImage?: string | null;
+        status?: string;
+        order?: number;
+    } | null;
     seriesOrder?: number | null;
     viewerState?: { bookmarked: boolean };
 }
@@ -100,6 +109,45 @@ export interface Project {
     order: number;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface Series {
+    id: number;
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string | null;
+    coverImage: string | null;
+    status: string;
+    order: number;
+    createdAt: string;
+    updatedAt: string;
+    stats?: {
+        totalPosts?: number;
+        publishedPosts?: number;
+        lastUpdatedAt?: string | null;
+    };
+}
+
+export interface SeriesPost {
+    id: number;
+    title: string;
+    slug: string;
+    deck: string | null;
+    excerpt: string;
+    coverImage: string | null;
+    coverAlt: string | null;
+    publishedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    seriesOrder: number | null;
+    meta?: PostMeta | null;
+    category?: Category | null;
+    tags: Tag[];
+}
+
+export interface SeriesDetail extends Series {
+    posts: SeriesPost[];
 }
 
 export interface User {
@@ -126,6 +174,8 @@ export interface PostInput {
     featured: boolean;
     tags: string[];
     categoryId?: number | null;
+    seriesId?: number | null;
+    seriesOrder?: number | null;
 }
 
 export interface ProjectInput {
@@ -408,6 +458,52 @@ export async function fetchTags(): Promise<Tag[]> {
 
 export async function fetchProjects(): Promise<Project[]> {
     return fetchJson(`${API_BASE}/projects`);
+}
+
+export async function fetchSeries() {
+    return fetchJson<Series[]>(`${API_BASE}/series`);
+}
+
+export async function fetchSeriesDetail(slug: string) {
+    return fetchJson<SeriesDetail>(`${API_BASE}/series/${slug}`);
+}
+
+export async function fetchAdminSeries() {
+    return fetchJson<Series[]>(`${API_BASE}/series/admin`);
+}
+
+export async function createSeries(data: {
+    title: string;
+    slug?: string;
+    summary?: string | null;
+    description?: string | null;
+    coverImage?: string | null;
+    status?: string | null;
+    order?: number | string | null;
+}) {
+    return fetchJson<Series>(`${API_BASE}/series`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateSeries(id: number, data: Partial<{
+    title: string;
+    slug: string;
+    summary: string | null;
+    description: string | null;
+    coverImage: string | null;
+    status: string | null;
+    order: number | string | null;
+}>) {
+    return fetchJson<Series>(`${API_BASE}/series/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteSeries(id: number) {
+    return fetchJson<void>(`${API_BASE}/series/${id}`, { method: 'DELETE' });
 }
 
 export async function createProject(project: ProjectInput): Promise<Project> {

@@ -105,11 +105,19 @@ model PostMeta {
 }
 
 model Series {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
-  slug        String  @unique
+  slug        String   @unique
+  summary     String?
   description String?
+  coverImage  String?
+  status      String   @default("active")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   posts       Post[]
+
+  @@index([status, order])
 }
 
 model Project {

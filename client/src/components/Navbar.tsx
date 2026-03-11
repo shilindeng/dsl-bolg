@@ -72,6 +72,10 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                                 <SiteIcon name="pen" size={14} />
                                 <span>写文章</span>
                             </Link>
+                            <Link to="/admin/series" className="action-chip desktop-only">
+                                <SiteIcon name="link" size={14} />
+                                <span>专栏</span>
+                            </Link>
                             <Link to="/admin/dashboard" className="action-chip desktop-only">
                                 <SiteIcon name="grid" size={14} />
                                 <span>控制台</span>
@@ -133,6 +137,10 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                                     <Link to="/editor" className="action-chip">
                                         <SiteIcon name="pen" size={14} />
                                         <span>写文章</span>
+                                    </Link>
+                                    <Link to="/admin/series" className="action-chip">
+                                        <SiteIcon name="link" size={14} />
+                                        <span>专栏</span>
                                     </Link>
                                     <Link to="/admin/dashboard" className="action-chip">
                                         <SiteIcon name="grid" size={14} />

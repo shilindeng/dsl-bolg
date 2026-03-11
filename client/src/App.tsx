@@ -11,6 +11,8 @@ import { useAuth } from './hooks/useAuth';
 
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
+const Series = lazy(() => import('./pages/Series'));
+const SeriesDetail = lazy(() => import('./pages/SeriesDetail'));
 const Editor = lazy(() => import('./pages/Editor'));
 const Projects = lazy(() => import('./pages/Projects'));
 const About = lazy(() => import('./pages/About'));
@@ -20,6 +22,7 @@ const NewsletterIssue = lazy(() => import('./pages/NewsletterIssue'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
 const NewsletterManager = lazy(() => import('./pages/admin/NewsletterManager'));
 const HomepageManager = lazy(() => import('./pages/admin/HomepageManager'));
+const SeriesManager = lazy(() => import('./pages/admin/SeriesManager'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountProfile = lazy(() => import('./pages/account/Profile'));
@@ -48,6 +51,8 @@ function App() {
                                 <Route path="/" element={<Home />} />
                                 <Route path="/blog" element={<Blog />} />
                                 <Route path="/blog/:slug" element={<BlogPost />} />
+                                <Route path="/series" element={<Series />} />
+                                <Route path="/series/:slug" element={<SeriesDetail />} />
                                 <Route path="/projects" element={<Projects />} />
                                 <Route path="/about" element={<About />} />
                                 <Route path="/newsletter" element={<Newsletter />} />
@@ -69,6 +74,7 @@ function App() {
                                     <Route path="/admin/dashboard" element={<Dashboard />} />
                                     <Route path="/admin/newsletter" element={<NewsletterManager />} />
                                     <Route path="/admin/homepage" element={<HomepageManager />} />
+                                    <Route path="/admin/series" element={<SeriesManager />} />
                                 </Route>
 
                                 <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

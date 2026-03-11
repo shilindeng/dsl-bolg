@@ -73,6 +73,51 @@ export async function resolveCategoryId(categoryInput?: number | string | null) 
     return category?.id ?? null;
 }
 
+function normalizeNullableInt(input: unknown) {
+    if (input === undefined) return undefined;
+    if (input === null || input === '') return null;
+
+    const asNumber = typeof input === 'number' ? input : Number(input);
+    if (Number.isNaN(asNumber)) return null;
+
+    return Math.trunc(asNumber);
+}
+
+async function resolveSeriesId(seriesInput?: number | string | null) {
+    if (seriesInput === undefined) return undefined;
+    if (seriesInput === null || seriesInput === '') return null;
+
+    if (typeof seriesInput === 'number') {
+        const series = await prisma.series.findUnique({ where: { id: seriesInput } });
+        return series ? series.id : null;
+    }
+
+    const raw = String(seriesInput);
+    const asNumber = Number(raw);
+    if (!Number.isNaN(asNumber) && String(asNumber) === raw) {
+        const series = await prisma.series.findUnique({ where: { id: asNumber } });
+        return series ? series.id : null;
+    }
+
+    const series = await prisma.series.findUnique({ where: { slug: raw } });
+    return series ? series.id : null;
+}
+
+async function resolveSeriesOrder(seriesId: number, seriesOrderInput: unknown) {
+    const parsed = normalizeNullableInt(seriesOrderInput);
+
+    if (parsed === undefined || parsed === null) {
+        const maxOrder = await prisma.post.aggregate({
+            where: { seriesId },
+            _max: { seriesOrder: true },
+        });
+
+        return (maxOrder._max.seriesOrder ?? 0) + 1;
+    }
+
+    return Math.max(1, parsed);
+}
+
 export interface PostPayload {
     title: string;
     slug?: string;
@@ -86,6 +131,8 @@ export interface PostPayload {
     tags?: string[];
     categoryId?: number | string | null;
     sourceUrl?: string | null;
+    seriesId?: number | string | null;
+    seriesOrder?: number | string | null;
 }
 
 export async function createPostRecord(payload: PostPayload, source = 'admin') {
@@ -94,6 +141,13 @@ export async function createPostRecord(payload: PostPayload, source = 'admin') {
     const readTime = estimateReadTime(payload.content);
     const tagPairs = Array.isArray(payload.tags) ? await upsertTags(payload.tags) : [];
     const categoryId = await resolveCategoryId(payload.categoryId);
+    const seriesId = (await resolveSeriesId(payload.seriesId)) ?? null;
+
+    if (payload.seriesId !== undefined && payload.seriesId !== null && payload.seriesId !== '' && seriesId === null) {
+        throw new Error('SERIES_NOT_FOUND');
+    }
+
+    const seriesOrder = seriesId === null ? null : await resolveSeriesOrder(seriesId, payload.seriesOrder);
 
     const post = await prisma.post.create({
         data: {
@@ -109,6 +163,8 @@ export async function createPostRecord(payload: PostPayload, source = 'admin') {
             featured: Boolean(payload.featured),
             publishedAt: payload.published ? new Date() : null,
             categoryId: categoryId ?? null,
+            seriesId,
+            seriesOrder,
             meta: { create: { readTime } },
             tags: tagPairs.length ? { create: tagPairs } : undefined,
         },
@@ -138,6 +194,33 @@ export async function updatePostRecord(id: number, payload: Partial<PostPayload>
     if (payload.sourceUrl !== undefined) updates.sourceUrl = payload.sourceUrl || null;
     if (payload.categoryId !== undefined) updates.categoryId = await resolveCategoryId(payload.categoryId);
     if (payload.excerpt !== undefined) updates.excerpt = payload.excerpt?.trim() || createExcerpt(nextContent);
+
+    const nextSeriesId = payload.seriesId === undefined ? existing.seriesId : (await resolveSeriesId(payload.seriesId)) ?? null;
+    const seriesIdChanged = payload.seriesId !== undefined && nextSeriesId !== existing.seriesId;
+
+    if (payload.seriesId !== undefined && payload.seriesId !== null && payload.seriesId !== '' && nextSeriesId === null) {
+        throw new Error('SERIES_NOT_FOUND');
+    }
+
+    const nextSeriesOrderBase =
+        payload.seriesOrder !== undefined
+            ? normalizeNullableInt(payload.seriesOrder)
+            : seriesIdChanged
+                ? null
+                : existing.seriesOrder;
+
+    const nextSeriesOrder =
+        nextSeriesId === null
+            ? null
+            : await resolveSeriesOrder(nextSeriesId, nextSeriesOrderBase);
+
+    if (payload.seriesId !== undefined || payload.seriesOrder !== undefined) {
+        updates.seriesId = nextSeriesId;
+        updates.seriesOrder = nextSeriesOrder;
+    } else if (existing.seriesId !== null && existing.seriesOrder === null && nextSeriesId !== null) {
+        // Backfill order for legacy posts that were assigned to a series without an explicit order.
+        updates.seriesOrder = nextSeriesOrder;
+    }
 
     if (payload.published !== undefined) {
         updates.published = Boolean(payload.published);

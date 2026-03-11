@@ -3,12 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { addBookmark, fetchPost, likePost, removeBookmark, type Comment, type Post } from '../api/client';
+import { addBookmark, fetchPost, fetchSeriesDetail, likePost, removeBookmark, type Comment, type Post, type SeriesDetail } from '../api/client';
 import Comments from '../components/Comments';
 import LazyImage from '../components/LazyImage';
 import NewsletterSignup from '../components/NewsletterSignup';
 import ReadingProgress from '../components/ReadingProgress';
 import SEO from '../components/SEO';
+import SeriesRail from '../components/SeriesRail';
 import SiteIcon from '../components/SiteIcon';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
@@ -27,11 +28,13 @@ export default function BlogPost() {
     const [liking, setLiking] = useState(false);
     const [bookmarking, setBookmarking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
+    const [seriesDetail, setSeriesDetail] = useState<SeriesDetail | null>(null);
 
     useEffect(() => {
         if (!slug) return;
         let cancelled = false;
         setLoading(true);
+        setSeriesDetail(null);
 
         fetchPost(slug)
             .then((data) => {
@@ -47,6 +50,29 @@ export default function BlogPost() {
             cancelled = true;
         };
     }, [slug]);
+
+    useEffect(() => {
+        const seriesSlug = post?.series?.slug;
+        if (!seriesSlug) {
+            setSeriesDetail(null);
+            return;
+        }
+
+        let cancelled = false;
+        fetchSeriesDetail(seriesSlug)
+            .then((detail) => {
+                if (cancelled) return;
+                setSeriesDetail(detail);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setSeriesDetail(null);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [post?.series?.slug]);
 
     const handleLike = async () => {
         if (!post || liking) return;
@@ -168,6 +194,12 @@ export default function BlogPost() {
                                     <SiteIcon name="folder" size={13} />
                                     <span>{post.category.name}</span>
                                 </span>
+                            ) : null}
+                            {post.series ? (
+                                <Link to={`/series/${post.series.slug}`} className="chip">
+                                    <SiteIcon name="link" size={13} />
+                                    <span>{post.series.title}</span>
+                                </Link>
                             ) : null}
                             {post.tags.slice(0, 3).map((tag) => (
                                 <span key={tag.id} className="tag">
@@ -309,6 +341,8 @@ export default function BlogPost() {
                             </div>
                         ) : null}
 
+                        {seriesDetail ? <SeriesRail series={seriesDetail} currentSlug={post.slug} variant="inline" /> : null}
+
                         <Comments postId={post.id} comments={comments} onCommentAdded={handleCommentAdded} />
 
                         <div className="feature-panel newsletter-inline-panel">
@@ -354,6 +388,7 @@ export default function BlogPost() {
                     </article>
 
                     <aside className="article-sidebar">
+                        {seriesDetail ? <SeriesRail series={seriesDetail} currentSlug={post.slug} /> : null}
                         {post.toc?.length ? (
                             <div className="article-side-card">
                                 <strong>目录</strong>
