@@ -1,13 +1,11 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { isR2Enabled, siteConfig } from './site.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+// Keep uploads outside the compiled dist tree so local storage survives releases.
+const uploadsDir = path.join(process.cwd(), 'uploads');
 
 const r2Client = isR2Enabled
     ? new S3Client({

@@ -3,7 +3,6 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import rateLimit from 'express-rate-limit';
 import postsRouter from './routes/posts.js';
 import projectsRouter from './routes/projects.js';
@@ -22,8 +21,6 @@ import homepageRouter from './routes/homepage.js';
 import seriesRouter from './routes/series.js';
 import { isR2Enabled, siteConfig } from './lib/site.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -60,7 +57,7 @@ app.use((req, _res, next) => {
 });
 
 if (!isR2Enabled) {
-    app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+    app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 }
 
 app.use('/api/auth', authRouter);
