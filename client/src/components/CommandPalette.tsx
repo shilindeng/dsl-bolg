@@ -113,7 +113,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
             onClick={() => setOpen(false)}
         >
             <div className="command-palette" onClick={(event) => event.stopPropagation()}>
-                <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="command-palette-head">
                     <input
                         autoFocus
                         data-testid="command-palette-input"
@@ -129,11 +129,11 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
 
                 <div className="command-results">
                     {loading ? (
-                        <div style={{ padding: '1rem 1.1rem' }} className="muted">
+                        <div className="command-palette-state muted">
                             正在加载快速导航...
                         </div>
                     ) : results.length === 0 ? (
-                        <div style={{ padding: '1rem 1.1rem' }} className="muted">
+                        <div className="command-palette-state muted">
                             没有匹配结果，试试搜索文章标题或页面名称。
                         </div>
                     ) : (

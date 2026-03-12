@@ -118,9 +118,9 @@ const rssItems = posts
 const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
-    <title>DSL Blog</title>
+    <title>AI信息差研究院</title>
     <link>${xmlEscape(siteUrl)}</link>
-    <description>DSL Blog RSS Feed</description>
+    <description>AI信息差研究院 RSS Feed</description>
     <language>zh-CN</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
 ${rssItems}

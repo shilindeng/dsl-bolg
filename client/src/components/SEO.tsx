@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { siteConfig } from '../config/site';
+import { useTheme } from '../hooks/useTheme';
 
 interface SEOProps {
     title: string;
@@ -24,6 +25,7 @@ export default function SEO({
     modifiedTime,
     jsonLd,
 }: SEOProps) {
+    const { theme } = useTheme();
     const canonicalUrl = url || window.location.href;
     const metaImage = image
         ? image.startsWith('http')
@@ -31,6 +33,7 @@ export default function SEO({
             : `${siteConfig.url}${image}`
         : `${siteConfig.url}${siteConfig.defaultOgImage}`;
     const fullTitle = `${title} | ${siteConfig.name}`;
+    const themeColor = theme === 'dark' ? '#0b1020' : '#f6f1e7';
     const jsonLdItems = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
 
     return (
@@ -56,7 +59,7 @@ export default function SEO({
             {publishedTime ? <meta property="article:published_time" content={publishedTime} /> : null}
             {modifiedTime ? <meta property="article:modified_time" content={modifiedTime} /> : null}
 
-            <meta name="theme-color" content="#07111f" />
+            <meta name="theme-color" content={themeColor} />
 
             {jsonLdItems.map((item, index) => (
                 <script key={index} type="application/ld+json">

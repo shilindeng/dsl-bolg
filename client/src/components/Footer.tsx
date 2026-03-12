@@ -8,21 +8,21 @@ export default function Footer() {
         <footer className="site-footer">
             <div className="container site-footer-grid">
                 <section className="footer-intro">
-                    <span className="eyebrow">Public System</span>
+                    <span className="eyebrow">Research Notes</span>
                     <h2>{siteConfig.name}</h2>
                     <p>{siteConfig.author.summary}</p>
                     <div className="footer-badges">
                         <span className="chip">
                             <SiteIcon name="pen" size={13} />
-                            <span>内容</span>
+                            <span>研究</span>
                         </span>
                         <span className="chip">
                             <SiteIcon name="grid" size={13} />
-                            <span>界面</span>
+                            <span>结构</span>
                         </span>
                         <span className="chip">
                             <SiteIcon name="code" size={13} />
-                            <span>工程</span>
+                            <span>实现</span>
                         </span>
                     </div>
                 </section>

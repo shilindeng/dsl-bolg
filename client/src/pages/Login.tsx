@@ -4,6 +4,7 @@ import { login, requestLoginCode, verifyLoginCode } from '../api/client';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
 import TurnstileWidget from '../components/TurnstileWidget';
+import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 
@@ -79,7 +80,7 @@ export default function Login() {
                 <div className="container split-feature">
                     <div>
                         <span className="eyebrow">Access</span>
-                        <h1 className="section-title">登录 DSL Blog</h1>
+                        <h1 className="section-title">登录 {siteConfig.name}</h1>
                         <p className="section-copy">
                             读者使用邮箱验证码进入会员中心，管理员继续使用密码登录控制台。
                         </p>

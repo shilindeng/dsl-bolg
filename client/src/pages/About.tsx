@@ -10,7 +10,7 @@ export default function About() {
             <section className="section page-compact-hero">
                 <div className="container page-compact-grid">
                     <div>
-                        <span className="eyebrow">关于 DSL</span>
+                        <span className="eyebrow">关于 {siteConfig.author.name}</span>
                         <h1 className="section-title">{siteConfig.author.name}</h1>
                         <p className="section-copy">{siteConfig.author.bio}</p>
                     </div>
@@ -19,7 +19,7 @@ export default function About() {
                         <div className="stat-card">
                             <SiteIcon name="compass" size={16} />
                             <strong>{siteConfig.author.location.city}，{siteConfig.author.location.country}</strong>
-                            <span>以上海为基准城市进行长期创作与开发。</span>
+                            <span>以{siteConfig.author.location.city}为基准城市进行长期创作与开发。</span>
                         </div>
                         <div className="stat-card">
                             <SiteIcon name="user" size={16} />

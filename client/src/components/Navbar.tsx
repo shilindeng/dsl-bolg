@@ -45,7 +45,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
         <header className={`site-nav ${open ? 'is-open' : ''}`}>
             <div className="container site-nav-inner">
                 <Link to="/" className="site-nav-brand" aria-label="返回首页">
-                    <span className="brand-mark mono">DSL</span>
+                    <span className="brand-mark mono">{siteConfig.shortName}</span>
                     <div className="brand-copy">
                         <strong>{siteConfig.name}</strong>
                         <span>{siteConfig.author.role}</span>
@@ -59,7 +59,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                 <div className="site-nav-actions">
                     <span className="nav-status desktop-only">
                         <SiteIcon name="spark" size={14} />
-                        <span>作品系统在线</span>
+                        <span>研究库在线</span>
                     </span>
 
                     {isAdmin ? (

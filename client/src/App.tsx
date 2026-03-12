@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import AdminRoute from './components/AdminRoute';
 import AuthenticatedRoute from './components/AuthenticatedRoute';
+import CommandPalette from './components/CommandPalette';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
 import { ThemeProvider } from './hooks/useTheme';
@@ -38,6 +39,7 @@ function App() {
             <ToastProvider>
                 <div className="app-shell">
                     <Navbar isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
+                    <CommandPalette isAdmin={isAdmin} />
 
                     <main className="page-shell">
                         <Suspense

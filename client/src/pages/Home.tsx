@@ -40,6 +40,7 @@ export default function Home() {
     const leadPost = featuredPosts[0];
     const supportingPosts = featuredPosts.slice(1, 4);
     const homepageProjects = featuredProjects.slice(0, 2);
+    const featuredProject = homepageProjects[0];
 
     return (
         <>
@@ -58,9 +59,9 @@ export default function Home() {
             <section className="section home-hero">
                 <div className="container home-hero-grid" data-testid="home-hero">
                     <div className="home-hero-copy">
-                        <span className="eyebrow">{hero?.eyebrow || '长期主义的个人品牌主场'}</span>
+                        <span className="eyebrow">{hero?.eyebrow || 'AI 信息差研究与实验笔记'}</span>
                         <h1 className="display-title home-display-title">
-                            {hero?.title || '把博客做成真正能持续经营的作品系统。'}
+                            {hero?.title || '把信息差变成可复用的结论库。'}
                         </h1>
                         <p className="lead home-hero-lead">{hero?.description || siteConfig.author.bio}</p>
 
@@ -85,19 +86,94 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="home-hero-media">
-                        <div className="hero-media-frame">
-                            <img src="/hero-landing.png" alt="黑灰极简的品牌视觉封面" className="hero-media-image" />
-                        </div>
+                    <aside className="home-hero-side" aria-label="本期精选">
+                        <div className="issue-card">
+                            <div className="issue-card-head">
+                                <div>
+                                    <span className="eyebrow">Issue</span>
+                                    <h2 className="section-title compact-title">本期精选</h2>
+                                </div>
+                                <span className="meta-pill emphasis mono">{new Date().getFullYear()}</span>
+                            </div>
 
-                        <div className="hero-caption-strip">
-                            <span className="meta-pill">
-                                <SiteIcon name="grid" size={13} />
-                                <span>Landing Visual</span>
-                            </span>
-                            <p>更克制的黑灰视觉，只负责建立语气和质感，不再抢走正文注意力。</p>
+                            {leadPost ? (
+                                <Link to={`/blog/${leadPost.slug}`} className="issue-feature" data-testid="home-issue-post">
+                                    <span className="issue-kicker">
+                                        <SiteIcon name="book-open" size={14} />
+                                        <span>精选文章</span>
+                                    </span>
+                                    <strong>{leadPost.title}</strong>
+                                    <p>{leadPost.deck?.trim() || leadPost.excerpt}</p>
+                                    <div className="meta-inline">
+                                        <span className="meta-pill">
+                                            <SiteIcon name="calendar" size={13} />
+                                            <span>{formatShortDate(leadPost.publishedAt || leadPost.createdAt)}</span>
+                                        </span>
+                                        {leadPost.category ? (
+                                            <span className="meta-pill">
+                                                <SiteIcon name="folder" size={13} />
+                                                <span>{leadPost.category.name}</span>
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="issue-feature is-empty">
+                                    <span className="issue-kicker">
+                                        <SiteIcon name="book-open" size={14} />
+                                        <span>精选文章</span>
+                                    </span>
+                                    <strong>还没有设置精选文章</strong>
+                                    <p className="muted">后台配置首页精选后，这里会展示 1 篇代表性文章。</p>
+                                </div>
+                            )}
+
+                            {featuredProject ? (
+                                <Link to={`/projects#${featuredProject.slug}`} className="issue-feature" data-testid="home-issue-project">
+                                    <span className="issue-kicker">
+                                        <SiteIcon name="briefcase" size={14} />
+                                        <span>研究样本</span>
+                                    </span>
+                                    <strong>{featuredProject.name}</strong>
+                                    <p>{featuredProject.summary || featuredProject.description}</p>
+                                    <div className="meta-inline">
+                                        {featuredProject.status ? (
+                                            <span className="meta-pill">
+                                                <SiteIcon name="check" size={13} />
+                                                <span>{featuredProject.status}</span>
+                                            </span>
+                                        ) : null}
+                                        {featuredProject.period ? (
+                                            <span className="meta-pill">
+                                                <SiteIcon name="calendar" size={13} />
+                                                <span>{featuredProject.period}</span>
+                                            </span>
+                                        ) : null}
+                                    </div>
+                                </Link>
+                            ) : (
+                                <div className="issue-feature is-empty">
+                                    <span className="issue-kicker">
+                                        <SiteIcon name="briefcase" size={14} />
+                                        <span>研究样本</span>
+                                    </span>
+                                    <strong>还没有设置代表项目</strong>
+                                    <p className="muted">当有公开项目时，这里会展示 1 个案例作为研究样本。</p>
+                                </div>
+                            )}
+
+                            <div className="issue-actions">
+                                <Link to="/blog" className="btn btn-primary">
+                                    <SiteIcon name="arrow-right" size={15} />
+                                    <span>进入文章归档</span>
+                                </Link>
+                                <Link to="/projects" className="btn btn-secondary">
+                                    <SiteIcon name="briefcase" size={15} />
+                                    <span>查看项目案例</span>
+                                </Link>
+                            </div>
                         </div>
-                    </div>
+                    </aside>
                 </div>
             </section>
 
@@ -107,7 +183,7 @@ export default function Home() {
                         <div className="section-head editorial-head">
                             <div>
                                 <span className="eyebrow">{featuredPostsSection?.eyebrow || '精选文章'}</span>
-                                <h2 className="section-title">先看到最能代表方法与判断力的内容</h2>
+                                <h2 className="section-title">{featuredPostsSection?.title || '先看到最能代表方法与判断力的内容'}</h2>
                             </div>
                             <Link to="/blog" className="section-link">
                                 <span>查看全部文章</span>
@@ -152,9 +228,9 @@ export default function Home() {
                     <div className="container home-project-shell">
                         <div className="project-intro-card">
                             <span className="eyebrow">{projectsSection?.eyebrow || '代表项目'}</span>
-                            <h2 className="section-title">项目页承担方法论与落地能力的第二层证明</h2>
+                            <h2 className="section-title">{projectsSection?.title || '项目页承担方法论与落地能力的第二层证明'}</h2>
                             <p className="section-copy">
-                                文章负责建立判断力，项目负责证明交付能力。这一段不再堆很多卡，只保留最完整的案例。
+                                {projectsSection?.description || '文章负责建立判断力，项目负责证明交付能力。这一段不再堆很多卡，只保留最完整的案例。'}
                             </p>
 
                             <div className="stack-grid">

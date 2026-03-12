@@ -14,7 +14,7 @@ const detectPreferredTheme = (): Theme => {
     if (saved === 'light' || saved === 'dark') {
         return saved;
     }
-    return 'dark';
+    return 'light';
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

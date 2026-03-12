@@ -16,7 +16,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { buildHeadingId } from '../lib/content';
 import { formatDate } from '../lib/format';
-import 'highlight.js/styles/atom-one-dark.css';
+import 'highlight.js/styles/github.css';
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();

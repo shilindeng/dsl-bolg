@@ -6,6 +6,7 @@ import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
 import { useToast } from '../hooks/useToast';
 import { formatShortDate } from '../lib/format';
+import { siteConfig } from '../config/site';
 
 export default function Newsletter() {
     const { showToast } = useToast();
@@ -41,7 +42,7 @@ export default function Newsletter() {
 
     return (
         <>
-            <SEO title="Newsletter" description="订阅 DSL Blog 的长期写作与产品化更新。" />
+            <SEO title="Newsletter" description={`订阅 ${siteConfig.name} 的长期写作与产品化更新。`} />
 
             <section className="section page-compact-hero">
                 <div className="container split-feature">
