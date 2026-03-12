@@ -156,4 +156,4 @@ npm run e2e
 - `bootstrap.sh` 只用于首装或重建环境，允许在没有数据库时执行 seed
 - `update.sh` 是日常发布入口，**不会**执行 seed
 - 备份只在部署前执行，归档保存在服务器本地 `/opt/dsl-blog/backups`
-- 标准正式发布流程仍然是：本地改动合入 `main`，再触发远程 `update.sh`
+- 标准正式发布流程仍然是：本地改动合入正式部署分支，再触发远程 `update.sh`

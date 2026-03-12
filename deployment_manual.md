@@ -17,7 +17,7 @@
 ├─ bin/                 # 服务器上实际执行的运维脚本
 ├─ config/
 │  └─ deploy.env        # 部署配置
-├─ repo/                # git 工作副本，固定跟踪 origin/main
+├─ repo/                # git 工作副本，固定跟踪 origin/$DEPLOY_BRANCH
 ├─ releases/            # 每次发布的版本目录
 ├─ current -> releases/<timestamp>
 ├─ shared/              # 持久化状态
@@ -45,7 +45,7 @@
 
 ```env
 REPO_URL=https://github.com/shilindeng/dsl-bolg.git
-DEPLOY_BRANCH=main
+DEPLOY_BRANCH=master
 APP_ROOT=/opt/dsl-blog
 SERVICE_NAME=dsl-blog-api
 SITE_URL=https://www.shilin.tech
@@ -104,7 +104,7 @@ bash /opt/dsl-blog/bin/bootstrap.sh
 `bootstrap.sh` 会做这些事：
 
 1. 初始化目录
-2. clone `origin/main` 到 `/opt/dsl-blog/repo`
+2. clone `origin/$DEPLOY_BRANCH` 到 `/opt/dsl-blog/repo`
 3. 迁移旧的 `/opt/dsl-blog/app` 状态到 `shared`
 4. 创建首个 release
 5. 安装 systemd/Caddy 配置
@@ -134,7 +134,7 @@ Windows 本机入口：
 `update.sh` 的顺序：
 
 1. 先执行部署前备份
-2. 从 `origin/main` 拉最新代码
+2. 从 `origin/$DEPLOY_BRANCH` 拉最新代码
 3. 生成新的 release
 4. 把共享状态链接到 release
 5. 执行：
@@ -153,16 +153,16 @@ Windows 本机入口：
 
 适用前提：
 
-- 标准发布流程默认从 `origin/main` 拉取最新代码
-- 推荐做法是先在本地完成开发、验证并 push 到 `main`，再执行远程更新
-- 如果线上需要临时发布尚未进入 `main` 的本地工作区代码，应视为例外操作，仍需复用现有 release、备份、校验和回滚逻辑
+- 标准发布流程默认从 `origin/$DEPLOY_BRANCH` 拉取最新代码
+- 推荐做法是先在本地完成开发、验证并 push 到 `$DEPLOY_BRANCH`，再执行远程更新
+- 如果线上需要临时发布尚未进入 `$DEPLOY_BRANCH` 的本地工作区代码，应视为例外操作，仍需复用现有 release、备份、校验和回滚逻辑
 
 关键约束：
 
 - `update.sh` **不会执行 seed**
 - 它不会重置管理员密码
 - 它不会覆盖现有文章、项目、评论、数据库或上传文件
-- 如果当前 release 是从旧的 `/opt/dsl-blog/app` 迁移过来的，`update.sh` 会先拒绝执行，防止把线上回退到尚未 push 到 `origin/main` 的旧代码
+- 如果当前 release 是从旧的 `/opt/dsl-blog/app` 迁移过来的，`update.sh` 会先拒绝执行，防止把线上回退到尚未 push 到 `origin/$DEPLOY_BRANCH` 的旧代码
 
 ## 5. 备份策略
 

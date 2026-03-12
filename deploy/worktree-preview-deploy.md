@@ -30,7 +30,7 @@ bash /opt/dsl-blog/bin/install-worktree-release.sh /tmp/dsl-blog-worktree-<times
 The remote installer:
 
 - does not modify `/opt/dsl-blog/repo`
-- does not change the standard `update.sh` workflow for `origin/main`
+- does not change the standard `update.sh` workflow for `origin/$DEPLOY_BRANCH`
 - writes release metadata with `.source=workspace-upload`
 - reuses the existing backup, build, restart, validation, and rollback flow
 

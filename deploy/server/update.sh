@@ -17,7 +17,7 @@ previous_release="$(current_release_target || true)"
 if [[ -n "$previous_release" && -f "$previous_release/.source" ]]; then
     release_source="$(cat "$previous_release/.source")"
     if [[ "$release_source" == "legacy-app" ]]; then
-        fail "Current deployment was migrated from the legacy app directory. Push the current repo state to origin/main before using update.sh."
+        fail "Current deployment was migrated from the legacy app directory. Push the current repo state to origin/$DEPLOY_BRANCH before using update.sh."
     fi
 fi
 
