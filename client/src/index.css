@@ -1587,6 +1587,27 @@ h4 {
   text-align: center;
 }
 
+.article-html-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.article-html-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.article-html-body section,
+.article-html-body article,
+.article-html-body div {
+  max-width: 100%;
+}
+
+.article-html-body a {
+  color: inherit;
+}
+
 .comment-card,
 .comment-form-shell,
 .login-card,

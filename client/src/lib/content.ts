@@ -24,6 +24,11 @@ export function createHeadingIdResolver() {
     };
 }
 
+export function looksLikeHtmlContent(content: string) {
+    const trimmed = content.trim();
+    return /^<(?:!doctype|html|body|section|article|div|p|h1|h2|h3|h4|blockquote|ul|ol|table|figure|img)\b/i.test(trimmed);
+}
+
 export function splitTechStack(value: string) {
     return value
         .split(',')

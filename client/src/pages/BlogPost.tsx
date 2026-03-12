@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,9 +14,34 @@ import SiteIcon from '../components/SiteIcon';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
-import { buildHeadingId } from '../lib/content';
+import { buildHeadingId, looksLikeHtmlContent } from '../lib/content';
 import { formatDate } from '../lib/format';
 import 'highlight.js/styles/github.css';
+
+function enhanceArticleHtml(content: string) {
+    if (typeof window === 'undefined' || !looksLikeHtmlContent(content)) {
+        return content;
+    }
+
+    const documentFragment = new window.DOMParser().parseFromString(content, 'text/html');
+    const counts = new Map<string, number>();
+    let fallbackIndex = 0;
+
+    documentFragment.querySelectorAll('h2, h3, h4').forEach((heading) => {
+        const text = heading.textContent?.trim() || '';
+        const base = buildHeadingId(text) || `section-${++fallbackIndex}`;
+        const currentCount = counts.get(base) || 0;
+        const nextCount = currentCount + 1;
+        counts.set(base, nextCount);
+        heading.id = nextCount === 1 ? base : `${base}-${nextCount}`;
+    });
+
+    documentFragment.querySelectorAll('img').forEach((image) => {
+        image.setAttribute('loading', 'lazy');
+    });
+
+    return documentFragment.body.innerHTML;
+}
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
@@ -29,6 +54,12 @@ export default function BlogPost() {
     const [bookmarking, setBookmarking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
     const [seriesDetail, setSeriesDetail] = useState<SeriesDetail | null>(null);
+    const articleContent = post?.content || '';
+    const isHtmlArticle = looksLikeHtmlContent(articleContent);
+    const renderedHtml = useMemo(
+        () => (isHtmlArticle ? enhanceArticleHtml(articleContent) : ''),
+        [articleContent, isHtmlArticle],
+    );
 
     useEffect(() => {
         if (!slug) return;
@@ -249,50 +280,54 @@ export default function BlogPost() {
                 <div className="container article-layout">
                     <article className="article-main">
                         <div className="article-prose-shell">
-                            <div className="markdown-body" data-testid="article-content">
-                                <Markdown
-                                    remarkPlugins={[remarkGfm]}
-                                    rehypePlugins={[rehypeHighlight]}
-                                    components={{
-                                        h2: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h2 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h2>
-                                            );
-                                        },
-                                        h3: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h3 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h3>
-                                            );
-                                        },
-                                        h4: ({ children }) => {
-                                            const text = String(children);
-                                            const id = buildHeadingId(text);
-                                            return (
-                                                <h4 id={id}>
-                                                    <a href={`#${id}`}>{children}</a>
-                                                </h4>
-                                            );
-                                        },
-                                        img: ({ alt, ...props }) => (
-                                            <figure>
-                                                <div className="article-inline-media">
-                                                    <LazyImage {...props} src={props.src || ''} alt={alt} />
-                                                </div>
-                                                {alt ? <figcaption>{alt}</figcaption> : null}
-                                            </figure>
-                                        ),
-                                    }}
-                                >
-                                    {post.content}
-                                </Markdown>
+                            <div className="markdown-body article-rich-body" data-testid="article-content">
+                                {isHtmlArticle ? (
+                                    <div className="article-html-body" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
+                                ) : (
+                                    <Markdown
+                                        remarkPlugins={[remarkGfm]}
+                                        rehypePlugins={[rehypeHighlight]}
+                                        components={{
+                                            h2: ({ children }) => {
+                                                const text = String(children);
+                                                const id = buildHeadingId(text);
+                                                return (
+                                                    <h2 id={id}>
+                                                        <a href={`#${id}`}>{children}</a>
+                                                    </h2>
+                                                );
+                                            },
+                                            h3: ({ children }) => {
+                                                const text = String(children);
+                                                const id = buildHeadingId(text);
+                                                return (
+                                                    <h3 id={id}>
+                                                        <a href={`#${id}`}>{children}</a>
+                                                    </h3>
+                                                );
+                                            },
+                                            h4: ({ children }) => {
+                                                const text = String(children);
+                                                const id = buildHeadingId(text);
+                                                return (
+                                                    <h4 id={id}>
+                                                        <a href={`#${id}`}>{children}</a>
+                                                    </h4>
+                                                );
+                                            },
+                                            img: ({ alt, ...props }) => (
+                                                <figure>
+                                                    <div className="article-inline-media">
+                                                        <LazyImage {...props} src={props.src || ''} alt={alt} />
+                                                    </div>
+                                                    {alt ? <figcaption>{alt}</figcaption> : null}
+                                                </figure>
+                                            ),
+                                        }}
+                                    >
+                                        {post.content}
+                                    </Markdown>
+                                )}
                             </div>
                         </div>
 

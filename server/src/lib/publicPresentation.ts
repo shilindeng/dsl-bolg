@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { normalizeExcerpt } from './content.js';
+import { looksLikeHtmlContent, normalizeExcerpt } from './content.js';
 import { isR2Enabled } from './site.js';
 
 function normalizeText(value?: string | null) {
@@ -29,6 +29,15 @@ function shouldDropImage(url: string, alt: string) {
 }
 
 export function sanitizePostContent(content: string) {
+    if (looksLikeHtmlContent(content)) {
+        return content.replace(/<img\b([^>]*)\bsrc=(["'])([^"']+)\2([^>]*)>/gi, (match, before, _quote, url, after) => {
+            const attrs = `${before} ${after}`;
+            const altMatch = /\balt=(["'])(.*?)\1/i.exec(attrs);
+            const alt = altMatch?.[2] || '';
+            return shouldDropImage(String(url).trim(), alt) ? '' : match;
+        });
+    }
+
     const withoutBrokenImages = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) =>
         shouldDropImage(String(url).trim(), String(alt).trim()) ? '' : match,
     );

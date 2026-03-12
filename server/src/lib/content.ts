@@ -5,9 +5,58 @@ export interface TocHeading {
 }
 
 const markdownArtifacts = /(```[\s\S]*?```|`[^`]+`|!\[[^\]]*]\([^)]*\)|\[[^\]]+]\([^)]*\))/g;
+const htmlTagPattern = /<\/?[^>]+>/g;
+const htmlHeadingPattern = /<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1>/gi;
+const htmlBlockEndPattern = /<\/(p|div|li|h[1-6]|blockquote|section|article|tr|figure)>/gi;
+const htmlBreakPattern = /<br\s*\/?>/gi;
+const htmlListItemPattern = /<li\b[^>]*>/gi;
 
 function normalizeWhitespace(value: string) {
     return value.replace(/\s+/g, ' ').trim();
+}
+
+function decodeHtmlEntities(value: string) {
+    return value.replace(/&(#x?[0-9a-f]+|\w+);/gi, (match, entity: string) => {
+        const normalized = entity.toLowerCase();
+
+        if (normalized === 'nbsp') return ' ';
+        if (normalized === 'amp') return '&';
+        if (normalized === 'lt') return '<';
+        if (normalized === 'gt') return '>';
+        if (normalized === 'quot') return '"';
+        if (normalized === 'apos') return '\'';
+
+        if (normalized.startsWith('#x')) {
+            const codePoint = parseInt(normalized.slice(2), 16);
+            return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+        }
+
+        if (normalized.startsWith('#')) {
+            const codePoint = parseInt(normalized.slice(1), 10);
+            return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+        }
+
+        return match;
+    });
+}
+
+export function looksLikeHtmlContent(content: string) {
+    const trimmed = content.trim();
+    return /^<(?:!doctype|html|body|section|article|div|p|h1|h2|h3|h4|blockquote|ul|ol|table|figure|img)\b/i.test(trimmed);
+}
+
+function stripHtmlMarkup(value: string) {
+    return normalizeWhitespace(
+        decodeHtmlEntities(
+            value
+                .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+                .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                .replace(htmlBreakPattern, '\n')
+                .replace(htmlBlockEndPattern, '\n')
+                .replace(htmlListItemPattern, '- ')
+                .replace(htmlTagPattern, ' '),
+        ),
+    );
 }
 
 function stripLeadingTitle(value: string, title?: string) {
@@ -29,7 +78,8 @@ function stripLeadingTitle(value: string, title?: string) {
 }
 
 export function estimateReadTime(content: string) {
-    const words = content
+    const source = looksLikeHtmlContent(content) ? stripHtmlMarkup(content) : content;
+    const words = source
         .replace(markdownArtifacts, ' ')
         .replace(/[^\p{L}\p{N}\s]/gu, ' ')
         .trim()
@@ -40,11 +90,13 @@ export function estimateReadTime(content: string) {
 }
 
 export function createExcerpt(content: string, maxLength = 160, title?: string) {
-    const plain = content
-        .replace(markdownArtifacts, ' ')
-        .replace(/^#+\s+/gm, '')
-        .replace(/^>\s+/gm, '')
-        .replace(/\s+/g, ' ');
+    const plain = looksLikeHtmlContent(content)
+        ? stripHtmlMarkup(content)
+        : content
+            .replace(markdownArtifacts, ' ')
+            .replace(/^#+\s+/gm, '')
+            .replace(/^>\s+/gm, '')
+            .replace(/\s+/g, ' ');
 
     const sanitized = stripLeadingTitle(plain, title);
 
@@ -99,6 +151,24 @@ export function createHeadingIdResolver() {
 export function extractHeadings(content: string): TocHeading[] {
     const headings: TocHeading[] = [];
     const resolveHeadingId = createHeadingIdResolver();
+
+    if (looksLikeHtmlContent(content)) {
+        for (const match of content.matchAll(htmlHeadingPattern)) {
+            const level = Number(match[1]);
+            const text = stripHtmlMarkup(match[2] || '');
+            if (!text) {
+                continue;
+            }
+
+            headings.push({
+                id: resolveHeadingId(text),
+                text,
+                level,
+            });
+        }
+
+        return headings;
+    }
 
     for (const line of content.split('\n')) {
         const match = /^(#{2,4})\s+(.+)$/.exec(line.trim());
