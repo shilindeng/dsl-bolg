@@ -6,9 +6,11 @@ export default function AuthenticatedRoute() {
 
     if (loading) {
         return (
-            <div className="container page-shell">
-                <div className="empty-state">正在验证登录状态...</div>
-            </div>
+            <section className="section">
+                <div className="container">
+                    <div className="empty-state">正在验证登录状态...</div>
+                </div>
+            </section>
         );
     }
 

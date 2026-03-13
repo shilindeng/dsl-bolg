@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import AdminLayout from './components/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import AuthenticatedRoute from './components/AuthenticatedRoute';
 import CommandPalette from './components/CommandPalette';
@@ -33,64 +34,76 @@ const AccountComments = lazy(() => import('./pages/account/Comments'));
 const AccountBookmarks = lazy(() => import('./pages/account/Bookmarks'));
 const AccountHistory = lazy(() => import('./pages/account/History'));
 
-function App() {
+function RouteFallback() {
+    return (
+        <div className="container">
+            <div className="empty-state">正在加载页面...</div>
+        </div>
+    );
+}
+
+function PublicLayout() {
     const { isAdmin, isAuthenticated } = useAuth();
 
     return (
+        <div className="app-shell">
+            <ScrollManager />
+            <Navbar isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
+            <CommandPalette isAdmin={isAdmin} />
+
+            <main className="page-shell">
+                <Suspense fallback={<RouteFallback />}>
+                    <Outlet />
+                </Suspense>
+            </main>
+
+            <Footer />
+        </div>
+    );
+}
+
+function App() {
+    return (
         <ThemeProvider>
             <ToastProvider>
-                <div className="app-shell">
-                    <ScrollManager />
-                    <Navbar isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
-                    <CommandPalette isAdmin={isAdmin} />
+                <Routes>
+                    <Route element={<AdminRoute />}>
+                        <Route element={<AdminLayout />}>
+                            <Route path="/editor" element={<Editor />} />
+                            <Route path="/editor/:slug" element={<Editor />} />
+                            <Route path="/admin/dashboard" element={<Dashboard />} />
+                            <Route path="/admin/newsletter" element={<NewsletterManager />} />
+                            <Route path="/admin/homepage" element={<HomepageManager />} />
+                            <Route path="/admin/series" element={<SeriesManager />} />
+                            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                        </Route>
+                    </Route>
 
-                    <main className="page-shell">
-                        <Suspense
-                            fallback={
-                                <div className="container">
-                                    <div className="empty-state">正在加载页面...</div>
-                                </div>
-                            }
-                        >
-                            <Routes>
-                                <Route path="/" element={<Home />} />
-                                <Route path="/blog" element={<Blog />} />
-                                <Route path="/blog/:slug" element={<BlogPost />} />
-                                <Route path="/series" element={<Series />} />
-                                <Route path="/series/:slug" element={<SeriesDetail />} />
-                                <Route path="/projects" element={<Projects />} />
-                                <Route path="/projects/:slug" element={<ProjectDetail />} />
-                                <Route path="/about" element={<About />} />
-                                <Route path="/newsletter" element={<Newsletter />} />
-                                <Route path="/newsletter/:slug" element={<NewsletterIssue />} />
-                                <Route path="/login" element={<Login />} />
+                    <Route element={<PublicLayout />}>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/blog" element={<Blog />} />
+                        <Route path="/blog/:slug" element={<BlogPost />} />
+                        <Route path="/series" element={<Series />} />
+                        <Route path="/series/:slug" element={<SeriesDetail />} />
+                        <Route path="/projects" element={<Projects />} />
+                        <Route path="/projects/:slug" element={<ProjectDetail />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/newsletter" element={<Newsletter />} />
+                        <Route path="/newsletter/:slug" element={<NewsletterIssue />} />
+                        <Route path="/login" element={<Login />} />
 
-                                <Route element={<AuthenticatedRoute />}>
-                                    <Route path="/account" element={<AccountLayout />}>
-                                        <Route index element={<AccountProfile />} />
-                                        <Route path="comments" element={<AccountComments />} />
-                                        <Route path="bookmarks" element={<AccountBookmarks />} />
-                                        <Route path="history" element={<AccountHistory />} />
-                                    </Route>
-                                </Route>
+                        <Route element={<AuthenticatedRoute />}>
+                            <Route path="/account" element={<AccountLayout />}>
+                                <Route index element={<AccountProfile />} />
+                                <Route path="comments" element={<AccountComments />} />
+                                <Route path="bookmarks" element={<AccountBookmarks />} />
+                                <Route path="history" element={<AccountHistory />} />
+                            </Route>
+                        </Route>
 
-                                <Route element={<AdminRoute />}>
-                                    <Route path="/editor" element={<Editor />} />
-                                    <Route path="/editor/:slug" element={<Editor />} />
-                                    <Route path="/admin/dashboard" element={<Dashboard />} />
-                                    <Route path="/admin/newsletter" element={<NewsletterManager />} />
-                                    <Route path="/admin/homepage" element={<HomepageManager />} />
-                                    <Route path="/admin/series" element={<SeriesManager />} />
-                                </Route>
-
-                                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                                <Route path="*" element={<NotFound />} />
-                            </Routes>
-                        </Suspense>
-                    </main>
-
-                    <Footer />
-                </div>
+                        <Route path="*" element={<NotFound />} />
+                    </Route>
+                </Routes>
             </ToastProvider>
         </ThemeProvider>
     );
