@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
-import * as echarts from 'echarts';
+import { BarChart, LineChart, PieChart } from 'echarts/charts';
+import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
+import { init, use } from 'echarts/core';
+import { CanvasRenderer } from 'echarts/renderers';
 import type { EChartsOption } from 'echarts';
+
+use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 interface EChartProps {
     option: EChartsOption;
@@ -10,7 +15,6 @@ interface EChartProps {
 
 export default function EChart({ option, className = '', height = 320 }: EChartProps) {
     const hostRef = useRef<HTMLDivElement | null>(null);
-
     const stableOption = useMemo(() => option, [option]);
 
     useEffect(() => {
@@ -18,7 +22,7 @@ export default function EChart({ option, className = '', height = 320 }: EChartP
             return;
         }
 
-        const chart = echarts.init(hostRef.current, undefined, { renderer: 'canvas' });
+        const chart = init(hostRef.current, undefined, { renderer: 'canvas' });
         chart.setOption(stableOption);
 
         const resizeObserver = new ResizeObserver(() => chart.resize());

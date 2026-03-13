@@ -4,6 +4,17 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    charts: ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
+                    markdown: ['react-markdown', 'remark-gfm', 'rehype-highlight'],
+                    reactVendor: ['react', 'react-dom', 'react-router-dom', 'react-helmet-async'],
+                },
+            },
+        },
+    },
     server: {
         port: 5173,
         proxy: {
@@ -23,6 +34,6 @@ export default defineConfig({
         },
     },
     optimizeDeps: {
-        include: ['recharts'],
+        include: ['echarts'],
     },
 });
