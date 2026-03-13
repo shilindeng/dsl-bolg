@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchProjects, type Project } from '../api/client';
 import ProjectCard from '../components/ProjectCard';
 import SEO from '../components/SEO';
@@ -52,11 +53,63 @@ export default function Projects() {
                     {loading ? (
                         <div className="empty-state">正在读取项目列表...</div>
                     ) : projects.length ? (
-                        <div className="project-grid">
-                            {projects.map((project) => (
-                                <ProjectCard key={project.id} project={project} />
-                            ))}
-                        </div>
+                        <>
+                            <div className="split-feature project-feature-stage">
+                                <div className="project-intro-card">
+                                    <span className="eyebrow">Case Library</span>
+                                    <h2 className="section-title compact-title">案例不是装饰，而是方法与交付能力的证据</h2>
+                                    <p className="section-copy">
+                                        这里不是简单堆项目卡片，而是把每个案例当作可公开讲清楚的能力样本，补齐背景、角色、过程、结果与可访问链接。
+                                    </p>
+                                    <div className="list-block">
+                                        <div className="list-item">
+                                            <SiteIcon name="check" size={14} />
+                                            <span>优先展示能被说明白、也能被访问到的真实项目。</span>
+                                        </div>
+                                        <div className="list-item">
+                                            <SiteIcon name="check" size={14} />
+                                            <span>每个项目详情页都承担 SEO、传播与案例沉淀的作用。</span>
+                                        </div>
+                                        <div className="list-item">
+                                            <SiteIcon name="check" size={14} />
+                                            <span>项目页与文章页共同构成“观点 + 证据”的双层表达。</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {projects[0] ? (
+                                    <Link to={`/projects/${projects[0].slug}`} className="feature-panel project-feature-card">
+                                        <span className="eyebrow">Featured Case</span>
+                                        <h2 className="section-title compact-title">{projects[0].name}</h2>
+                                        <p className="section-copy">{projects[0].summary || projects[0].description}</p>
+                                        <div className="meta-inline">
+                                            {projects[0].status ? (
+                                                <span className="meta-pill">
+                                                    <SiteIcon name="check" size={13} />
+                                                    <span>{projects[0].status}</span>
+                                                </span>
+                                            ) : null}
+                                            {projects[0].role ? (
+                                                <span className="meta-pill">
+                                                    <SiteIcon name="user" size={13} />
+                                                    <span>{projects[0].role}</span>
+                                                </span>
+                                            ) : null}
+                                        </div>
+                                        <span className="section-link">
+                                            <span>阅读案例详情</span>
+                                            <SiteIcon name="arrow-right" size={14} />
+                                        </span>
+                                    </Link>
+                                ) : null}
+                            </div>
+
+                            <div className="project-grid">
+                                {projects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} />
+                                ))}
+                            </div>
+                        </>
                     ) : (
                         <div className="empty-state">当前还没有满足公开展示条件的项目。</div>
                     )}

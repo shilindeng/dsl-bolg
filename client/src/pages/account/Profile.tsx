@@ -49,6 +49,16 @@ export default function AccountProfilePage() {
                     <h2 className="section-title">账户资料</h2>
                 </div>
             </div>
+            <div className="hero-metrics">
+                <div className="metric-card">
+                    <span className="muted mono">MEMBERSHIP</span>
+                    <strong>{profile?.role || 'reader'}</strong>
+                </div>
+                <div className="metric-card">
+                    <span className="muted mono">EMAIL</span>
+                    <strong>{profile?.email || '--'}</strong>
+                </div>
+            </div>
             <form className="comment-form" onSubmit={handleSubmit}>
                 <label className="form-field">
                     <span className="form-label">名称</span>
@@ -64,12 +74,12 @@ export default function AccountProfilePage() {
                 </label>
                 <div className="hero-metrics">
                     <div className="metric-card">
-                        <span className="muted mono">ROLE</span>
-                        <strong>{profile?.role || '--'}</strong>
-                    </div>
-                    <div className="metric-card">
                         <span className="muted mono">VERIFIED</span>
                         <strong>{profile?.emailVerifiedAt ? '已验证' : '未验证'}</strong>
+                    </div>
+                    <div className="metric-card">
+                        <span className="muted mono">UPDATED</span>
+                        <strong>{profile?.lastLoginAt ? '近期活跃' : '刚创建'}</strong>
                     </div>
                 </div>
                 <button type="submit" className="btn btn-primary" disabled={saving}>

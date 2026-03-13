@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Children, isValidElement, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,7 +14,7 @@ import SiteIcon from '../components/SiteIcon';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
-import { buildHeadingId, looksLikeHtmlContent } from '../lib/content';
+import { buildHeadingId, createHeadingIdResolver, looksLikeHtmlContent } from '../lib/content';
 import { formatDate } from '../lib/format';
 import 'highlight.js/styles/github.css';
 
@@ -43,6 +43,22 @@ function enhanceArticleHtml(content: string) {
     return documentFragment.body.innerHTML;
 }
 
+function extractNodeText(node: ReactNode): string {
+    if (typeof node === 'string' || typeof node === 'number') {
+        return String(node);
+    }
+
+    if (Array.isArray(node)) {
+        return node.map((item) => extractNodeText(item)).join(' ');
+    }
+
+    if (isValidElement(node)) {
+        return extractNodeText((node.props as { children?: ReactNode }).children);
+    }
+
+    return '';
+}
+
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
     const { isAdmin, isAuthenticated } = useAuth();
@@ -60,6 +76,7 @@ export default function BlogPost() {
         () => (isHtmlArticle ? enhanceArticleHtml(articleContent) : ''),
         [articleContent, isHtmlArticle],
     );
+    const resolveMarkdownHeadingId = createHeadingIdResolver();
 
     useEffect(() => {
         if (!slug) return;
@@ -256,6 +273,12 @@ export default function BlogPost() {
                                 <SiteIcon name="spark" size={13} />
                                 <span>最后更新于 {formatDate(post.updatedAt)}</span>
                             </span>
+                            {post.series && post.seriesOrder ? (
+                                <span className="meta-pill">
+                                    <SiteIcon name="link" size={13} />
+                                    <span>专栏第 {post.seriesOrder} 篇</span>
+                                </span>
+                            ) : null}
                         </div>
 
                         {isAdmin ? (
@@ -272,7 +295,53 @@ export default function BlogPost() {
                         <div className="article-cover-card editorial-cover-card">
                             <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
                         </div>
-                    ) : null}
+                    ) : (
+                        <div className="feature-panel article-header-note">
+                            <span className="eyebrow">Reading Notes</span>
+                            <div className="list-block">
+                                <div className="list-item">
+                                    <SiteIcon name="book-open" size={14} />
+                                    <span>文章页优先保证阅读密度、目录可达性和推荐关系。</span>
+                                </div>
+                                <div className="list-item">
+                                    <SiteIcon name="spark" size={14} />
+                                    <span>每篇长文都尽量承担一个明确问题，或给出一条可执行路径。</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <section className="section section-tight">
+                <div className="container article-context-grid">
+                    <div className="feature-panel article-context-card">
+                        <span className="eyebrow">阅读路径</span>
+                        <h2 className="section-title compact-title">先判断是否值得深入读</h2>
+                        <p className="section-copy">
+                            这篇文章属于长期研究型写作，适合先看导语和目录，再决定是否投入完整阅读时间。
+                        </p>
+                    </div>
+
+                    <div className="feature-panel article-context-card">
+                        <span className="eyebrow">内容属性</span>
+                        <div className="tag-list article-tag-list">
+                            {post.tags.map((tag) => (
+                                <span key={tag.id} className="tag">
+                                    <SiteIcon name="tag" size={12} />
+                                    <span>{tag.name}</span>
+                                </span>
+                            ))}
+                        </div>
+                        {post.sourceUrl ? (
+                            <a href={post.sourceUrl} target="_blank" rel="noreferrer" className="section-link">
+                                <span>查看引用来源</span>
+                                <SiteIcon name="external" size={14} />
+                            </a>
+                        ) : (
+                            <span className="muted">当前没有额外引用链接。</span>
+                        )}
+                    </div>
                 </div>
             </section>
 
@@ -289,8 +358,8 @@ export default function BlogPost() {
                                         rehypePlugins={[rehypeHighlight]}
                                         components={{
                                             h2: ({ children }) => {
-                                                const text = String(children);
-                                                const id = buildHeadingId(text);
+                                                const text = extractNodeText(Children.toArray(children)).trim();
+                                                const id = resolveMarkdownHeadingId(text);
                                                 return (
                                                     <h2 id={id}>
                                                         <a href={`#${id}`}>{children}</a>
@@ -298,8 +367,8 @@ export default function BlogPost() {
                                                 );
                                             },
                                             h3: ({ children }) => {
-                                                const text = String(children);
-                                                const id = buildHeadingId(text);
+                                                const text = extractNodeText(Children.toArray(children)).trim();
+                                                const id = resolveMarkdownHeadingId(text);
                                                 return (
                                                     <h3 id={id}>
                                                         <a href={`#${id}`}>{children}</a>
@@ -307,8 +376,8 @@ export default function BlogPost() {
                                                 );
                                             },
                                             h4: ({ children }) => {
-                                                const text = String(children);
-                                                const id = buildHeadingId(text);
+                                                const text = extractNodeText(Children.toArray(children)).trim();
+                                                const id = resolveMarkdownHeadingId(text);
                                                 return (
                                                     <h4 id={id}>
                                                         <a href={`#${id}`}>{children}</a>
@@ -366,7 +435,12 @@ export default function BlogPost() {
                                         <SiteIcon name="inbox" size={14} />
                                         <span>{bookmarking ? '处理中' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}</span>
                                     </button>
-                                ) : null}
+                                ) : (
+                                    <Link to="/login" className="btn btn-ghost">
+                                        <SiteIcon name="user" size={14} />
+                                        <span>登录后收藏</span>
+                                    </Link>
+                                )}
                             </div>
                         </div>
 
@@ -425,7 +499,7 @@ export default function BlogPost() {
                     <aside className="article-sidebar">
                         {seriesDetail ? <SeriesRail series={seriesDetail} currentSlug={post.slug} /> : null}
                         {post.toc?.length ? (
-                            <div className="article-side-card">
+                            <div className="article-side-card article-toc-card">
                                 <strong>目录</strong>
                                 <div className="toc-list" data-testid="post-toc">
                                     {post.toc.map((item) => (
@@ -458,6 +532,16 @@ export default function BlogPost() {
                                 </button>
                             </div>
                         </div>
+
+                        {post.sourceUrl ? (
+                            <div className="article-side-card">
+                                <strong>补充链接</strong>
+                                <a href={post.sourceUrl} target="_blank" rel="noreferrer" className="side-link">
+                                    <SiteIcon name="external" size={14} />
+                                    <span>查看文章来源</span>
+                                </a>
+                            </div>
+                        ) : null}
                     </aside>
                 </div>
             </section>

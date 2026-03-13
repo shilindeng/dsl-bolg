@@ -17,6 +17,16 @@ export default function AccountBookmarksPage() {
                     <h2 className="section-title">我的收藏</h2>
                 </div>
             </div>
+            <div className="hero-metrics">
+                <div className="metric-card">
+                    <span className="muted mono">TOTAL</span>
+                    <strong>{bookmarks.length}</strong>
+                </div>
+                <div className="metric-card">
+                    <span className="muted mono">USE</span>
+                    <strong>回到重点文章</strong>
+                </div>
+            </div>
             {bookmarks.length ? (
                 <div className="account-list">
                     {bookmarks.map((bookmark) => (

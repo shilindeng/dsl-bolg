@@ -5,6 +5,7 @@ import AuthenticatedRoute from './components/AuthenticatedRoute';
 import CommandPalette from './components/CommandPalette';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
+import ScrollManager from './components/ScrollManager';
 import { ThemeProvider } from './hooks/useTheme';
 import Home from './pages/Home';
 import { ToastProvider } from './hooks/useToast';
@@ -16,6 +17,7 @@ const Series = lazy(() => import('./pages/Series'));
 const SeriesDetail = lazy(() => import('./pages/SeriesDetail'));
 const Editor = lazy(() => import('./pages/Editor'));
 const Projects = lazy(() => import('./pages/Projects'));
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
 const About = lazy(() => import('./pages/About'));
 const Login = lazy(() => import('./pages/Login'));
 const Newsletter = lazy(() => import('./pages/Newsletter'));
@@ -38,6 +40,7 @@ function App() {
         <ThemeProvider>
             <ToastProvider>
                 <div className="app-shell">
+                    <ScrollManager />
                     <Navbar isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
                     <CommandPalette isAdmin={isAdmin} />
 
@@ -56,6 +59,7 @@ function App() {
                                 <Route path="/series" element={<Series />} />
                                 <Route path="/series/:slug" element={<SeriesDetail />} />
                                 <Route path="/projects" element={<Projects />} />
+                                <Route path="/projects/:slug" element={<ProjectDetail />} />
                                 <Route path="/about" element={<About />} />
                                 <Route path="/newsletter" element={<Newsletter />} />
                                 <Route path="/newsletter/:slug" element={<NewsletterIssue />} />

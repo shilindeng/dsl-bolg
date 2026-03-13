@@ -99,6 +99,12 @@ export default function Login() {
                                 <span>公开站保持轻量，功能入口只解决登录这一个任务。</span>
                             </div>
                         </div>
+                        <div className="feature-panel login-note-card">
+                            <span className="eyebrow">Why This Flow</span>
+                            <p className="section-copy">
+                                公开站优先降低登录摩擦，把账号体系压缩到真正有价值的能力：收藏、评论、阅读历史和资料维护。
+                            </p>
+                        </div>
                     </div>
 
                     <div className="login-card">

@@ -18,6 +18,16 @@ export default function AccountCommentsPage() {
                     <h2 className="section-title">我的评论</h2>
                 </div>
             </div>
+            <div className="hero-metrics">
+                <div className="metric-card">
+                    <span className="muted mono">TOTAL</span>
+                    <strong>{comments.length}</strong>
+                </div>
+                <div className="metric-card">
+                    <span className="muted mono">STATUS</span>
+                    <strong>含审核状态</strong>
+                </div>
+            </div>
             {comments.length ? (
                 <div className="account-list">
                     {comments.map((comment) => (

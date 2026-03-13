@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
+import { isPublicProjectReady } from '../lib/publicPresentation.js';
 import { siteConfig } from '../lib/site.js';
 
 const router = Router();
@@ -22,7 +23,7 @@ router.get('/sitemap.xml', async (_req, res) => {
                 select: { slug: true, updatedAt: true },
             }),
             prisma.project.findMany({
-                select: { slug: true, updatedAt: true },
+                select: { slug: true, updatedAt: true, name: true, summary: true, description: true },
             }),
             prisma.series.findMany({
                 where: { posts: { some: { published: true } } },
@@ -69,12 +70,12 @@ router.get('/sitemap.xml', async (_req, res) => {
 `;
         }
 
-        for (const project of projects) {
+        for (const project of projects.filter((item) => isPublicProjectReady(item))) {
             xml += `    <url>
-        <loc>${siteConfig.siteUrl}/projects#${project.slug}</loc>
+        <loc>${siteConfig.siteUrl}/projects/${project.slug}</loc>
         <lastmod>${new Date(project.updatedAt).toISOString()}</lastmod>
         <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
+        <priority>0.7</priority>
     </url>
 `;
         }

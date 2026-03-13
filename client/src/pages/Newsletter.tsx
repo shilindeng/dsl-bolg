@@ -90,8 +90,8 @@ export default function Newsletter() {
 
                     {issues.length ? (
                         <div className="stack-grid">
-                            {issues.map((issue) => (
-                                <Link key={issue.id} to={`/newsletter/${issue.slug}`} className="archive-item">
+                            {issues.map((issue, index) => (
+                                <Link key={issue.id} to={`/newsletter/${issue.slug}`} className={`archive-item ${index === 0 ? 'is-featured-issue' : ''}`}>
                                     <div>
                                         <div className="meta-inline">
                                             <span className="meta-pill">

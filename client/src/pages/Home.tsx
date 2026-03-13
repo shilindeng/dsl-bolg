@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchHomepage, type HomepageSection, type Post, type Project } from '../api/client';
+import NewsletterSignup from '../components/NewsletterSignup';
 import PostCard from '../components/PostCard';
 import ProjectCard from '../components/ProjectCard';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
+import WeatherCard from '../components/WeatherCard';
 import { formatShortDate } from '../lib/format';
 import { siteConfig } from '../config/site';
 
@@ -32,8 +34,11 @@ export default function Home() {
 
     const hero = sectionMap.get('hero');
     const featuredPostsSection = sectionMap.get('featured_posts');
+    const archiveEntrySection = sectionMap.get('archive_entry');
     const projectsSection = sectionMap.get('featured_projects');
     const authorSection = sectionMap.get('author_cta');
+    const newsletterSection = sectionMap.get('newsletter_cta');
+    const weatherSection = sectionMap.get('utility_weather');
 
     const featuredPosts = getPosts(featuredPostsSection);
     const featuredProjects = getProjects(projectsSection);
@@ -129,7 +134,7 @@ export default function Home() {
                             )}
 
                             {featuredProject ? (
-                                <Link to={`/projects#${featuredProject.slug}`} className="issue-feature" data-testid="home-issue-project">
+                                <Link to={`/projects/${featuredProject.slug}`} className="issue-feature" data-testid="home-issue-project">
                                     <span className="issue-kicker">
                                         <SiteIcon name="briefcase" size={14} />
                                         <span>研究样本</span>
@@ -174,6 +179,71 @@ export default function Home() {
                             </div>
                         </div>
                     </aside>
+                </div>
+            </section>
+
+            <section className="section section-tight section-border">
+                <div className="container home-utility-rail">
+                    <div className="feature-panel home-archive-entry-card">
+                        <div className="section-head compact-head">
+                            <div>
+                                <span className="eyebrow">{archiveEntrySection?.eyebrow || '归档入口'}</span>
+                                <h2 className="section-title compact-title">
+                                    {archiveEntrySection?.title || '按主题、标签与关键词进入研究档案'}
+                                </h2>
+                            </div>
+                        </div>
+
+                        <p className="section-copy">
+                            {archiveEntrySection?.description || '先定位问题，再决定投入时间。把博客当作内容检索库来用，而不是时间线。'}
+                        </p>
+
+                        <div className="list-block">
+                            <div className="list-item">
+                                <SiteIcon name="search" size={14} />
+                                <span>按关键词快速定位主题文章与长期系列。</span>
+                            </div>
+                            <div className="list-item">
+                                <SiteIcon name="folder" size={14} />
+                                <span>按分类判断内容语境，再选择值得深读的文章。</span>
+                            </div>
+                            <div className="list-item">
+                                <SiteIcon name="tag" size={14} />
+                                <span>按标签追踪跨主题的工具、框架与方法线索。</span>
+                            </div>
+                        </div>
+
+                        <Link to={archiveEntrySection?.ctaHref || '/blog'} className="btn btn-secondary">
+                            <SiteIcon name="arrow-right" size={15} />
+                            <span>{archiveEntrySection?.ctaLabel || '浏览内容归档'}</span>
+                        </Link>
+                    </div>
+
+                    <div className="home-weather-stack">
+                        {weatherSection?.enabled !== false ? <WeatherCard /> : null}
+
+                        <div className="feature-panel">
+                            <div className="section-head compact-head">
+                                <div>
+                                    <span className="eyebrow">{newsletterSection?.eyebrow || 'Newsletter'}</span>
+                                    <h2 className="section-title compact-title">
+                                        {newsletterSection?.title || '订阅长期写作与产品化更新'}
+                                    </h2>
+                                </div>
+                            </div>
+
+                            <p className="section-copy">
+                                {newsletterSection?.description || '当有新长文、项目复盘和工作流迭代时，会优先从这里发出去。'}
+                            </p>
+
+                            <NewsletterSignup source="home_utility" compact />
+
+                            <Link to={newsletterSection?.ctaHref || '/newsletter'} className="section-link">
+                                <span>{newsletterSection?.ctaLabel || '前往订阅页'}</span>
+                                <SiteIcon name="arrow-right" size={14} />
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -263,24 +333,38 @@ export default function Home() {
             ) : null}
 
             <section className="section">
-                <div className="container compact-cta home-cta-band">
-                    <div>
-                        <span className="eyebrow">{authorSection?.eyebrow || '作者与合作'}</span>
-                        <h2 className="section-title compact-title">
-                            {authorSection?.title || '如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。'}
-                        </h2>
-                        <p className="section-copy">{authorSection?.description || siteConfig.author.summary}</p>
+                <div className="container split-feature">
+                    <div className="compact-cta home-cta-band">
+                        <div>
+                            <span className="eyebrow">{authorSection?.eyebrow || '作者与合作'}</span>
+                            <h2 className="section-title compact-title">
+                                {authorSection?.title || '如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。'}
+                            </h2>
+                            <p className="section-copy">{authorSection?.description || siteConfig.author.summary}</p>
+                        </div>
+
+                        <div className="hero-actions">
+                            <a href={authorSection?.ctaHref || `mailto:${siteConfig.email}`} className="btn btn-primary">
+                                <SiteIcon name="mail" size={15} />
+                                <span>{authorSection?.ctaLabel || '发送邮件'}</span>
+                            </a>
+                            <Link to="/about" className="btn btn-ghost">
+                                <SiteIcon name="user" size={15} />
+                                <span>了解作者</span>
+                            </Link>
+                        </div>
                     </div>
 
-                    <div className="hero-actions">
-                        <a href={authorSection?.ctaHref || `mailto:${siteConfig.email}`} className="btn btn-primary">
-                            <SiteIcon name="mail" size={15} />
-                            <span>{authorSection?.ctaLabel || '发送邮件'}</span>
-                        </a>
-                        <Link to="/about" className="btn btn-ghost">
-                            <SiteIcon name="user" size={15} />
-                            <span>了解作者</span>
-                        </Link>
+                    <div className="feature-panel">
+                        <span className="eyebrow">当前重心</span>
+                        <div className="list-block">
+                            {siteConfig.currentFocus.map((item, index) => (
+                                <div key={item} className="list-item">
+                                    <span className="badge">0{index + 1}</span>
+                                    <span>{item}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>

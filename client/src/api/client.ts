@@ -460,6 +460,10 @@ export async function fetchProjects(): Promise<Project[]> {
     return fetchJson(`${API_BASE}/projects`);
 }
 
+export async function fetchProject(slug: string): Promise<Project> {
+    return fetchJson(`${API_BASE}/projects/${slug}`);
+}
+
 export async function fetchSeries() {
     return fetchJson<Series[]>(`${API_BASE}/series`);
 }

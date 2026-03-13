@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Project } from '../api/client';
 import { splitTechStack } from '../lib/content';
 import LazyImage from './LazyImage';
@@ -8,7 +9,7 @@ export default function ProjectCard({ project }: { project: Project }) {
 
     return (
         <article id={project.slug} className="project-card" data-testid={`project-card-${project.slug}`}>
-            <div className="project-card-media">
+            <Link to={`/projects/${project.slug}`} className="project-card-media project-card-media-link">
                 {project.coverImage ? (
                     <LazyImage src={project.coverImage} alt={project.name} />
                 ) : (
@@ -20,7 +21,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                         <strong>{project.headline || '项目案例'}</strong>
                     </div>
                 )}
-            </div>
+            </Link>
 
             <div className="project-card-content">
                 <div className="project-card-topline">
@@ -42,7 +43,11 @@ export default function ProjectCard({ project }: { project: Project }) {
 
                 <div className="project-card-body">
                     {project.headline ? <span className="project-card-headline">{project.headline}</span> : null}
-                    <h3>{project.name}</h3>
+                    <h3>
+                        <Link to={`/projects/${project.slug}`} className="project-card-title-link">
+                            {project.name}
+                        </Link>
+                    </h3>
                     <p className="project-card-summary">{project.summary || project.description}</p>
                     <p>{project.description}</p>
                 </div>
@@ -74,6 +79,10 @@ export default function ProjectCard({ project }: { project: Project }) {
                 </div>
 
                 <div className="project-card-actions">
+                    <Link className="btn btn-ghost" to={`/projects/${project.slug}`}>
+                        <SiteIcon name="arrow-right" size={14} />
+                        <span>案例详情</span>
+                    </Link>
                     {project.liveUrl ? (
                         <a className="btn btn-primary" href={project.liveUrl} target="_blank" rel="noreferrer">
                             <SiteIcon name="external" size={14} />

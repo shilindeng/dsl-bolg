@@ -18,6 +18,16 @@ export default function AccountHistoryPage() {
                     <h2 className="section-title">阅读历史</h2>
                 </div>
             </div>
+            <div className="hero-metrics">
+                <div className="metric-card">
+                    <span className="muted mono">TOTAL</span>
+                    <strong>{history.length}</strong>
+                </div>
+                <div className="metric-card">
+                    <span className="muted mono">TRACKING</span>
+                    <strong>最近阅读 + 频次</strong>
+                </div>
+            </div>
             {history.length ? (
                 <div className="account-list">
                     {history.map((item) => (

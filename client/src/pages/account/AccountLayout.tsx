@@ -23,6 +23,16 @@ export default function AccountLayout() {
                             <div className="eyebrow">Member</div>
                             <h1 className="section-title">{user?.name || '会员中心'}</h1>
                             <p className="muted">{user?.email}</p>
+                            <div className="hero-metrics">
+                                <div className="metric-card">
+                                    <span className="muted mono">ROLE</span>
+                                    <strong>{user?.role || 'reader'}</strong>
+                                </div>
+                                <div className="metric-card">
+                                    <span className="muted mono">ACCESS</span>
+                                    <strong>已登录</strong>
+                                </div>
+                            </div>
                             <div className="account-nav">
                                 {accountNav.map((item) => {
                                     const active = item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);

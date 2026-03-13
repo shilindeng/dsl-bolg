@@ -9,6 +9,12 @@ export default function NotFound() {
                     <span className="eyebrow">404</span>
                     <h1 className="section-title">这个地址不存在</h1>
                     <p className="section-copy">你访问的页面可能已被移动、删除，或者当前链接本身已经失效。</p>
+                    <div className="tag-list">
+                        <span className="tag">首页</span>
+                        <span className="tag">博客归档</span>
+                        <span className="tag">项目案例</span>
+                        <span className="tag">专栏</span>
+                    </div>
                     <div className="hero-actions">
                         <Link to="/" className="btn btn-primary">
                             <SiteIcon name="home" size={14} />

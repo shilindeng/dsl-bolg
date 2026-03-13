@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadEnv } from 'vite';
 
 const rootDir = process.cwd();
@@ -11,7 +12,7 @@ const env = {
 
 const normalizeUrl = (value) => value.replace(/\/+$/, '');
 const xmlEscape = (value) =>
-    value
+    String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -23,6 +24,72 @@ const apiBaseRaw = (env.VITE_API_BASE || '/api').trim();
 const apiCandidates = apiBaseRaw.startsWith('http')
     ? [normalizeUrl(apiBaseRaw)]
     : ['http://127.0.0.1:3001/api', 'http://localhost:3001/api'];
+const serverDir = path.resolve(rootDir, '..', 'server');
+
+async function fetchStaticDataFromPrisma() {
+    try {
+        const prismaModule = await import(pathToFileURL(path.resolve(serverDir, 'node_modules', '@prisma', 'client', 'index.js')).href);
+        const { PrismaClient } = prismaModule;
+        const databasePath = path.join(serverDir, 'prisma', 'blog.db').replace(/\\/g, '/');
+        const prisma = new PrismaClient({
+            datasources: {
+                db: {
+                    url: `file:${databasePath}`,
+                },
+            },
+        });
+
+        const [posts, series, projects] = await Promise.all([
+            prisma.post.findMany({
+                where: { published: true },
+                select: {
+                    slug: true,
+                    title: true,
+                    excerpt: true,
+                    createdAt: true,
+                    publishedAt: true,
+                    updatedAt: true,
+                    featured: true,
+                },
+                orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+            }),
+            prisma.series.findMany({
+                where: { posts: { some: { published: true } } },
+                select: {
+                    slug: true,
+                    updatedAt: true,
+                },
+            }),
+            prisma.project.findMany({
+                select: {
+                    slug: true,
+                    updatedAt: true,
+                    name: true,
+                    summary: true,
+                    description: true,
+                },
+            }),
+        ]);
+
+        await prisma.$disconnect();
+
+        return {
+            posts,
+            series,
+            projects: projects.filter((item) => {
+                const summary = (item.summary || item.description || '').trim();
+                const description = (item.description || '').trim();
+                return Boolean(item.name?.trim() && summary.length >= 16 && description.length >= 32);
+            }),
+        };
+    } catch {
+        return {
+            posts: [],
+            series: [],
+            projects: [],
+        };
+    }
+}
 
 async function fetchJsonFromCandidates(resourcePath) {
     for (const candidate of apiCandidates) {
@@ -54,10 +121,12 @@ const staticEntries = [
 ];
 
 const postsResponse = await fetchJsonFromCandidates('/posts?limit=100');
-const posts = Array.isArray(postsResponse?.data) ? postsResponse.data : [];
-
 const seriesResponse = await fetchJsonFromCandidates('/series');
-const series = Array.isArray(seriesResponse) ? seriesResponse : [];
+const projectsResponse = await fetchJsonFromCandidates('/projects');
+const prismaFallback = await fetchStaticDataFromPrisma();
+const posts = Array.isArray(postsResponse?.data) && postsResponse.data.length ? postsResponse.data : prismaFallback.posts;
+const series = Array.isArray(seriesResponse) && seriesResponse.length ? seriesResponse : prismaFallback.series;
+const projects = Array.isArray(projectsResponse) && projectsResponse.length ? projectsResponse : prismaFallback.projects;
 
 const sitemapEntries = [
     ...staticEntries.map((entry) => ({
@@ -76,6 +145,12 @@ const sitemapEntries = [
         loc: makeAbsoluteUrl(`/series/${item.slug}`),
         lastmod: item.updatedAt || new Date().toISOString(),
         changefreq: 'weekly',
+        priority: '0.7',
+    })),
+    ...projects.map((item) => ({
+        loc: makeAbsoluteUrl(`/projects/${item.slug}`),
+        lastmod: item.updatedAt || new Date().toISOString(),
+        changefreq: 'monthly',
         priority: '0.7',
     })),
 ];

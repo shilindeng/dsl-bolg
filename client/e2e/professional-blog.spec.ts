@@ -57,6 +57,9 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await page.getByTestId('primary-nav').getByRole('link', { name: /项目/ }).click();
     await expect(page).toHaveURL(/\/projects$/);
     await expect(page.locator('[data-testid^="project-card-"]').first()).toBeVisible();
+    await page.locator('[data-testid^="project-card-"]').first().getByRole('link', { name: /案例详情|DSL Blog|Signal Archive|Operator Console/ }).first().click();
+    await expect(page).toHaveURL(/\/projects\/.+/);
+    await expect(page.getByRole('heading', { name: /项目概览/ })).toBeVisible();
 
     await page.getByTestId('primary-nav').getByRole('link', { name: /关于/ }).click();
     await expect(page).toHaveURL(/\/about$/);
@@ -72,11 +75,31 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await saveScreenshot(page, testInfo, 'login');
 });
 
+test('desktop admin smoke covers login and core admin surfaces', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium');
+
+    await page.goto('/login');
+    await page.getByRole('button', { name: /管理员/ }).click();
+    await page.getByTestId('login-email-input').fill('admin@dsl.blog');
+    await page.getByTestId('login-password-input').fill('admin123');
+    await page.getByTestId('login-submit-button').click();
+
+    await expect(page).toHaveURL(/\/admin\/dashboard$/);
+    await expect(page.getByRole('heading', { name: /内容运营与分发总控台/ })).toBeVisible();
+
+    await page.goto('/admin/homepage');
+    await expect(page.getByRole('heading', { name: /首页编排面板/ })).toBeVisible();
+
+    await page.goto('/admin/series');
+    await expect(page.getByRole('heading', { name: /专栏管理/ })).toBeVisible();
+});
+
 test('mobile smoke covers menu navigation and article reading', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-chromium');
 
     await page.goto('/');
     await expect(page.getByTestId('home-hero')).toBeVisible();
+    await expect(page.getByTestId('weather-card')).toBeVisible();
     await saveScreenshot(page, testInfo, 'home-mobile');
 
     await page.getByRole('button', { name: /打开导航菜单/ }).click();
@@ -100,4 +123,10 @@ test('mobile smoke covers menu navigation and article reading', async ({ page },
     await expect(page.getByTestId('article-content')).toBeVisible();
     await expect(page.getByTestId('article-meta')).toBeVisible();
     await saveScreenshot(page, testInfo, 'article-mobile');
+
+    await page.getByRole('button', { name: /打开导航菜单/ }).click();
+    await page.getByLabel('移动端导航').getByRole('link', { name: /项目/ }).click();
+    await expect(page).toHaveURL(/\/projects$/);
+    await page.locator('[data-testid^="project-card-"]').first().getByRole('link', { name: /案例详情|DSL Blog|Signal Archive|Operator Console/ }).first().click();
+    await expect(page).toHaveURL(/\/projects\/.+/);
 });

@@ -57,6 +57,16 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                 </nav>
 
                 <div className="site-nav-actions">
+                    <button
+                        type="button"
+                        className="action-chip desktop-only nav-command"
+                        onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+                    >
+                        <SiteIcon name="search" size={14} />
+                        <span>快速检索</span>
+                        <kbd>Ctrl K</kbd>
+                    </button>
+
                     <span className="nav-status desktop-only">
                         <SiteIcon name="spark" size={14} />
                         <span>研究库在线</span>

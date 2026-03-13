@@ -25,6 +25,14 @@ export default function Footer() {
                             <span>实现</span>
                         </span>
                     </div>
+                    <div className="list-block footer-focus-list">
+                        {siteConfig.currentFocus.slice(0, 2).map((item) => (
+                            <div key={item} className="list-item">
+                                <SiteIcon name="spark" size={13} />
+                                <span>{item}</span>
+                            </div>
+                        ))}
+                    </div>
                 </section>
 
                 <section className="footer-stack">
@@ -65,6 +73,9 @@ export default function Footer() {
                     <strong>订阅更新</strong>
                     <p>接收新的长文、项目复盘和工作流迭代记录。</p>
                     <NewsletterSignup source="footer" compact />
+                    <span className="muted">
+                        基准城市：{siteConfig.author.location.city} · {siteConfig.author.location.country}
+                    </span>
                 </section>
             </div>
         </footer>

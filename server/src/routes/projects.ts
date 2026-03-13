@@ -41,7 +41,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             where: { slug: String(req.params.slug) },
         });
 
-        if (!project) {
+        if (!project || !isPublicProjectReady(project)) {
             res.status(404).json({ error: 'Project not found' });
             return;
         }
