@@ -227,7 +227,7 @@ ${BLOG_HOST} {
         @seo path /robots.txt /sitemap.xml /rss.xml
         header @seo Cache-Control "public, max-age=3600"
 
-        try_files {path} /index.html
+        try_files {path} {path}/index.html /index.html
         file_server
     }
 }

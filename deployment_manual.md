@@ -157,6 +157,18 @@ Windows 本机入口：
 - 推荐做法是先在本地完成开发、验证并 push 到 `$DEPLOY_BRANCH`，再执行远程更新
 - 如果线上需要临时发布尚未进入 `$DEPLOY_BRANCH` 的本地工作区代码，应视为例外操作，仍需复用现有 release、备份、校验和回滚逻辑
 
+补充维护命令：
+
+```bash
+# 应用首页/专栏/项目的编辑部默认维护脚本
+cd /opt/dsl-blog/current/server
+npm run content:maintain
+
+# 审计公开内容质量
+cd /opt/dsl-blog/current/server
+npm run content:audit
+```
+
 关键约束：
 
 - `update.sh` **不会执行 seed**
@@ -222,6 +234,12 @@ readlink -f /opt/dsl-blog/current
 
 ```bash
 ls -1dt /opt/dsl-blog/backups/*.tar.gz | head
+```
+
+Windows 侧生产验证：
+
+```powershell
+.\deploy\verify-production.ps1
 ```
 
 ## 7. 上线核对
