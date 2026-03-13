@@ -26,6 +26,7 @@ bash "$SCRIPT_DIR/backup.sh"
 
 log "Syncing repository"
 sync_repo
+sync_runtime_scripts
 
 log "Creating release"
 release_dir="$(create_release_from_repo)"

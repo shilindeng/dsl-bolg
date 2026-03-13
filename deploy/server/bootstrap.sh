@@ -23,6 +23,7 @@ fi
 
 log "Syncing repository"
 sync_repo
+sync_runtime_scripts
 
 log "Creating initial release"
 if [[ -d "${APP_ROOT}/app/server" && -d "${APP_ROOT}/app/client" ]]; then

@@ -62,6 +62,13 @@ ensure_base_dirs() {
         "$SHARED_UPLOADS_DIR"
 }
 
+sync_runtime_scripts() {
+    if [[ -d "$REPO_DIR/deploy/server" ]]; then
+        cp -f "$REPO_DIR"/deploy/server/*.sh "$BIN_DIR"/
+        chmod +x "$BIN_DIR"/*.sh
+    fi
+}
+
 sync_repo() {
     if [[ ! -d "$REPO_DIR/.git" ]]; then
         log "Cloning repository into $REPO_DIR"

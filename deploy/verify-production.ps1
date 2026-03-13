@@ -23,6 +23,18 @@ function Assert-Contains {
     }
 }
 
+function Assert-Match {
+    param(
+        [string]$Body,
+        [string]$Pattern,
+        [string]$Label
+    )
+
+    if ($Body -notmatch $Pattern) {
+        throw "$Label missing expected pattern: $Pattern"
+    }
+}
+
 $health = Get-Body "$BaseUrl/api/health"
 $robots = Get-Body "$BaseUrl/robots.txt"
 $sitemap = Get-Body "$BaseUrl/sitemap.xml"
@@ -36,9 +48,12 @@ Assert-Contains $health '"status":"ok"' 'health'
 Assert-Contains $robots "$BaseUrl/sitemap.xml" 'robots'
 Assert-Contains $sitemap "$BaseUrl/projects/$ExpectedProjectSlug" 'sitemap'
 Assert-Contains $rss '<rss version="2.0">' 'rss'
-Assert-Contains $homeHtml '<title>首页 | AI信息差研究院</title>' 'home title'
-Assert-Contains $postHtml '<title>把个人博客做成专业品牌站，需要先解决什么问题 | AI信息差研究院</title>' 'post title'
-Assert-Contains $projectHtml '<title>DSL Blog | AI信息差研究院</title>' 'project title'
-Assert-Contains $seriesHtml "<title>把博客做成长期经营的作品系统 | AI信息差研究院</title>" 'series title'
+Assert-Contains $homeHtml "<link rel=`"canonical`" href=`"$BaseUrl/`"" 'home canonical'
+Assert-Contains $postHtml "<link rel=`"canonical`" href=`"$BaseUrl/blog/$ExpectedPostSlug`"" 'post canonical'
+Assert-Contains $projectHtml "<link rel=`"canonical`" href=`"$BaseUrl/projects/$ExpectedProjectSlug`"" 'project canonical'
+Assert-Contains $seriesHtml "<link rel=`"canonical`" href=`"$BaseUrl/series/$ExpectedSeriesSlug`"" 'series canonical'
+Assert-Match $postHtml 'article:published_time' 'post article meta'
+Assert-Match $projectHtml 'CreativeWork' 'project json-ld'
+Assert-Match $seriesHtml 'og:url' 'series og meta'
 
 Write-Output "Production verification passed for $BaseUrl"
