@@ -119,14 +119,36 @@ async function loadSelectedPosts(config: HomepageSectionConfig) {
     const limit = Math.max(1, Math.min(8, config.limit || 4));
 
     if (config.postIds?.length) {
-        const posts = await prisma.post.findMany({
-            where: { id: { in: config.postIds }, published: true },
+        const selectedIds = [...new Set(config.postIds)];
+        const selectedPosts = await prisma.post.findMany({
+            where: { id: { in: selectedIds }, published: true },
             include: includePostRelations,
         });
-        const sorted = config.postIds
-            .map((id) => posts.find((post) => post.id === id))
-            .filter(Boolean);
-        return sorted.map((post) => formatPost(post!)).filter((post) => isPublicPostReady(post));
+
+        const orderedSelected = selectedIds
+            .map((id) => selectedPosts.find((post) => post.id === id))
+            .filter(Boolean)
+            .map((post) => formatPost(post!))
+            .filter((post) => isPublicPostReady(post));
+
+        if (!config.autoFill || orderedSelected.length >= limit) {
+            return orderedSelected.slice(0, limit);
+        }
+
+        const needed = Math.max(0, limit - orderedSelected.length);
+        const fallback = await prisma.post.findMany({
+            where: { published: true, id: { notIn: selectedIds } },
+            include: includePostRelations,
+            orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
+            take: Math.min(12, needed * 3),
+        });
+
+        const topups = fallback
+            .map((post) => formatPost(post))
+            .filter((post) => isPublicPostReady(post))
+            .slice(0, needed);
+
+        return [...orderedSelected, ...topups].slice(0, limit);
     }
 
     const posts = await prisma.post.findMany({
@@ -143,14 +165,34 @@ async function loadSelectedProjects(config: HomepageSectionConfig) {
     const limit = Math.max(1, Math.min(6, config.limit || 3));
 
     if (config.projectIds?.length) {
-        const projects = await prisma.project.findMany({
-            where: { id: { in: config.projectIds } },
+        const selectedIds = [...new Set(config.projectIds)];
+        const selectedProjects = await prisma.project.findMany({
+            where: { id: { in: selectedIds } },
         });
-        return config.projectIds
-            .map((id) => projects.find((project) => project.id === id))
+
+        const orderedSelected = selectedIds
+            .map((id) => selectedProjects.find((project) => project.id === id))
             .filter(Boolean)
             .map((project) => formatPublicProject(project!))
             .filter((project) => isPublicProjectReady(project));
+
+        if (!config.autoFill || orderedSelected.length >= limit) {
+            return orderedSelected.slice(0, limit);
+        }
+
+        const needed = Math.max(0, limit - orderedSelected.length);
+        const fallback = await prisma.project.findMany({
+            where: { id: { notIn: selectedIds } },
+            orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
+            take: Math.min(12, needed * 3),
+        });
+
+        const topups = fallback
+            .map((project) => formatPublicProject(project))
+            .filter((project) => isPublicProjectReady(project))
+            .slice(0, needed);
+
+        return [...orderedSelected, ...topups].slice(0, limit);
     }
 
     const projects = await prisma.project.findMany({

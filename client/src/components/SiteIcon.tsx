@@ -31,6 +31,7 @@ export type SiteIconName =
     | 'sun'
     | 'tag'
     | 'user'
+    | 'warning'
     | 'x';
 
 interface SiteIconProps extends SVGProps<SVGSVGElement> {
@@ -227,6 +228,14 @@ function IconPath({ name }: { name: SiteIconName }) {
                 <>
                     <circle cx="12" cy="8.2" r="3.2" />
                     <path d="M5 19C6.4 15.9 9 14.5 12 14.5C15 14.5 17.6 15.9 19 19" />
+                </>
+            );
+        case 'warning':
+            return (
+                <>
+                    <path d="M12 3.5L21 19H3L12 3.5Z" />
+                    <path d="M12 9V13" />
+                    <path d="M12 16.8V17" />
                 </>
             );
         case 'x':

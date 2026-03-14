@@ -8,12 +8,17 @@ function normalizeText(value?: string | null) {
 }
 
 export function resolvePublicAsset(assetPath?: string | null) {
-    if (!assetPath || isR2Enabled || !assetPath.startsWith('/uploads/')) {
-        return assetPath ?? null;
+    const normalized = assetPath?.trim() || '';
+    if (!normalized || normalized === '/') {
+        return null;
     }
 
-    const absolutePath = path.join(process.cwd(), 'uploads', path.basename(assetPath));
-    return fs.existsSync(absolutePath) ? assetPath : null;
+    if (isR2Enabled || !normalized.startsWith('/uploads/')) {
+        return normalized;
+    }
+
+    const absolutePath = path.join(process.cwd(), 'uploads', path.basename(normalized));
+    return fs.existsSync(absolutePath) ? normalized : null;
 }
 
 function shouldDropImage(url: string, alt: string) {
@@ -30,7 +35,13 @@ function shouldDropImage(url: string, alt: string) {
 
 export function sanitizePostContent(content: string) {
     if (looksLikeHtmlContent(content)) {
-        return content.replace(/<img\b([^>]*)\bsrc=(["'])([^"']+)\2([^>]*)>/gi, (match, before, _quote, url, after) => {
+        const stripped = content
+            .replace(/<script[\s\S]*?<\/script>/gi, '')
+            .replace(/<style[\s\S]*?<\/style>/gi, '')
+            .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '')
+            .replace(/\sstyle\s*=\s*(?:"[^"]*"|'[^']*')/gi, '');
+
+        return stripped.replace(/<img\b([^>]*)\bsrc=(["'])([^"']+)\2([^>]*)>/gi, (match, before, _quote, url, after) => {
             const attrs = `${before} ${after}`;
             const altMatch = /\balt=(["'])(.*?)\1/i.exec(attrs);
             const alt = altMatch?.[2] || '';

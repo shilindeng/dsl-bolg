@@ -7,10 +7,44 @@ export default defineConfig({
     build: {
         rollupOptions: {
             output: {
-                manualChunks: {
-                    charts: ['echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
-                    markdown: ['react-markdown', 'remark-gfm', 'rehype-highlight'],
-                    reactVendor: ['react', 'react-dom', 'react-router-dom', 'react-helmet-async'],
+                manualChunks(id) {
+                    const normalized = id.replace(/\\\\/g, '/');
+
+                    if (!normalized.includes('node_modules/')) {
+                        return undefined;
+                    }
+
+                    // Heavy, admin-only charts chunk.
+                    if (normalized.includes('/echarts/')) {
+                        return 'charts';
+                    }
+
+                    // Markdown rendering toolchain (keep off the landing page).
+                    if (
+                        normalized.includes('/react-markdown/') ||
+                        normalized.includes('/remark-gfm/') ||
+                        normalized.includes('/rehype-highlight/') ||
+                        normalized.includes('/unified/') ||
+                        normalized.includes('/remark-') ||
+                        normalized.includes('/rehype-') ||
+                        normalized.includes('/mdast-') ||
+                        normalized.includes('/micromark-')
+                    ) {
+                        return 'markdown';
+                    }
+
+                    // Core React runtime + router + helmet.
+                    if (
+                        normalized.includes('/react/') ||
+                        normalized.includes('/react-dom/') ||
+                        normalized.includes('/react-router/') ||
+                        normalized.includes('/react-router-dom/') ||
+                        normalized.includes('/react-helmet-async/')
+                    ) {
+                        return 'reactVendor';
+                    }
+
+                    return undefined;
                 },
             },
         },

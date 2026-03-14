@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAdminHomepage, fetchPosts, fetchProjects, saveAdminHomepage, type HomepageSection, type Post, type Project } from '../../api/client';
+import { fetchAdminHomepage, fetchHomepage, fetchPosts, fetchProjects, saveAdminHomepage, type HomepageSection, type Post, type Project } from '../../api/client';
 import SEO from '../../components/SEO';
 import SiteIcon from '../../components/SiteIcon';
 import { useToast } from '../../hooks/useToast';
@@ -35,9 +35,18 @@ function isContentSection(type: string) {
     return type === 'featured_posts' || type === 'featured_projects';
 }
 
+function isPost(item: Post | Project): item is Post {
+    return 'content' in item;
+}
+
+function isProject(item: Post | Project): item is Project {
+    return 'techStack' in item;
+}
+
 export default function HomepageManagerPage() {
     const { showToast } = useToast();
     const [sections, setSections] = useState<HomepageSection[]>([]);
+    const [previewSections, setPreviewSections] = useState<HomepageSection[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [saving, setSaving] = useState(false);
@@ -45,16 +54,18 @@ export default function HomepageManagerPage() {
     useEffect(() => {
         Promise.all([
             fetchAdminHomepage(),
+            fetchHomepage(),
             fetchPosts({ limit: 40 }),
             fetchProjects(),
         ])
-            .then(([homepage, postResponse, projectResponse]) => {
+            .then(([homepage, preview, postResponse, projectResponse]) => {
                 setSections(
                     homepage.sections.map((section) => ({
                         ...section,
                         config: parseConfig(section),
                     })),
                 );
+                setPreviewSections(preview.sections);
                 setPosts(postResponse.data);
                 setProjects(projectResponse);
             })
@@ -64,6 +75,21 @@ export default function HomepageManagerPage() {
     const sectionMap = useMemo(
         () => new Map(sections.map((section) => [section.type, section])),
         [sections],
+    );
+
+    const previewMap = useMemo(
+        () => new Map(previewSections.map((section) => [section.type, section])),
+        [previewSections],
+    );
+
+    const previewFeaturedPosts = useMemo(
+        () => ((previewMap.get('featured_posts')?.items || []) as Array<Post | Project>).filter(isPost),
+        [previewMap],
+    );
+
+    const previewFeaturedProjects = useMemo(
+        () => ((previewMap.get('featured_projects')?.items || []) as Array<Post | Project>).filter(isProject),
+        [previewMap],
     );
 
     const updateSection = (type: string, patch: Partial<HomepageSection>) => {
@@ -283,16 +309,28 @@ export default function HomepageManagerPage() {
                                 </div>
                                 <div className="list-block">
                                     <div className="list-item">
-                                        <SiteIcon name="check" size={14} />
-                                        <span>首屏至少保证 1 篇代表文章和 1 个代表项目，不让 Issue 区落空。</span>
+                                        <SiteIcon name={previewFeaturedPosts.length ? 'check' : 'warning'} size={14} />
+                                        <span>Issue 主打文章：{previewFeaturedPosts[0]?.title || '当前为空（请配置 featured_posts）'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={previewFeaturedProjects.length ? 'check' : 'warning'} size={14} />
+                                        <span>Issue 主打项目：{previewFeaturedProjects[0]?.name || '当前为空（请配置 featured_projects）'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={previewMap.has('archive_entry') ? 'check' : 'warning'} size={14} />
+                                        <span>归档入口：{previewMap.has('archive_entry') ? '已启用' : '未启用（请启用 archive_entry）'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={previewMap.has('newsletter_cta') ? 'check' : 'warning'} size={14} />
+                                        <span>Newsletter：{previewMap.has('newsletter_cta') ? '已启用' : '未启用（请启用 newsletter_cta）'}</span>
                                     </div>
                                     <div className="list-item">
                                         <SiteIcon name="check" size={14} />
-                                        <span>精选文章优先挑“能建立判断力”的长文，而不是仅看发布时间。</span>
+                                        <span>规则：手动指定优先，启用“自动填充”会在你选的内容不足时自动补齐，避免 section 变空。</span>
                                     </div>
                                     <div className="list-item">
                                         <SiteIcon name="check" size={14} />
-                                        <span>项目位优先放案例完整、角色明确、可访问的项目详情页。</span>
+                                        <span>流程：每次发布新内容后，先来这里更新首页配置，再去首页做一次目视验收。</span>
                                     </div>
                                 </div>
                             </div>
