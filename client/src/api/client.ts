@@ -1,5 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
+export type ContentFormat = 'markdown' | 'html';
+
 export interface Tag {
     id: number;
     name: string;
@@ -61,6 +63,7 @@ export interface Post {
     deck?: string | null;
     excerpt: string;
     content: string;
+    contentFormat: ContentFormat;
     coverImage: string | null;
     coverAlt?: string | null;
     sourceUrl?: string | null;
@@ -167,6 +170,7 @@ export interface PostInput {
     slug?: string;
     deck?: string;
     content: string;
+    contentFormat?: ContentFormat;
     excerpt: string;
     coverImage: string | null;
     coverAlt?: string | null;
@@ -267,6 +271,14 @@ export interface HomepageSection {
         hidden?: boolean;
     };
     items?: Array<Post | Project>;
+}
+
+export interface HomepageHealth {
+    featuredPostReady: boolean;
+    featuredProjectReady: boolean;
+    featuredPostFallbackUsed: boolean;
+    featuredProjectFallbackUsed: boolean;
+    warnings: string[];
 }
 
 export interface PaginatedResponse<T> {
@@ -688,15 +700,15 @@ export async function sendNewsletterIssue(id: number) {
 }
 
 export async function fetchHomepage() {
-    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage`);
+    return fetchJson<{ sections: HomepageSection[]; health: HomepageHealth }>(`${API_BASE}/homepage`);
 }
 
 export async function fetchAdminHomepage() {
-    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage/admin`);
+    return fetchJson<{ sections: HomepageSection[]; health: HomepageHealth }>(`${API_BASE}/homepage/admin`);
 }
 
 export async function saveAdminHomepage(sections: HomepageSection[]) {
-    return fetchJson<{ sections: HomepageSection[] }>(`${API_BASE}/homepage/admin`, {
+    return fetchJson<{ sections: HomepageSection[]; health: HomepageHealth }>(`${API_BASE}/homepage/admin`, {
         method: 'PUT',
         body: JSON.stringify({ sections }),
     });
@@ -728,5 +740,53 @@ export async function createApiKey(data: { name: string; scopes: string[] }) {
 export async function revokeApiKey(id: number) {
     return fetchJson<{ id: number; revokedAt: string }>(`${API_BASE}/open/admin/keys/${id}/revoke`, {
         method: 'POST',
+    });
+}
+
+export async function createCategory(data: { name: string }) {
+    return fetchJson<Category>(`${API_BASE}/categories`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateCategory(id: number, data: { name?: string; slug?: string }) {
+    return fetchJson<Category>(`${API_BASE}/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteCategory(id: number, replacementCategoryId?: number | null) {
+    return fetchJson<void>(`${API_BASE}/categories/${id}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ replacementCategoryId: replacementCategoryId ?? null }),
+    });
+}
+
+export async function createTag(data: { name: string }) {
+    return fetchJson<Tag>(`${API_BASE}/tags`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateTag(id: number, data: { name?: string; slug?: string }) {
+    return fetchJson<Tag>(`${API_BASE}/tags/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteTag(id: number) {
+    return fetchJson<void>(`${API_BASE}/tags/${id}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function mergeTags(sourceTagId: number, targetTagId: number) {
+    return fetchJson<{ sourceTagId: number; targetTagId: number; merged: boolean }>(`${API_BASE}/tags/merge`, {
+        method: 'POST',
+        body: JSON.stringify({ sourceTagId, targetTagId }),
     });
 }

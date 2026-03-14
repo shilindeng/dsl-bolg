@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dsl-blog-secret-key-change-in-production';
+import { readJwtSecret } from '../lib/env.js';
 
 export interface AuthUser {
     id: number;
@@ -15,7 +14,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 function decodeToken(token: string) {
-    return jwt.verify(token, JWT_SECRET) as AuthUser;
+    return jwt.verify(token, readJwtSecret()) as AuthUser;
 }
 
 export function getTokenFromRequest(req: Request) {

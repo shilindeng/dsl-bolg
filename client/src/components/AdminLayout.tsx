@@ -15,10 +15,12 @@ type AdminNavItem = {
 };
 
 const navItems: AdminNavItem[] = [
-    { to: '/admin/dashboard', label: '总控台', icon: 'grid', description: '数据、审核与运营状态' },
-    { to: '/admin/homepage', label: '首页编排', icon: 'home', description: '运营位与模块配置' },
+    { to: '/admin/dashboard', label: '总览', icon: 'grid', description: '数据、风险与运营状态' },
+    { to: '/admin/homepage', label: '首页编排', icon: 'home', description: '首屏与模块配置' },
     { to: '/admin/newsletter', label: 'Newsletter', icon: 'inbox', description: '订阅者与 issue' },
     { to: '/admin/series', label: '专栏', icon: 'link', description: '专栏与章节顺序' },
+    { to: '/admin/taxonomy', label: '分类标签', icon: 'tag', description: '分类、标签与脏数据合并' },
+    { to: '/admin/api-keys', label: 'API Key', icon: 'code', description: '开放发布凭证' },
     { to: '/editor', label: '写文章', icon: 'pen', description: '内容编辑器' },
 ];
 
@@ -53,7 +55,7 @@ export default function AdminLayout() {
 
             <header className="admin-topbar">
                 <div className="admin-topbar-inner">
-                    <Link to="/admin/dashboard" className="admin-brand" aria-label="返回后台总控台">
+                    <Link to="/admin/dashboard" className="admin-brand" aria-label="返回后台总览">
                         <span className="admin-brand-mark mono">{siteConfig.shortName}</span>
                         <div className="admin-brand-copy">
                             <strong>{siteConfig.name}</strong>
@@ -72,7 +74,7 @@ export default function AdminLayout() {
                             <kbd>Ctrl K</kbd>
                         </button>
 
-                        <Link to="/" className="action-chip desktop-only" title="回到公开站">
+                        <Link to="/" className="action-chip desktop-only" title="回到站点">
                             <SiteIcon name="external" size={14} />
                             <span>查看站点</span>
                         </Link>
@@ -103,7 +105,7 @@ export default function AdminLayout() {
                 <aside className={`feature-panel admin-sidebar ${open ? 'is-open' : ''}`} aria-label="后台导航">
                     <div className="admin-nav-head">
                         <span className="eyebrow">Workbench</span>
-                        <p className="muted">把运营动作收进一套稳定的工作台布局里。</p>
+                        <p className="muted">把总览、首页、内容和分发工具拆开，后台信息结构更清楚。</p>
                     </div>
 
                     <nav className="admin-nav">
@@ -155,4 +157,3 @@ export default function AdminLayout() {
         </div>
     );
 }
-

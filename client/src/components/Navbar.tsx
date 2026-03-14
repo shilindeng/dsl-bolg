@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
+import { resolveAvatarUrl } from '../lib/avatars';
 import SiteIcon from './SiteIcon';
 import ThemeToggle from './ThemeToggle';
 
@@ -75,7 +76,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     {isAdmin ? (
                         <>
                             <Link to="/account" className="action-chip desktop-only">
-                                <SiteIcon name="user" size={14} />
+                                <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                 <span>{accountLabel}</span>
                             </Link>
                             <Link to="/editor" className="action-chip desktop-only">
@@ -94,7 +95,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     ) : isAuthenticated ? (
                         <>
                             <Link to="/account" className="action-chip desktop-only">
-                                <SiteIcon name="user" size={14} />
+                                <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                 <span>{accountLabel}</span>
                             </Link>
                             <button type="button" className="action-chip desktop-only" onClick={() => void logout()}>
@@ -141,7 +142,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                             {isAdmin ? (
                                 <>
                                     <Link to="/account" className="action-chip">
-                                        <SiteIcon name="user" size={14} />
+                                        <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                         <span>{accountLabel}</span>
                                     </Link>
                                     <Link to="/editor" className="action-chip">
@@ -160,7 +161,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                             ) : isAuthenticated ? (
                                 <>
                                     <Link to="/account" className="action-chip">
-                                        <SiteIcon name="user" size={14} />
+                                        <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                         <span>{accountLabel}</span>
                                     </Link>
                                     <button type="button" className="action-chip" onClick={() => void logout()}>

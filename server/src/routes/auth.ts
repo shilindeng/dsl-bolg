@@ -5,16 +5,17 @@ import prisma from '../lib/prisma.js';
 import { getTokenFromRequest } from '../middleware/auth.js';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
 import { createEmailToken, consumeEmailToken, pruneExpiredEmailTokens } from '../lib/authTokens.js';
-import { buildSiteUrl, sendMail } from '../lib/email.js';
+import { sendMail } from '../lib/email.js';
+import { readJwtSecret } from '../lib/env.js';
+import { formatZodError, isZodError, loginSchema, parseBody, requestCodeSchema, verifyCodeSchema } from '../lib/schemas.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dsl-blog-secret-key-change-in-production';
 const isProduction = process.env.NODE_ENV === 'production';
 
 function signUserToken(user: { id: number; email: string; role: string; name: string }) {
     return jwt.sign(
         { id: user.id, email: user.email, role: user.role, name: user.name },
-        JWT_SECRET,
+        readJwtSecret(),
         { expiresIn: '7d' },
     );
 }
@@ -25,7 +26,7 @@ function buildReaderName(email: string) {
 
 router.post('/login', async (req: Request, res: Response) => {
     try {
-        const { email, password, turnstileToken } = req.body;
+        const { email, password, turnstileToken } = parseBody(loginSchema, req.body);
 
         if (!email || !password) {
             res.status(400).json({ error: 'Email and password are required' });
@@ -61,22 +62,21 @@ router.post('/login', async (req: Request, res: Response) => {
 
         res.json({
             token,
-            user: { id: user.id, email: user.email, name: user.name, role: user.role },
+            user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl },
         });
     } catch (error) {
         console.error('Login error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to log in' });
     }
 });
 
 router.post('/request-code', async (req: Request, res: Response) => {
     try {
-        const { email, turnstileToken } = req.body as { email?: string; turnstileToken?: string };
-
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
+        const { email, turnstileToken } = parseBody(requestCodeSchema, req.body);
 
         const validTurnstile = await verifyTurnstileToken(turnstileToken, req.ip);
         if (!validTurnstile) {
@@ -108,18 +108,17 @@ router.post('/request-code', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Request code error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to send verification code' });
     }
 });
 
 router.post('/verify-code', async (req: Request, res: Response) => {
     try {
-        const { email, code } = req.body as { email?: string; code?: string };
-
-        if (!email || !code) {
-            res.status(400).json({ error: 'Email and code are required' });
-            return;
-        }
+        const { email, code } = parseBody(verifyCodeSchema, req.body);
 
         const tokenRecord = await consumeEmailToken({
             email,
@@ -156,10 +155,14 @@ router.post('/verify-code', async (req: Request, res: Response) => {
         const token = signUserToken(user);
         res.json({
             token,
-            user: { id: user.id, email: user.email, name: user.name, role: user.role },
+            user: { id: user.id, email: user.email, name: user.name, role: user.role, avatarUrl: user.avatarUrl },
         });
     } catch (error) {
         console.error('Verify code error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to verify code' });
     }
 });
@@ -177,10 +180,10 @@ router.get('/me', async (req: Request, res: Response) => {
             return;
         }
 
-        const decoded = jwt.verify(token, JWT_SECRET) as { id: number };
+        const decoded = jwt.verify(token, readJwtSecret()) as { id: number };
         const user = await prisma.user.findUnique({
             where: { id: decoded.id },
-            select: { id: true, email: true, name: true, role: true },
+            select: { id: true, email: true, name: true, role: true, avatarUrl: true, bio: true, emailVerifiedAt: true, lastLoginAt: true, createdAt: true },
         });
 
         if (!user) {

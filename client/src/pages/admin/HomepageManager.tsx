@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAdminHomepage, fetchHomepage, fetchPosts, fetchProjects, saveAdminHomepage, type HomepageSection, type Post, type Project } from '../../api/client';
+import {
+    fetchAdminHomepage,
+    fetchHomepage,
+    fetchPosts,
+    fetchProjects,
+    saveAdminHomepage,
+    type HomepageHealth,
+    type HomepageSection,
+    type Post,
+    type Project,
+} from '../../api/client';
 import SEO from '../../components/SEO';
 import SiteIcon from '../../components/SiteIcon';
 import { useToast } from '../../hooks/useToast';
@@ -50,6 +60,7 @@ export default function HomepageManagerPage() {
     const [posts, setPosts] = useState<Post[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [saving, setSaving] = useState(false);
+    const [health, setHealth] = useState<HomepageHealth | null>(null);
 
     useEffect(() => {
         Promise.all([
@@ -66,6 +77,7 @@ export default function HomepageManagerPage() {
                     })),
                 );
                 setPreviewSections(preview.sections);
+                setHealth(homepage.health);
                 setPosts(postResponse.data);
                 setProjects(projectResponse);
             })
@@ -118,12 +130,13 @@ export default function HomepageManagerPage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            await saveAdminHomepage(
+            const response = await saveAdminHomepage(
                 sections.map((section) => ({
                     ...section,
                     configJson: serializeConfig(parseConfig(section)),
                 })),
             );
+            setHealth(response.health);
             showToast('首页编排已保存。', 'success');
         } catch (error) {
             showToast(error instanceof Error ? error.message : '首页编排保存失败。', 'error');
@@ -134,7 +147,7 @@ export default function HomepageManagerPage() {
 
     return (
         <>
-            <SEO title="首页编排" description="配置首页模块顺序、文案和内容来源。" />
+            <SEO title="首页编排" description="配置首页模块顺序、文案与内容来源。" />
             <section className="section">
                 <div className="container admin-shell">
                     <header className="feature-panel">
@@ -142,7 +155,7 @@ export default function HomepageManagerPage() {
                             <div>
                                 <div className="eyebrow">Homepage Composer</div>
                                 <h1 className="section-title">首页编排面板</h1>
-                                <p className="section-copy">把精选内容、归档入口和作者 CTA 变成可维护的运营配置，而不是继续手改 JSON。</p>
+                                <p className="section-copy">把首屏精选、归档入口与 CTA 收成可维护配置，不再靠手改 JSON 和人工巡检。</p>
                             </div>
                             <button type="button" className="btn btn-primary" onClick={() => void handleSave()} disabled={saving}>
                                 {saving ? '保存中...' : '保存首页配置'}
@@ -284,7 +297,7 @@ export default function HomepageManagerPage() {
                                                         </div>
                                                     ))}
                                                     {(section.type === 'featured_posts' ? selectedPosts : selectedProjects).length === 0 ? (
-                                                        <span className="muted">当前未手动指定内容；启用自动填充时会按公开内容自动取数。</span>
+                                                        <span className="muted">当前未手动指定内容；开启自动填充时会自动补位，避免首屏为空。</span>
                                                     ) : null}
                                                 </div>
                                             </div>
@@ -303,34 +316,59 @@ export default function HomepageManagerPage() {
                             <div className="feature-panel">
                                 <div className="section-heading">
                                     <div>
-                                        <div className="eyebrow">Homepage Rules</div>
+                                        <div className="eyebrow">Homepage Health</div>
+                                        <h2 className="section-title">首页健康检查</h2>
+                                    </div>
+                                </div>
+                                <div className="list-block">
+                                    <div className="list-item">
+                                        <SiteIcon name={health?.featuredPostReady ? 'check' : 'warning'} size={14} />
+                                        <span>首屏文章位：{health?.featuredPostReady ? '已满足' : '缺失'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={health?.featuredProjectReady ? 'check' : 'warning'} size={14} />
+                                        <span>首屏项目位：{health?.featuredProjectReady ? '已满足' : '缺失'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={health?.featuredPostFallbackUsed ? 'warning' : 'check'} size={14} />
+                                        <span>文章补位：{health?.featuredPostFallbackUsed ? '当前使用兜底内容' : '未触发'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name={health?.featuredProjectFallbackUsed ? 'warning' : 'check'} size={14} />
+                                        <span>项目补位：{health?.featuredProjectFallbackUsed ? '当前使用兜底内容' : '未触发'}</span>
+                                    </div>
+                                    {(health?.warnings || []).map((warning) => (
+                                        <div key={warning} className="list-item">
+                                            <SiteIcon name="warning" size={14} />
+                                            <span>{warning}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="feature-panel">
+                                <div className="section-heading">
+                                    <div>
+                                        <div className="eyebrow">Preview Rules</div>
                                         <h2 className="section-title">运营建议</h2>
                                     </div>
                                 </div>
                                 <div className="list-block">
                                     <div className="list-item">
                                         <SiteIcon name={previewFeaturedPosts.length ? 'check' : 'warning'} size={14} />
-                                        <span>Issue 主打文章：{previewFeaturedPosts[0]?.title || '当前为空（请配置 featured_posts）'}</span>
+                                        <span>Issue 主打文章：{previewFeaturedPosts[0]?.title || '当前为空，请配置 featured_posts'}</span>
                                     </div>
                                     <div className="list-item">
                                         <SiteIcon name={previewFeaturedProjects.length ? 'check' : 'warning'} size={14} />
-                                        <span>Issue 主打项目：{previewFeaturedProjects[0]?.name || '当前为空（请配置 featured_projects）'}</span>
+                                        <span>Issue 主打项目：{previewFeaturedProjects[0]?.name || '当前为空，请配置 featured_projects'}</span>
                                     </div>
                                     <div className="list-item">
                                         <SiteIcon name={previewMap.has('archive_entry') ? 'check' : 'warning'} size={14} />
-                                        <span>归档入口：{previewMap.has('archive_entry') ? '已启用' : '未启用（请启用 archive_entry）'}</span>
+                                        <span>归档入口：{previewMap.has('archive_entry') ? '已启用' : '未启用 archive_entry'}</span>
                                     </div>
                                     <div className="list-item">
                                         <SiteIcon name={previewMap.has('newsletter_cta') ? 'check' : 'warning'} size={14} />
-                                        <span>Newsletter：{previewMap.has('newsletter_cta') ? '已启用' : '未启用（请启用 newsletter_cta）'}</span>
-                                    </div>
-                                    <div className="list-item">
-                                        <SiteIcon name="check" size={14} />
-                                        <span>规则：手动指定优先，启用“自动填充”会在你选的内容不足时自动补齐，避免 section 变空。</span>
-                                    </div>
-                                    <div className="list-item">
-                                        <SiteIcon name="check" size={14} />
-                                        <span>流程：每次发布新内容后，先来这里更新首页配置，再去首页做一次目视验收。</span>
+                                        <span>Newsletter：{previewMap.has('newsletter_cta') ? '已启用' : '未启用 newsletter_cta'}</span>
                                     </div>
                                 </div>
                             </div>

@@ -5,7 +5,8 @@ import { imageUploadSingle } from '../middleware/upload.js';
 import { persistUpload } from '../lib/upload.js';
 import { createApiKeyRecord, parseScopes, resolveApiKey } from '../lib/apiKeys.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
-import { upsertExternalPost } from '../lib/posts.js';
+import { PostQualityError, upsertExternalPost } from '../lib/posts.js';
+import { apiKeyCreateSchema, formatZodError, isZodError, openApiPostSchema, parseBody } from '../lib/schemas.js';
 
 interface ApiKeyRequest extends Request {
     apiKey?: {
@@ -65,11 +66,7 @@ router.get('/admin/keys', authMiddleware, requireAdmin, async (_req: Request, re
 
 router.post('/admin/keys', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { name, scopes } = req.body as { name?: string; scopes?: string[] };
-        if (!name?.trim()) {
-            res.status(400).json({ error: 'Key name is required' });
-            return;
-        }
+        const { name, scopes } = parseBody(apiKeyCreateSchema, req.body);
 
         const normalizedScopes = Array.isArray(scopes) && scopes.length ? scopes : ['posts:write', 'media:write'];
         const result = await createApiKeyRecord({ name: name.trim(), scopes: normalizedScopes });
@@ -89,6 +86,10 @@ router.post('/admin/keys', authMiddleware, requireAdmin, async (req: Request, re
         });
     } catch (error) {
         console.error('Create API key error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to create API key' });
     }
 });
@@ -137,21 +138,31 @@ router.post('/v1/media', requireApiKey(['media:write']), imageUploadSingle, asyn
 router.put('/v1/posts/:provider/:externalId', requireApiKey(['posts:write']), async (req: Request, res: Response) => {
     try {
         const { provider, externalId } = req.params;
-        const post = await upsertExternalPost({
+        const payload = parseBody(openApiPostSchema, req.body);
+        const result = await upsertExternalPost({
             provider: String(provider),
             externalId: String(externalId),
-            payload: req.body,
+            payload,
         });
 
         res.json({
-            postId: post.id,
-            slug: post.slug,
-            url: `/blog/${post.slug}`,
-            published: post.published,
-            updatedAt: post.updatedAt,
+            postId: result.post.id,
+            slug: result.post.slug,
+            url: `/blog/${result.post.slug}`,
+            published: result.post.published,
+            updatedAt: result.post.updatedAt,
+            quality: { warnings: result.quality.warnings },
         });
     } catch (error) {
         console.error('Open API upsert failed:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
+        if (error instanceof PostQualityError) {
+            res.status(400).json({ error: 'Post quality validation failed', quality: { errors: error.errors, warnings: error.warnings } });
+            return;
+        }
         res.status(500).json({ error: 'Failed to publish post' });
     }
 });
@@ -168,21 +179,31 @@ router.patch('/v1/posts/:provider/:externalId', requireApiKey(['posts:write']), 
             return;
         }
 
-        const post = await upsertExternalPost({
+        const payload = parseBody(openApiPostSchema.partial(), req.body);
+        const result = await upsertExternalPost({
             provider: String(provider),
             externalId: String(externalId),
-            payload: req.body,
+            payload,
         });
 
         res.json({
-            postId: post.id,
-            slug: post.slug,
-            url: `/blog/${post.slug}`,
-            published: post.published,
-            updatedAt: post.updatedAt,
+            postId: result.post.id,
+            slug: result.post.slug,
+            url: `/blog/${result.post.slug}`,
+            published: result.post.published,
+            updatedAt: result.post.updatedAt,
+            quality: { warnings: result.quality.warnings },
         });
     } catch (error) {
         console.error('Open API patch failed:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
+        if (error instanceof PostQualityError) {
+            res.status(400).json({ error: 'Post quality validation failed', quality: { errors: error.errors, warnings: error.warnings } });
+            return;
+        }
         res.status(500).json({ error: 'Failed to update post' });
     }
 });

@@ -1,10 +1,7 @@
 import { PrismaClient } from '@prisma/client';
+import { assessPostQuality } from '../src/lib/contentQuality.js';
 
 const prisma = new PrismaClient();
-
-function looksInlineHtmlHeavy(content: string) {
-    return /style=|data-blog-html-root=|<section|<div/i.test(content);
-}
 
 async function main() {
     const posts = await prisma.post.findMany({
@@ -24,22 +21,27 @@ async function main() {
             createdAt: true,
             updatedAt: true,
             content: true,
+            contentFormat: true,
+            sourceUrl: true,
             meta: { select: { views: true, likes: true, readTime: true } },
-            tags: { select: { tagId: true } },
+            tags: { select: { tag: { select: { name: true } } } },
         },
         orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
     });
 
     const issues = posts.map((post) => {
-        const findings: string[] = [];
-
-        if (!post.deck?.trim()) findings.push('missing_deck');
-        if (!post.categoryId) findings.push('missing_category');
-        if (!post.coverImage) findings.push('missing_cover');
-        if (!post.seriesId) findings.push('missing_series');
-        if (!post.tags.length) findings.push('missing_tags');
-        if (post.excerpt.trim().length < 48) findings.push('weak_excerpt');
-        if (looksInlineHtmlHeavy(post.content)) findings.push('inline_html_heavy');
+        const quality = assessPostQuality({
+            title: post.title,
+            deck: post.deck,
+            excerpt: post.excerpt,
+            content: post.content,
+            contentFormat: post.contentFormat,
+            published: true,
+            tags: post.tags.map((item) => item.tag.name),
+            categoryId: post.categoryId,
+            coverImage: post.coverImage,
+            sourceUrl: post.sourceUrl,
+        });
 
         const views = post.meta?.views ?? 0;
         const likes = post.meta?.likes ?? 0;
@@ -52,23 +54,24 @@ async function main() {
             views,
             likes,
             score,
-            findings,
+            errors: quality.errors,
+            warnings: quality.warnings,
         };
     })
-        .filter((post) => post.findings.length > 0)
+        .filter((post) => post.errors.length > 0 || post.warnings.length > 0)
         .sort((a, b) => b.score - a.score);
 
-    const findingCounts = new Map<string, number>();
+    const counts = new Map<string, number>();
     for (const issue of issues) {
-        for (const finding of issue.findings) {
-            findingCounts.set(finding, (findingCounts.get(finding) || 0) + 1);
+        for (const finding of [...issue.errors, ...issue.warnings]) {
+            counts.set(finding, (counts.get(finding) || 0) + 1);
         }
     }
 
     console.log(JSON.stringify({
         total: posts.length,
         issueCount: issues.length,
-        findingCounts: Object.fromEntries([...findingCounts.entries()].sort((a, b) => b[1] - a[1])),
+        findingCounts: Object.fromEntries([...counts.entries()].sort((a, b) => b[1] - a[1])),
         issues,
     }, null, 2));
 }

@@ -338,6 +338,8 @@ export default function Dashboard() {
                         <Link to="/editor" className="btn btn-primary">新建文章</Link>
                         <Link to="/admin/newsletter" className="btn btn-secondary">Newsletter</Link>
                         <Link to="/admin/homepage" className="btn btn-secondary">首页编排</Link>
+                        <Link to="/admin/taxonomy" className="btn btn-secondary">分类标签</Link>
+                        <Link to="/admin/api-keys" className="btn btn-secondary">API Key</Link>
                         <Link to="/" className="btn btn-ghost">查看首页</Link>
                     </div>
                     <div className="admin-summary-strip">
@@ -480,22 +482,9 @@ export default function Dashboard() {
                             </form>
                             <div className="feature-panel nested-panel api-key-panel">
                                 <div className="editor-card-head"><strong>开放 API</strong><span className="command-hint">POSTS + MEDIA</span></div>
-                                <form className="api-key-form" onSubmit={handleCreateApiKey}>
-                                    <label className="form-field"><span className="form-label">Key 名称</span><input className="form-input" value={apiKeyName} onChange={(event) => setApiKeyName(event.target.value)} placeholder="Automation Publisher" /></label>
-                                    <div className="metric-card api-scope-card"><span className="muted mono">权限范围</span><strong>posts:write / media:write</strong></div>
-                                    <button type="submit" className="btn btn-primary" disabled={creatingApiKey}>{creatingApiKey ? '创建中...' : '创建 API Key'}</button>
-                                </form>
-                                {latestApiKey ? <div className="metric-card latest-key-card"><span className="muted mono">最新密钥</span><strong className="mono api-key-value">{latestApiKey}</strong><button type="button" className="btn btn-ghost" onClick={copyLatestApiKey}>复制</button></div> : null}
-                                <div className="admin-list compact-admin-list">
-                                    {apiKeys.length ? apiKeys.map((key) => (
-                                        <div key={key.id} className="admin-row compact-admin-row">
-                                            <div className="admin-row-copy">
-                                                <strong>{key.name}</strong>
-                                                <div className="admin-row-meta"><span className="chip mono">{key.keyPrefix}</span><span className="chip">{key.scopes.join(' / ')}</span>{key.revokedAt ? <span className="chip">已吊销</span> : <span className="chip">有效</span>}</div>
-                                            </div>
-                                            <div className="admin-row-actions"><span className="command-hint">{key.lastUsedAt ? `最近使用 ${formatDateTime(key.lastUsedAt)}` : '尚未使用'}</span>{!key.revokedAt ? <button type="button" className="btn btn-ghost" onClick={() => handleRevokeApiKey(key.id)}>吊销</button> : null}</div>
-                                        </div>
-                                    )) : <div className="empty-state">还没有开放 API Key，创建后可用于外部自动发文。</div>}
+                                <p className="muted">创建、吊销、复制密钥以及接入文档已经拆到独立页面，Dashboard 只保留总览入口。</p>
+                                <div className="hero-actions">
+                                    <Link to="/admin/api-keys" className="btn btn-primary">前往 API Key 管理</Link>
                                 </div>
                             </div>
                         </div>

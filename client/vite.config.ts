@@ -19,6 +19,13 @@ export default defineConfig({
                         return 'charts';
                     }
 
+                    if (
+                        normalized.includes('/@tiptap/') ||
+                        normalized.includes('/prosemirror-')
+                    ) {
+                        return 'editor';
+                    }
+
                     // Markdown rendering toolchain (keep off the landing page).
                     if (
                         normalized.includes('/react-markdown/') ||

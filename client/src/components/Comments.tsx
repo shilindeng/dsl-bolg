@@ -4,6 +4,7 @@ import { createComment, type Comment } from '../api/client';
 import { formatDateTime, getInitials } from '../lib/format';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
+import { resolveAvatarUrl } from '../lib/avatars';
 
 interface CommentsProps {
     postId: number;
@@ -51,7 +52,11 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
             <div className="comment-card-head">
                 <div className="comment-author">
                     <div className="comment-avatar" aria-hidden="true">
-                        {getInitials(comment.user?.name || comment.author)}
+                        {comment.userId ? (
+                            <img src={resolveAvatarUrl(comment.user?.avatarUrl, comment.user?.id || comment.userId)} alt={comment.user?.name || comment.author} />
+                        ) : (
+                            getInitials(comment.user?.name || comment.author)
+                        )}
                     </div>
                     <div>
                         <strong>{comment.user?.name || comment.author}</strong>

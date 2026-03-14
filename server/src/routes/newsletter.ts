@@ -5,6 +5,17 @@ import { authMiddleware, requireAdmin, type AuthenticatedRequest } from '../midd
 import { createEmailToken, consumeEmailToken } from '../lib/authTokens.js';
 import { buildSiteUrl, sendMail } from '../lib/email.js';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
+import { enqueueNewsletterIssue } from '../lib/newsletterWorker.js';
+import {
+    formatZodError,
+    isZodError,
+    newsletterConfirmSchema,
+    newsletterIssueCreateSchema,
+    newsletterIssueUpdateSchema,
+    newsletterSubscribeSchema,
+    newsletterUnsubscribeSchema,
+    parseBody,
+} from '../lib/schemas.js';
 
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -26,16 +37,7 @@ async function resolveIssueSlug(input: string, excludeId?: number) {
 
 router.post('/subscribe', async (req: Request, res: Response) => {
     try {
-        const { email, turnstileToken, source } = req.body as {
-            email?: string;
-            turnstileToken?: string;
-            source?: string;
-        };
-
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
+        const { email, turnstileToken, source } = parseBody(newsletterSubscribeSchema, req.body);
 
         const validTurnstile = await verifyTurnstileToken(turnstileToken, req.ip);
         if (!validTurnstile) {
@@ -82,18 +84,17 @@ router.post('/subscribe', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Newsletter subscribe error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to subscribe to newsletter' });
     }
 });
 
 router.post('/confirm', async (req: Request, res: Response) => {
     try {
-        const { email, token } = req.body as { email?: string; token?: string };
-
-        if (!email || !token) {
-            res.status(400).json({ error: 'Email and token are required' });
-            return;
-        }
+        const { email, token } = parseBody(newsletterConfirmSchema, req.body);
 
         const tokenRecord = await consumeEmailToken({
             email,
@@ -123,17 +124,17 @@ router.post('/confirm', async (req: Request, res: Response) => {
         res.json(subscriber);
     } catch (error) {
         console.error('Newsletter confirm error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to confirm newsletter subscription' });
     }
 });
 
 router.post('/unsubscribe', async (req: Request, res: Response) => {
     try {
-        const { email } = req.body as { email?: string };
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
+        const { email } = parseBody(newsletterUnsubscribeSchema, req.body);
 
         const subscriber = await prisma.newsletterSubscriber.update({
             where: { email },
@@ -146,6 +147,10 @@ router.post('/unsubscribe', async (req: Request, res: Response) => {
         res.json(subscriber);
     } catch (error) {
         console.error('Newsletter unsubscribe error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to unsubscribe from newsletter' });
     }
 });
@@ -211,19 +216,7 @@ router.get('/admin/issues', authMiddleware, requireAdmin, async (_req: Request, 
 
 router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { title, slug, subject, previewText, bodyMarkdown, status } = req.body as {
-            title?: string;
-            slug?: string;
-            subject?: string;
-            previewText?: string;
-            bodyMarkdown?: string;
-            status?: string;
-        };
-
-        if (!title || !subject || !bodyMarkdown) {
-            res.status(400).json({ error: 'Title, subject and content are required' });
-            return;
-        }
+        const { title, slug, subject, previewText, bodyMarkdown, status } = parseBody(newsletterIssueCreateSchema, req.body);
 
         const issue = await prisma.newsletterIssue.create({
             data: {
@@ -240,6 +233,10 @@ router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, 
         res.status(201).json(issue);
     } catch (error) {
         console.error('Newsletter issue create error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to create newsletter issue' });
     }
 });
@@ -247,14 +244,7 @@ router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, 
 router.put('/admin/issues/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id), 10);
-        const { title, slug, subject, previewText, bodyMarkdown, status } = req.body as {
-            title?: string;
-            slug?: string;
-            subject?: string;
-            previewText?: string;
-            bodyMarkdown?: string;
-            status?: string;
-        };
+        const { title, slug, subject, previewText, bodyMarkdown, status } = parseBody(newsletterIssueUpdateSchema, req.body);
 
         const existing = await prisma.newsletterIssue.findUnique({ where: { id } });
         if (!existing) {
@@ -277,6 +267,10 @@ router.put('/admin/issues/:id', authMiddleware, requireAdmin, async (req: Reques
         res.json(issue);
     } catch (error) {
         console.error('Newsletter issue update error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to update newsletter issue' });
     }
 });
@@ -290,75 +284,17 @@ router.post('/admin/issues/:id/send', authMiddleware, requireAdmin, async (req: 
             return;
         }
 
-        const subscribers = await prisma.newsletterSubscriber.findMany({
-            where: { status: 'active' },
-        });
-
-        const results = [];
-        for (const subscriber of subscribers) {
-            try {
-                const delivery = await sendMail({
-                    to: subscriber.email,
-                    subject: issue.subject,
-                    html: `<p>${issue.previewText}</p><div>${issue.bodyMarkdown.replace(/\n/g, '<br />')}</div>`,
-                    text: `${issue.previewText}\n\n${issue.bodyMarkdown}`,
-                });
-
-                const row = await prisma.newsletterDelivery.upsert({
-                    where: {
-                        issueId_subscriberId: {
-                            issueId: issue.id,
-                            subscriberId: subscriber.id,
-                        },
-                    },
-                    update: {
-                        status: 'sent',
-                        providerMessageId: delivery.messageId || null,
-                        errorMessage: null,
-                        sentAt: new Date(),
-                    },
-                    create: {
-                        issueId: issue.id,
-                        subscriberId: subscriber.id,
-                        status: 'sent',
-                        providerMessageId: delivery.messageId || null,
-                        sentAt: new Date(),
-                    },
-                });
-                results.push(row);
-            } catch (error) {
-                const message = error instanceof Error ? error.message : 'Unknown delivery error';
-                const row = await prisma.newsletterDelivery.upsert({
-                    where: {
-                        issueId_subscriberId: {
-                            issueId: issue.id,
-                            subscriberId: subscriber.id,
-                        },
-                    },
-                    update: {
-                        status: 'failed',
-                        errorMessage: message,
-                    },
-                    create: {
-                        issueId: issue.id,
-                        subscriberId: subscriber.id,
-                        status: 'failed',
-                        errorMessage: message,
-                    },
-                });
-                results.push(row);
-            }
-        }
-
-        const updatedIssue = await prisma.newsletterIssue.update({
+        await enqueueNewsletterIssue(issue.id);
+        const updatedIssue = await prisma.newsletterIssue.findUnique({
             where: { id: issue.id },
-            data: {
-                status: 'sent',
-                sentAt: new Date(),
-            },
+            include: { deliveries: true },
         });
 
-        res.json({ issue: updatedIssue, deliveries: results });
+        res.json({
+            issue: updatedIssue,
+            queued: updatedIssue?.deliveries.length || 0,
+            deliveries: updatedIssue?.deliveries || [],
+        });
     } catch (error) {
         console.error('Newsletter send error:', error);
         res.status(500).json({ error: 'Failed to send newsletter issue' });

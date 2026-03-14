@@ -24,9 +24,11 @@ const Login = lazy(() => import('./pages/Login'));
 const Newsletter = lazy(() => import('./pages/Newsletter'));
 const NewsletterIssue = lazy(() => import('./pages/NewsletterIssue'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const ApiKeys = lazy(() => import('./pages/admin/ApiKeys'));
 const NewsletterManager = lazy(() => import('./pages/admin/NewsletterManager'));
 const HomepageManager = lazy(() => import('./pages/admin/HomepageManager'));
 const SeriesManager = lazy(() => import('./pages/admin/SeriesManager'));
+const TaxonomyManager = lazy(() => import('./pages/admin/Taxonomy'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountProfile = lazy(() => import('./pages/account/Profile'));
@@ -72,9 +74,11 @@ function App() {
                             <Route path="/editor" element={<Editor />} />
                             <Route path="/editor/:slug" element={<Editor />} />
                             <Route path="/admin/dashboard" element={<Dashboard />} />
+                            <Route path="/admin/api-keys" element={<ApiKeys />} />
                             <Route path="/admin/newsletter" element={<NewsletterManager />} />
                             <Route path="/admin/homepage" element={<HomepageManager />} />
                             <Route path="/admin/series" element={<SeriesManager />} />
+                            <Route path="/admin/taxonomy" element={<TaxonomyManager />} />
                             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                         </Route>
                     </Route>

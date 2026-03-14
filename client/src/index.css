@@ -3906,3 +3906,144 @@ body::after {
     position: static;
   }
 }
+
+.comment-avatar img,
+.profile-avatar-preview img,
+.avatar-preset-card img,
+.nav-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.nav-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+.profile-avatar-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 20px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-strong);
+}
+
+.profile-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-elevated);
+}
+
+.avatar-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 0.8rem;
+}
+
+.avatar-preset-card {
+  aspect-ratio: 1;
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-soft);
+  overflow: hidden;
+  padding: 0;
+}
+
+.avatar-preset-card.is-active {
+  box-shadow: var(--shadow-glow);
+  border-color: var(--accent-strong);
+}
+
+.avatar-preset-reset {
+  display: grid;
+  place-items: center;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.rich-editor-shell {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rich-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.rich-editor-chip.is-active {
+  border-color: var(--accent-strong);
+  color: var(--accent-strong);
+  box-shadow: var(--shadow-glow);
+}
+
+.rich-editor-surface {
+  min-height: 320px;
+  padding: 1rem 1.1rem;
+  border-radius: 22px;
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--surface-elevated) 84%, transparent);
+  color: var(--text-strong);
+  outline: none;
+}
+
+.rich-editor-surface p.is-editor-empty:first-child::before {
+  content: '开始写作';
+  color: var(--text-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-editor-surface > * + * {
+  margin-top: 0.9rem;
+}
+
+.rich-editor-surface h2,
+.rich-editor-surface h3,
+.rich-editor-surface h4 {
+  margin: 1.3rem 0 0.6rem;
+}
+
+.rich-editor-surface ul,
+.rich-editor-surface ol {
+  padding-left: 1.2rem;
+}
+
+.rich-editor-surface blockquote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent-strong);
+  color: var(--text-soft);
+}
+
+.rich-editor-surface pre {
+  overflow-x: auto;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, #000 12%);
+}
+
+.rich-editor-surface img {
+  max-width: 100%;
+  border-radius: 18px;
+}
+
+.code-panel {
+  margin: 0.75rem 0 0;
+  padding: 1rem;
+  border-radius: 20px;
+  overflow-x: auto;
+  background: color-mix(in srgb, var(--surface-soft) 88%, #000 12%);
+  border: 1px solid var(--border-strong);
+}

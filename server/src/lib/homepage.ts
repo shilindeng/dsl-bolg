@@ -10,15 +10,23 @@ export interface HomepageSectionConfig {
     hidden?: boolean;
 }
 
+export interface HomepageHealth {
+    featuredPostReady: boolean;
+    featuredProjectReady: boolean;
+    featuredPostFallbackUsed: boolean;
+    featuredProjectFallbackUsed: boolean;
+    warnings: string[];
+}
+
 const defaultSections = [
     {
         type: 'hero',
         enabled: true,
         sortOrder: 10,
         sourceType: 'manual',
-        eyebrow: '长期主义的个人品牌主场',
-        title: '把博客做成真正能持续经营的作品系统。',
-        description: '这里不只是展示“我做了什么”，而是把内容、项目、审美和部署能力一起组织成可长期累积的个人资产界面。',
+        eyebrow: 'Long-form personal publishing system',
+        title: 'Turn the blog into a durable content operating system.',
+        description: 'The homepage should not become a hollow hero shell. It needs stable representative content, clear archive entry points, and visible author intent.',
         ctaLabel: '进入文章归档',
         ctaHref: '/blog',
         configJson: JSON.stringify({}),
@@ -29,8 +37,8 @@ const defaultSections = [
         sortOrder: 20,
         sourceType: 'auto',
         eyebrow: '精选文章',
-        title: '先看到最能代表方法与判断力的内容',
-        description: '首页不堆满所有文章，而是优先把最值得建立第一印象的内容推到前面。',
+        title: '先看到最能代表判断力与方法论的内容',
+        description: '首页首屏必须有一篇能代表站点价值的文章，不能依赖人工每次手动维护。',
         ctaLabel: '打开完整归档',
         ctaHref: '/blog',
         configJson: JSON.stringify({ autoFill: true, limit: 4 }),
@@ -42,7 +50,7 @@ const defaultSections = [
         sourceType: 'manual',
         eyebrow: '归档入口',
         title: '按主题、标签和关键词进入内容档案',
-        description: '更轻、更快、更像编辑推荐列表，而不是重复的大卡片堆叠。',
+        description: '把博客当作可检索的研究库，而不是时间线。',
         ctaLabel: '浏览内容归档',
         ctaHref: '/blog',
         configJson: JSON.stringify({}),
@@ -53,8 +61,8 @@ const defaultSections = [
         sortOrder: 40,
         sourceType: 'auto',
         eyebrow: '代表项目',
-        title: '项目页承担方法论与落地能力的第二层证明',
-        description: '文章建立判断力，项目建立可信度。',
+        title: '项目承担方法论之外的落地证明',
+        description: '首屏项目位必须始终有内容，避免 Hero 右侧出现空壳卡片。',
         ctaLabel: '查看代表项目',
         ctaHref: '/projects',
         configJson: JSON.stringify({ autoFill: true, limit: 3 }),
@@ -65,8 +73,8 @@ const defaultSections = [
         sortOrder: 50,
         sourceType: 'manual',
         eyebrow: '作者与合作',
-        title: '如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。',
-        description: '适合交流的方向包括：个人品牌站、内容产品、设计系统、AI 自动化，以及把创作链路真正上线的工程实践。',
+        title: '如果你也在做长期主义内容系统、独立项目或 AI 工作流，可以聊聊。',
+        description: '合作入口要稳定存在，但不应抢占首屏代表内容的位置。',
         ctaLabel: '发送邮件',
         ctaHref: 'mailto:hello@dsl.blog',
         configJson: JSON.stringify({}),
@@ -78,7 +86,7 @@ const defaultSections = [
         sourceType: 'manual',
         eyebrow: 'Newsletter',
         title: '订阅长期写作与产品化更新',
-        description: '接收新的长文、项目复盘和工作流迭代记录。',
+        description: '新长文、项目复盘与工作流迭代从这里发出。',
         ctaLabel: '前往订阅',
         ctaHref: '/newsletter',
         configJson: JSON.stringify({}),
@@ -88,9 +96,9 @@ const defaultSections = [
         enabled: true,
         sortOrder: 70,
         sourceType: 'manual',
-        eyebrow: '在线天气信号',
-        title: '把实时天气降级为辅助信息，而不是首页主叙事',
-        description: '可保留现场感，但不再抢占主内容层级。',
+        eyebrow: 'Atmosphere',
+        title: 'Weather remains auxiliary, not a hero section replacement.',
+        description: '现场感可以保留，但不能影响首页主叙事稳定性。',
         ctaLabel: null,
         ctaHref: null,
         configJson: JSON.stringify({}),
@@ -106,6 +114,36 @@ function safeParseConfig(value: string | null): HomepageSectionConfig {
     }
 }
 
+async function fetchFallbackPosts(limit: number, excludedIds: number[] = []) {
+    const fallback = await prisma.post.findMany({
+        where: {
+            published: true,
+            ...(excludedIds.length ? { id: { notIn: excludedIds } } : {}),
+        },
+        include: includePostRelations,
+        orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
+        take: Math.min(12, limit * 3),
+    });
+
+    return fallback
+        .map((post) => formatPost(post))
+        .filter((post) => isPublicPostReady(post))
+        .slice(0, limit);
+}
+
+async function fetchFallbackProjects(limit: number, excludedIds: number[] = []) {
+    const fallback = await prisma.project.findMany({
+        where: excludedIds.length ? { id: { notIn: excludedIds } } : undefined,
+        orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
+        take: Math.min(12, limit * 3),
+    });
+
+    return fallback
+        .map((project) => formatPublicProject(project))
+        .filter((project) => isPublicProjectReady(project))
+        .slice(0, limit);
+}
+
 export async function ensureHomepageSections() {
     const count = await prisma.homepageSection.count();
     if (count > 0) return;
@@ -117,90 +155,118 @@ export async function ensureHomepageSections() {
 
 async function loadSelectedPosts(config: HomepageSectionConfig) {
     const limit = Math.max(1, Math.min(8, config.limit || 4));
+    const selectedIds = config.postIds?.length ? [...new Set(config.postIds)] : [];
+    let items: Array<ReturnType<typeof formatPost> & { id: number }> = [];
+    let fallbackUsed = false;
 
-    if (config.postIds?.length) {
-        const selectedIds = [...new Set(config.postIds)];
+    if (selectedIds.length) {
         const selectedPosts = await prisma.post.findMany({
             where: { id: { in: selectedIds }, published: true },
             include: includePostRelations,
         });
 
-        const orderedSelected = selectedIds
+        items = selectedIds
             .map((id) => selectedPosts.find((post) => post.id === id))
             .filter(Boolean)
             .map((post) => formatPost(post!))
             .filter((post) => isPublicPostReady(post));
-
-        if (!config.autoFill || orderedSelected.length >= limit) {
-            return orderedSelected.slice(0, limit);
-        }
-
-        const needed = Math.max(0, limit - orderedSelected.length);
-        const fallback = await prisma.post.findMany({
-            where: { published: true, id: { notIn: selectedIds } },
+    } else if (!config.autoFill) {
+        const featuredOnly = await prisma.post.findMany({
+            where: { published: true, featured: true },
             include: includePostRelations,
-            orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
-            take: Math.min(12, needed * 3),
+            orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+            take: limit,
         });
 
-        const topups = fallback
+        items = featuredOnly
             .map((post) => formatPost(post))
-            .filter((post) => isPublicPostReady(post))
-            .slice(0, needed);
-
-        return [...orderedSelected, ...topups].slice(0, limit);
+            .filter((post) => isPublicPostReady(post));
     }
 
-    const posts = await prisma.post.findMany({
-        where: { published: true, ...(config.autoFill ? {} : { featured: true }) },
-        include: includePostRelations,
-        orderBy: [{ featured: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
-        take: limit,
-    });
+    if ((config.autoFill || !items.length) && items.length < limit) {
+        const topups = await fetchFallbackPosts(limit - items.length, items.map((item) => item.id));
+        if (topups.length) {
+            fallbackUsed = true;
+            items = [...items, ...topups];
+        }
+    }
 
-    return posts.map((post) => formatPost(post)).filter((post) => isPublicPostReady(post));
+    return {
+        items: items.slice(0, limit),
+        fallbackUsed,
+    };
 }
 
 async function loadSelectedProjects(config: HomepageSectionConfig) {
     const limit = Math.max(1, Math.min(6, config.limit || 3));
+    const selectedIds = config.projectIds?.length ? [...new Set(config.projectIds)] : [];
+    let items: Array<ReturnType<typeof formatPublicProject> & { id: number }> = [];
+    let fallbackUsed = false;
 
-    if (config.projectIds?.length) {
-        const selectedIds = [...new Set(config.projectIds)];
+    if (selectedIds.length) {
         const selectedProjects = await prisma.project.findMany({
             where: { id: { in: selectedIds } },
         });
 
-        const orderedSelected = selectedIds
+        items = selectedIds
             .map((id) => selectedProjects.find((project) => project.id === id))
             .filter(Boolean)
             .map((project) => formatPublicProject(project!))
             .filter((project) => isPublicProjectReady(project));
-
-        if (!config.autoFill || orderedSelected.length >= limit) {
-            return orderedSelected.slice(0, limit);
-        }
-
-        const needed = Math.max(0, limit - orderedSelected.length);
-        const fallback = await prisma.project.findMany({
-            where: { id: { notIn: selectedIds } },
-            orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
-            take: Math.min(12, needed * 3),
-        });
-
-        const topups = fallback
-            .map((project) => formatPublicProject(project))
-            .filter((project) => isPublicProjectReady(project))
-            .slice(0, needed);
-
-        return [...orderedSelected, ...topups].slice(0, limit);
     }
 
-    const projects = await prisma.project.findMany({
-        orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
-        take: limit,
-    });
+    if ((config.autoFill || !items.length) && items.length < limit) {
+        const topups = await fetchFallbackProjects(limit - items.length, items.map((item) => item.id));
+        if (topups.length) {
+            fallbackUsed = true;
+            items = [...items, ...topups];
+        }
+    }
 
-    return projects.map((project) => formatPublicProject(project)).filter((project) => isPublicProjectReady(project));
+    return {
+        items: items.slice(0, limit),
+        fallbackUsed,
+    };
+}
+
+function buildHomepageHealth(resolvedSections: Array<{ type: string; enabled: boolean; items?: unknown[] }>, flags: {
+    featuredPostFallbackUsed: boolean;
+    featuredProjectFallbackUsed: boolean;
+}): HomepageHealth {
+    const featuredPosts = resolvedSections.find((section) => section.type === 'featured_posts');
+    const featuredProjects = resolvedSections.find((section) => section.type === 'featured_projects');
+    const warnings: string[] = [];
+
+    const featuredPostReady = Boolean(featuredPosts?.enabled && featuredPosts.items?.length);
+    const featuredProjectReady = Boolean(featuredProjects?.enabled && featuredProjects.items?.length);
+
+    if (!featuredPostReady) {
+        warnings.push('featured_posts_missing');
+    }
+
+    if (!featuredProjectReady) {
+        warnings.push('featured_projects_missing');
+    }
+
+    if (flags.featuredPostFallbackUsed) {
+        warnings.push('featured_posts_using_fallback');
+    }
+
+    if (flags.featuredProjectFallbackUsed) {
+        warnings.push('featured_projects_using_fallback');
+    }
+
+    const missingCoreSections = ['hero', 'archive_entry', 'newsletter_cta']
+        .filter((type) => !resolvedSections.find((section) => section.type === type && section.enabled))
+        .map((type) => `core_section_disabled:${type}`);
+
+    return {
+        featuredPostReady,
+        featuredProjectReady,
+        featuredPostFallbackUsed: flags.featuredPostFallbackUsed,
+        featuredProjectFallbackUsed: flags.featuredProjectFallbackUsed,
+        warnings: [...warnings, ...missingCoreSections],
+    };
 }
 
 export async function getPublicHomepage() {
@@ -211,17 +277,24 @@ export async function getPublicHomepage() {
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
 
+    let featuredPostFallbackUsed = false;
+    let featuredProjectFallbackUsed = false;
+
     const resolved = await Promise.all(
         sections.map(async (section) => {
             const config = safeParseConfig(section.configJson);
             let items: unknown[] = [];
 
             if (section.type === 'featured_posts') {
-                items = await loadSelectedPosts(config);
+                const result = await loadSelectedPosts(config);
+                items = result.items;
+                featuredPostFallbackUsed = featuredPostFallbackUsed || result.fallbackUsed;
             }
 
             if (section.type === 'featured_projects') {
-                items = await loadSelectedProjects(config);
+                const result = await loadSelectedProjects(config);
+                items = result.items;
+                featuredProjectFallbackUsed = featuredProjectFallbackUsed || result.fallbackUsed;
             }
 
             return {
@@ -232,14 +305,26 @@ export async function getPublicHomepage() {
         }),
     );
 
-    return resolved;
+    return {
+        sections: resolved,
+        health: buildHomepageHealth(resolved, {
+            featuredPostFallbackUsed,
+            featuredProjectFallbackUsed,
+        }),
+    };
 }
 
 export async function getHomepageAdminState() {
     await ensureHomepageSections();
-    return prisma.homepageSection.findMany({
+    const sections = await prisma.homepageSection.findMany({
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
+    const preview = await getPublicHomepage();
+
+    return {
+        sections,
+        health: preview.health,
+    };
 }
 
 export async function replaceHomepageSections(
