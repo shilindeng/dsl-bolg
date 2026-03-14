@@ -24,9 +24,14 @@ const Login = lazy(() => import('./pages/Login'));
 const Newsletter = lazy(() => import('./pages/Newsletter'));
 const NewsletterIssue = lazy(() => import('./pages/NewsletterIssue'));
 const Dashboard = lazy(() => import('./pages/admin/Dashboard'));
+const PostsManager = lazy(() => import('./pages/admin/PostsManager'));
+const ProjectsManager = lazy(() => import('./pages/admin/ProjectsManager'));
+const CommentsManager = lazy(() => import('./pages/admin/CommentsManager'));
 const NewsletterManager = lazy(() => import('./pages/admin/NewsletterManager'));
 const HomepageManager = lazy(() => import('./pages/admin/HomepageManager'));
 const SeriesManager = lazy(() => import('./pages/admin/SeriesManager'));
+const ApiKeysManager = lazy(() => import('./pages/admin/ApiKeysManager'));
+const TaxonomyManager = lazy(() => import('./pages/admin/TaxonomyManager'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AccountLayout = lazy(() => import('./pages/account/AccountLayout'));
 const AccountProfile = lazy(() => import('./pages/account/Profile'));
@@ -72,9 +77,14 @@ function App() {
                             <Route path="/editor" element={<Editor />} />
                             <Route path="/editor/:slug" element={<Editor />} />
                             <Route path="/admin/dashboard" element={<Dashboard />} />
+                            <Route path="/admin/posts" element={<PostsManager />} />
+                            <Route path="/admin/projects" element={<ProjectsManager />} />
+                            <Route path="/admin/comments" element={<CommentsManager />} />
                             <Route path="/admin/newsletter" element={<NewsletterManager />} />
                             <Route path="/admin/homepage" element={<HomepageManager />} />
                             <Route path="/admin/series" element={<SeriesManager />} />
+                            <Route path="/admin/api-keys" element={<ApiKeysManager />} />
+                            <Route path="/admin/taxonomy" element={<TaxonomyManager />} />
                             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                         </Route>
                     </Route>

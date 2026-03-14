@@ -23,21 +23,26 @@ export default function Newsletter() {
         const token = searchParams.get('token');
         const unsubscribe = searchParams.get('unsubscribe');
 
-        if (!email) return;
+        if (!email || !token) {
+            if (email && unsubscribe === '1' && !token) {
+                showToast('退订链接缺少 token。', 'error');
+            }
+            return;
+        }
 
-        if (token) {
-            setBusy(true);
-            confirmNewsletter({ email, token })
-                .then(() => showToast('订阅已确认。', 'success'))
-                .catch((error) => showToast(error instanceof Error ? error.message : '订阅确认失败。', 'error'))
-                .finally(() => setBusy(false));
-        } else if (unsubscribe === '1') {
-            setBusy(true);
-            unsubscribeNewsletter({ email })
+        setBusy(true);
+        if (unsubscribe === '1') {
+            unsubscribeNewsletter({ email, token })
                 .then(() => showToast('你已退出 newsletter。', 'success'))
                 .catch((error) => showToast(error instanceof Error ? error.message : '退订失败。', 'error'))
                 .finally(() => setBusy(false));
+            return;
         }
+
+        confirmNewsletter({ email, token })
+            .then(() => showToast('订阅已确认。', 'success'))
+            .catch((error) => showToast(error instanceof Error ? error.message : '订阅确认失败。', 'error'))
+            .finally(() => setBusy(false));
     }, [searchParams, showToast]);
 
     return (
@@ -72,9 +77,9 @@ export default function Newsletter() {
                     <div className="feature-panel">
                         <span className="eyebrow">订阅入口</span>
                         <h2 className="section-title compact-title">首版订阅流</h2>
-                        <p className="section-copy">这是一套更轻、更明确的订阅表单，只保留必要信息。</p>
+                        <p className="section-copy">表单保持轻量，只保留真正必要的信息。</p>
                         <NewsletterSignup source="newsletter_page" />
-                        {busy ? <span className="meta-pill">正在处理订阅操作...</span> : null}
+                        {busy ? <span className="meta-pill">正在处理订阅动作...</span> : null}
                     </div>
                 </div>
             </section>

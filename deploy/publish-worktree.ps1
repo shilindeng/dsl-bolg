@@ -170,21 +170,21 @@ try {
     $branchNameLiteral = ConvertTo-ShellLiteral $branchName
     $commitShaLiteral = ConvertTo-ShellLiteral $commitSha
 
-    $remoteCommand = @"
-set -Eeuo pipefail
-REMOTE_ARCHIVE=$remoteArchiveLiteral
-REMOTE_INSTALLER_TEMP=$remoteInstallerTempLiteral
-REMOTE_LIB_TEMP=$remoteLibTempLiteral
-REMOTE_INSTALLER_PATH=$remoteInstallerPathLiteral
-REMOTE_LIB_PATH=$remoteLibPathLiteral
-DEPLOY_CONFIG_PATH=$configPathLiteral
-WORKTREE_BRANCH_NAME=$branchNameLiteral
-WORKTREE_COMMIT_SHA=$commitShaLiteral
-trap 'rm -f "`$REMOTE_ARCHIVE" "`$REMOTE_INSTALLER_TEMP" "`$REMOTE_LIB_TEMP"' EXIT
-install -m 755 "`$REMOTE_LIB_TEMP" "`$REMOTE_LIB_PATH"
-install -m 755 "`$REMOTE_INSTALLER_TEMP" "`$REMOTE_INSTALLER_PATH"
-DEPLOY_CONFIG="`$DEPLOY_CONFIG_PATH" WORKTREE_BRANCH="`$WORKTREE_BRANCH_NAME" WORKTREE_COMMIT="`$WORKTREE_COMMIT_SHA" bash "`$REMOTE_INSTALLER_PATH" "`$REMOTE_ARCHIVE"
-"@
+    $remoteCommand = @(
+        "set -Eeuo pipefail",
+        "REMOTE_ARCHIVE=$remoteArchiveLiteral",
+        "REMOTE_INSTALLER_TEMP=$remoteInstallerTempLiteral",
+        "REMOTE_LIB_TEMP=$remoteLibTempLiteral",
+        "REMOTE_INSTALLER_PATH=$remoteInstallerPathLiteral",
+        "REMOTE_LIB_PATH=$remoteLibPathLiteral",
+        "DEPLOY_CONFIG_PATH=$configPathLiteral",
+        "WORKTREE_BRANCH_NAME=$branchNameLiteral",
+        "WORKTREE_COMMIT_SHA=$commitShaLiteral",
+        "trap 'rm -f ""`$REMOTE_ARCHIVE"" ""`$REMOTE_INSTALLER_TEMP"" ""`$REMOTE_LIB_TEMP""' EXIT",
+        "install -m 755 ""`$REMOTE_LIB_TEMP"" ""`$REMOTE_LIB_PATH""",
+        "install -m 755 ""`$REMOTE_INSTALLER_TEMP"" ""`$REMOTE_INSTALLER_PATH""",
+        "DEPLOY_CONFIG=""`$DEPLOY_CONFIG_PATH"" WORKTREE_BRANCH=""`$WORKTREE_BRANCH_NAME"" WORKTREE_COMMIT=""`$WORKTREE_COMMIT_SHA"" bash ""`$REMOTE_INSTALLER_PATH"" ""`$REMOTE_ARCHIVE"""
+    ) -join "; "
 
     Write-Host "[publish-worktree] Triggering remote release install"
     & ssh @sshBaseArgs "${User}@${ServerHost}" $remoteCommand

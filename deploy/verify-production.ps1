@@ -1,9 +1,9 @@
 [CmdletBinding()]
 param(
     [string]$BaseUrl = "https://www.shilin.tech",
-    [string]$ExpectedProjectSlug = "dsl-blog",
-    [string]$ExpectedPostSlug = "build-a-professional-personal-blog",
-    [string]$ExpectedSeriesSlug = "blog-as-public-system"
+    [string]$ExpectedProjectSlug = "",
+    [string]$ExpectedPostSlug = "",
+    [string]$ExpectedSeriesSlug = ""
 )
 
 function Get-Body {
@@ -35,10 +35,42 @@ function Assert-Match {
     }
 }
 
+function Get-Json {
+    param([string]$Url)
+    return Invoke-RestMethod -Uri $Url
+}
+
+function Resolve-DynamicSlug {
+    param(
+        [string]$Provided,
+        [object[]]$Items,
+        [string]$PropertyName,
+        [string]$Label
+    )
+
+    if ($Provided) {
+        return $Provided
+    }
+
+    if (-not $Items -or $Items.Count -eq 0) {
+        throw "No public $Label available for validation"
+    }
+
+    return $Items[0].$PropertyName
+}
+
 $health = Get-Body "$BaseUrl/api/health"
 $robots = Get-Body "$BaseUrl/robots.txt"
 $sitemap = Get-Body "$BaseUrl/sitemap.xml"
 $rss = Get-Body "$BaseUrl/rss.xml"
+
+$postsJson = Get-Json "$BaseUrl/api/posts?limit=1"
+$projectsJson = Get-Json "$BaseUrl/api/projects"
+$seriesJson = Get-Json "$BaseUrl/api/series"
+
+$ExpectedPostSlug = Resolve-DynamicSlug -Provided $ExpectedPostSlug -Items $postsJson.data -PropertyName "slug" -Label "post"
+$ExpectedProjectSlug = Resolve-DynamicSlug -Provided $ExpectedProjectSlug -Items $projectsJson -PropertyName "slug" -Label "project"
+$ExpectedSeriesSlug = Resolve-DynamicSlug -Provided $ExpectedSeriesSlug -Items $seriesJson -PropertyName "slug" -Label "series"
 
 $homeHtml = Get-Body "$BaseUrl/"
 $blogHtml = Get-Body "$BaseUrl/blog"

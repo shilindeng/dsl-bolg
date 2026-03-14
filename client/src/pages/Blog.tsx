@@ -1,8 +1,22 @@
-import { startTransition, useDeferredValue, useEffect, useState } from 'react';
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { fetchCategories, fetchPosts, fetchTags, type Category, type Post, type Tag } from '../api/client';
 import PostCard from '../components/PostCard';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
+
+const DEFAULT_TAG_LIMIT = 10;
+
+function sortByUsage<T extends { _count?: { posts: number }; name: string }>(items: T[]) {
+    return items
+        .filter((item) => (item._count?.posts || 0) > 0)
+        .sort((left, right) => {
+            const countDiff = (right._count?.posts || 0) - (left._count?.posts || 0);
+            if (countDiff !== 0) {
+                return countDiff;
+            }
+            return left.name.localeCompare(right.name, 'zh-CN');
+        });
+}
 
 export default function Blog() {
     const [posts, setPosts] = useState<Post[]>([]);
@@ -14,13 +28,14 @@ export default function Blog() {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [showAllTags, setShowAllTags] = useState(false);
     const deferredSearch = useDeferredValue(search);
 
     useEffect(() => {
         Promise.all([fetchTags(), fetchCategories()])
             .then(([tagResponse, categoryResponse]) => {
-                setTags(tagResponse);
-                setCategories(categoryResponse);
+                setTags(sortByUsage(tagResponse));
+                setCategories(sortByUsage(categoryResponse));
             })
             .catch(() => {
                 setTags([]);
@@ -52,6 +67,7 @@ export default function Blog() {
         setPage(1);
     }, [activeCategory, activeTag, deferredSearch]);
 
+    const visibleTags = showAllTags ? tags : tags.slice(0, DEFAULT_TAG_LIMIT);
     const featuredPost = page === 1 ? posts[0] : null;
     const restPosts = page === 1 ? posts.slice(1) : posts;
     const activeFilters = [
@@ -62,7 +78,7 @@ export default function Blog() {
 
     return (
         <>
-            <SEO title="博客" description="按主题、分类和关键词浏览 DSL 的长期写作与案例判断。" />
+            <SEO title="博客" description="按主题、分类和关键词浏览长期写作与研究归档。" />
 
             <section className="section page-compact-hero archive-hero">
                 <div className="container archive-hero-shell">
@@ -70,7 +86,7 @@ export default function Blog() {
                         <span className="eyebrow">文章归档</span>
                         <h1 className="section-title">给长期阅读者准备的内容档案</h1>
                         <p className="section-copy">
-                            这里按主题、分类和关键词组织长文、复盘和设计笔记。更像编辑目录，而不是无差别信息流。
+                            这里按主题、分类和关键词组织长文、复盘和研究笔记。更像编辑目录，而不是无差别信息流。
                         </p>
                     </div>
 
@@ -81,7 +97,7 @@ export default function Blog() {
                         </article>
                         <article className="hero-fact-item">
                             <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
-                            <p>当前公开内容线索都从这里收口。</p>
+                            <p>只保留当前公开内容真正用得到的线索。</p>
                         </article>
                     </div>
                 </div>
@@ -139,16 +155,24 @@ export default function Blog() {
                                         onClick={() => setActiveCategory(category.slug)}
                                     >
                                         {category.name}
+                                        <span className="command-hint">{category._count?.posts || 0}</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="filter-group">
-                            <span className="filter-label">
-                                <SiteIcon name="tag" size={13} />
-                                <span>标签</span>
-                            </span>
+                            <div className="section-head compact-head">
+                                <span className="filter-label">
+                                    <SiteIcon name="tag" size={13} />
+                                    <span>标签</span>
+                                </span>
+                                {tags.length > DEFAULT_TAG_LIMIT ? (
+                                    <button type="button" className="btn btn-ghost archive-filter-toggle" onClick={() => setShowAllTags((current) => !current)}>
+                                        {showAllTags ? '收起标签' : `展开更多标签 (${tags.length - DEFAULT_TAG_LIMIT})`}
+                                    </button>
+                                ) : null}
+                            </div>
                             <div className="filter-row">
                                 <button
                                     type="button"
@@ -157,7 +181,7 @@ export default function Blog() {
                                 >
                                     全部标签
                                 </button>
-                                {tags.map((tag) => (
+                                {visibleTags.map((tag) => (
                                     <button
                                         key={tag.id}
                                         type="button"
@@ -166,6 +190,7 @@ export default function Blog() {
                                         onClick={() => setActiveTag(tag.slug)}
                                     >
                                         {tag.name}
+                                        <span className="command-hint">{tag._count?.posts || 0}</span>
                                     </button>
                                 ))}
                             </div>
@@ -179,7 +204,7 @@ export default function Blog() {
                     {loading ? (
                         <div className="empty-state">正在同步文章归档...</div>
                     ) : posts.length === 0 ? (
-                        <div className="empty-state">没有找到符合条件的文章，换一个关键词或标签试试。</div>
+                        <div className="empty-state">没有找到符合条件的文章，换一个关键词或筛选条件试试。</div>
                     ) : (
                         <>
                             {featuredPost ? <PostCard post={featuredPost} featured /> : null}

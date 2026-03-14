@@ -4,6 +4,10 @@ import { splitTechStack } from '../lib/content';
 import LazyImage from './LazyImage';
 import SiteIcon from './SiteIcon';
 
+function getProjectSummary(project: Project) {
+    return (project.summary || project.description).trim();
+}
+
 export default function ProjectCard({ project }: { project: Project }) {
     const techStack = splitTechStack(project.techStack);
 
@@ -48,8 +52,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                             {project.name}
                         </Link>
                     </h3>
-                    <p className="project-card-summary">{project.summary || project.description}</p>
-                    <p>{project.description}</p>
+                    <p className="project-card-summary">{getProjectSummary(project)}</p>
                 </div>
 
                 {(project.role || project.period) ? (
@@ -70,7 +73,7 @@ export default function ProjectCard({ project }: { project: Project }) {
                 ) : null}
 
                 <div className="tag-list">
-                    {techStack.slice(0, 6).map((tech) => (
+                    {techStack.slice(0, 5).map((tech) => (
                         <span key={tech} className="tag">
                             <SiteIcon name="code" size={12} />
                             <span>{tech}</span>

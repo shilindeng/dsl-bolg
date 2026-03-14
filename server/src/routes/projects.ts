@@ -25,6 +25,7 @@ async function resolveProjectSlug(input: string, excludeId?: number) {
 router.get('/', async (_req: Request, res: Response) => {
     try {
         const projects = await prisma.project.findMany({
+            where: { published: true },
             orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
         });
 
@@ -35,10 +36,23 @@ router.get('/', async (_req: Request, res: Response) => {
     }
 });
 
+router.get('/admin', authMiddleware, requireAdmin, async (_req: Request, res: Response) => {
+    try {
+        const projects = await prisma.project.findMany({
+            orderBy: [{ published: 'desc' }, { featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
+        });
+
+        res.json(projects.map((project) => formatPublicProject(project)));
+    } catch (error) {
+        console.error('Error fetching admin projects:', error);
+        res.status(500).json({ error: 'Failed to fetch admin projects' });
+    }
+});
+
 router.get('/:slug', async (req: Request, res: Response) => {
     try {
-        const project = await prisma.project.findUnique({
-            where: { slug: String(req.params.slug) },
+        const project = await prisma.project.findFirst({
+            where: { slug: String(req.params.slug), published: true },
         });
 
         if (!project || !isPublicProjectReady(project)) {
@@ -55,13 +69,14 @@ router.get('/:slug', async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { name, slug, headline, summary, description, techStack, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+        const { name, slug, headline, summary, description, techStack, published, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
             name: string;
             slug?: string;
             headline?: string;
             summary?: string;
             description: string;
             techStack?: string;
+            published?: boolean;
             status?: string | null;
             period?: string | null;
             role?: string | null;
@@ -80,6 +95,7 @@ router.post('/', authMiddleware, requireAdmin, async (req: Request, res: Respons
                 summary: summary?.trim() || '',
                 description,
                 techStack: techStack || '',
+                published: Boolean(published),
                 status: status || null,
                 period: period || null,
                 role: role || null,
@@ -108,13 +124,14 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
             return;
         }
 
-        const { name, slug, headline, summary, description, techStack, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
+        const { name, slug, headline, summary, description, techStack, published, status, period, role, liveUrl, repoUrl, coverImage, featured, order } = req.body as {
             name?: string;
             slug?: string;
             headline?: string;
             summary?: string;
             description?: string;
             techStack?: string;
+            published?: boolean;
             status?: string | null;
             period?: string | null;
             role?: string | null;
@@ -131,6 +148,7 @@ router.put('/:id', authMiddleware, requireAdmin, async (req: Request, res: Respo
         if (summary !== undefined) updates.summary = summary?.trim() || '';
         if (description !== undefined) updates.description = description;
         if (techStack !== undefined) updates.techStack = techStack;
+        if (published !== undefined) updates.published = Boolean(published);
         if (status !== undefined) updates.status = status || null;
         if (period !== undefined) updates.period = period || null;
         if (role !== undefined) updates.role = role || null;

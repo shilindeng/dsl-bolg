@@ -1,9 +1,9 @@
 import { Prisma } from '@prisma/client';
-import slugify from 'slugify';
 import prisma from './prisma.js';
 import { createExcerpt, estimateReadTime } from './content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from './analytics.js';
 import { formatPublicPost } from './publicPresentation.js';
+import { createStableSlug } from './slugs.js';
 
 export const includePostRelations = {
     tags: { include: { tag: true } },
@@ -26,7 +26,7 @@ export const formatPost = <
 ) => formatPublicPost(post);
 
 export async function resolveUniquePostSlug(input: string, excludeId?: number) {
-    const base = slugify(input, { lower: true, strict: true }) || `post-${Date.now()}`;
+    const base = createStableSlug(input, 'post');
     let candidate = base;
     let counter = 1;
 
@@ -45,7 +45,7 @@ export async function upsertTags(tags: string[]) {
     for (const rawName of tags) {
         const name = rawName.trim();
         if (!name) continue;
-        const tagSlug = slugify(name, { lower: true, strict: true }) || `tag-${Date.now()}-${pairs.length}`;
+        const tagSlug = createStableSlug(name, 'tag');
         const tagRecord = await prisma.tag.upsert({
             where: { slug: tagSlug },
             update: { name },

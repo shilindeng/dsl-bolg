@@ -99,6 +99,7 @@ export interface Project {
     summary: string;
     description: string;
     techStack: string;
+    published: boolean;
     status?: string | null;
     period?: string | null;
     role?: string | null;
@@ -185,6 +186,7 @@ export interface ProjectInput {
     summary: string;
     description: string;
     techStack: string;
+    published: boolean;
     status?: string | null;
     period?: string | null;
     role?: string | null;
@@ -460,6 +462,10 @@ export async function fetchProjects(): Promise<Project[]> {
     return fetchJson(`${API_BASE}/projects`);
 }
 
+export async function fetchAdminProjects(): Promise<Project[]> {
+    return fetchJson(`${API_BASE}/projects/admin`);
+}
+
 export async function fetchProject(slug: string): Promise<Project> {
     return fetchJson(`${API_BASE}/projects/${slug}`);
 }
@@ -630,7 +636,7 @@ export async function confirmNewsletter(data: { email: string; token: string }) 
     });
 }
 
-export async function unsubscribeNewsletter(data: { email: string }) {
+export async function unsubscribeNewsletter(data: { email: string; token: string }) {
     return fetchJson<NewsletterSubscriber>(`${API_BASE}/newsletter/unsubscribe`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -682,7 +688,7 @@ export async function updateNewsletterIssue(id: number, data: {
 }
 
 export async function sendNewsletterIssue(id: number) {
-    return fetchJson<{ issue: NewsletterIssue; deliveries: NewsletterDelivery[] }>(`${API_BASE}/newsletter/admin/issues/${id}/send`, {
+    return fetchJson<{ issue: NewsletterIssue; message: string }>(`${API_BASE}/newsletter/admin/issues/${id}/send`, {
         method: 'POST',
     });
 }
@@ -728,5 +734,45 @@ export async function createApiKey(data: { name: string; scopes: string[] }) {
 export async function revokeApiKey(id: number) {
     return fetchJson<{ id: number; revokedAt: string }>(`${API_BASE}/open/admin/keys/${id}/revoke`, {
         method: 'POST',
+    });
+}
+
+export async function createCategory(data: { name: string }) {
+    return fetchJson<Category>(`${API_BASE}/categories`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateCategory(id: number, data: { name: string }) {
+    return fetchJson<Category>(`${API_BASE}/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteCategory(id: number) {
+    return fetchJson<void>(`${API_BASE}/categories/${id}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function createTag(data: { name: string }) {
+    return fetchJson<Tag>(`${API_BASE}/tags`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateTag(id: number, data: { name: string }) {
+    return fetchJson<Tag>(`${API_BASE}/tags/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deleteTag(id: number) {
+    return fetchJson<void>(`${API_BASE}/tags/${id}`, {
+        method: 'DELETE',
     });
 }

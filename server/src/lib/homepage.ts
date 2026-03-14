@@ -167,7 +167,7 @@ async function loadSelectedProjects(config: HomepageSectionConfig) {
     if (config.projectIds?.length) {
         const selectedIds = [...new Set(config.projectIds)];
         const selectedProjects = await prisma.project.findMany({
-            where: { id: { in: selectedIds } },
+            where: { id: { in: selectedIds }, published: true },
         });
 
         const orderedSelected = selectedIds
@@ -182,7 +182,7 @@ async function loadSelectedProjects(config: HomepageSectionConfig) {
 
         const needed = Math.max(0, limit - orderedSelected.length);
         const fallback = await prisma.project.findMany({
-            where: { id: { notIn: selectedIds } },
+            where: { id: { notIn: selectedIds }, published: true },
             orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
             take: Math.min(12, needed * 3),
         });
@@ -196,6 +196,7 @@ async function loadSelectedProjects(config: HomepageSectionConfig) {
     }
 
     const projects = await prisma.project.findMany({
+        where: { published: true },
         orderBy: [{ featured: 'desc' }, { order: 'asc' }, { createdAt: 'desc' }],
         take: limit,
     });

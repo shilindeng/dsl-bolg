@@ -297,7 +297,10 @@ validate_release() {
         local needle="$2"
         local label="$3"
 
-        printf '%s' "$body" | grep -F "$needle" >/dev/null || fail "SEO check failed ($label): missing $needle"
+        if ! printf '%s' "$body" | grep -F "$needle" >/dev/null; then
+            echo "SEO check failed ($label): missing $needle" >&2
+            return 1
+        fi
     }
 
     fetch_html() {
@@ -323,19 +326,28 @@ validate_release() {
     assert_contains "$projects_list_html" "<link rel=\"canonical\" href=\"${SITE_URL}/projects\"" "projects list canonical"
 
     posts_json="$(curl --fail --silent --show-error "http://127.0.0.1:3001/api/posts?limit=1")"
-    post_slug="$(pick_slug "$posts_json" "data.data && data.data[0] && data.data[0].slug")" || fail "SEO check failed: could not pick a post slug"
+    post_slug="$(pick_slug "$posts_json" "data.data && data.data[0] && data.data[0].slug")" || {
+        echo "SEO check failed: could not pick a post slug" >&2
+        return 1
+    }
     post_html="$(fetch_html "/blog/${post_slug}")"
     assert_contains "$post_html" "<link rel=\"canonical\" href=\"${SITE_URL}/blog/${post_slug}\"" "post canonical"
     assert_contains "$post_html" "article:published_time" "post article meta"
 
     projects_json="$(curl --fail --silent --show-error "http://127.0.0.1:3001/api/projects")"
-    project_slug="$(pick_slug "$projects_json" "Array.isArray(data) && data[0] && data[0].slug")" || fail "SEO check failed: could not pick a project slug"
+    project_slug="$(pick_slug "$projects_json" "Array.isArray(data) && data[0] && data[0].slug")" || {
+        echo "SEO check failed: could not pick a project slug" >&2
+        return 1
+    }
     project_html="$(fetch_html "/projects/${project_slug}")"
     assert_contains "$project_html" "<link rel=\"canonical\" href=\"${SITE_URL}/projects/${project_slug}\"" "project canonical"
     assert_contains "$project_html" "CreativeWork" "project json-ld"
 
     series_json="$(curl --fail --silent --show-error "http://127.0.0.1:3001/api/series")"
-    series_slug="$(pick_slug "$series_json" "Array.isArray(data) && data[0] && data[0].slug")" || fail "SEO check failed: could not pick a series slug"
+    series_slug="$(pick_slug "$series_json" "Array.isArray(data) && data[0] && data[0].slug")" || {
+        echo "SEO check failed: could not pick a series slug" >&2
+        return 1
+    }
     series_html="$(fetch_html "/series/${series_slug}")"
     assert_contains "$series_html" "<link rel=\"canonical\" href=\"${SITE_URL}/series/${series_slug}\"" "series canonical"
     assert_contains "$series_html" "og:url" "series og meta"

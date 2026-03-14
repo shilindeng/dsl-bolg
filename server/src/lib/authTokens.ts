@@ -17,7 +17,7 @@ function generateOpaqueToken() {
 
 export async function createEmailToken(input: {
     email: string;
-    purpose: 'reader_login' | 'newsletter_confirm';
+    purpose: 'reader_login' | 'newsletter_confirm' | 'newsletter_unsubscribe';
     userId?: number | null;
     ttlMinutes?: number;
     kind?: 'numeric' | 'opaque';
@@ -54,7 +54,7 @@ export async function createEmailToken(input: {
 
 export async function consumeEmailToken(input: {
     email: string;
-    purpose: 'reader_login' | 'newsletter_confirm';
+    purpose: 'reader_login' | 'newsletter_confirm' | 'newsletter_unsubscribe';
     value: string;
 }) {
     const token = await prisma.emailToken.findFirst({

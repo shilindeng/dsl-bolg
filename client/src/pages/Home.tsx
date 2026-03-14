@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchHomepage, type HomepageSection, type Post, type Project } from '../api/client';
 import NewsletterSignup from '../components/NewsletterSignup';
-import PostCard from '../components/PostCard';
 import ProjectCard from '../components/ProjectCard';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
@@ -18,13 +17,33 @@ function getProjects(section?: HomepageSection) {
     return ((section?.items || []) as Array<Post | Project>).filter((item): item is Project => 'techStack' in item);
 }
 
+function IssueSkeleton() {
+    return (
+        <div className="issue-feature issue-feature-skeleton" aria-hidden="true">
+            <span className="issue-kicker">正在同步内容</span>
+            <div className="ui-skeleton ui-skeleton-title" />
+            <div className="ui-skeleton ui-skeleton-line" />
+            <div className="ui-skeleton ui-skeleton-line is-short" />
+        </div>
+    );
+}
+
 export default function Home() {
     const [sections, setSections] = useState<HomepageSection[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
         fetchHomepage()
-            .then((response) => setSections(response.sections))
-            .catch(() => setSections([]));
+            .then((response) => {
+                setSections(response.sections);
+                setLoadFailed(false);
+            })
+            .catch(() => {
+                setSections([]);
+                setLoadFailed(true);
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     const sectionMap = useMemo(
@@ -42,10 +61,14 @@ export default function Home() {
 
     const featuredPosts = getPosts(featuredPostsSection);
     const featuredProjects = getProjects(projectsSection);
+
     const leadPost = featuredPosts[0];
     const supportingPosts = featuredPosts.slice(1, 4);
-    const homepageProjects = featuredProjects.slice(0, 2);
-    const featuredProject = homepageProjects[0];
+    const leadProject = featuredProjects[0];
+    const remainingProjects = featuredProjects.slice(1, 4);
+
+    const shouldShowEditorialSection = supportingPosts.length > 0;
+    const shouldShowProjectSection = remainingProjects.length > 0;
 
     return (
         <>
@@ -101,7 +124,12 @@ export default function Home() {
                                 <span className="meta-pill emphasis mono">{new Date().getFullYear()}</span>
                             </div>
 
-                            {leadPost ? (
+                            {loading ? (
+                                <>
+                                    <IssueSkeleton />
+                                    <IssueSkeleton />
+                                </>
+                            ) : leadPost ? (
                                 <Link to={`/blog/${leadPost.slug}`} className="issue-feature" data-testid="home-issue-post">
                                     <span className="issue-kicker">
                                         <SiteIcon name="book-open" size={14} />
@@ -128,30 +156,32 @@ export default function Home() {
                                         <SiteIcon name="book-open" size={14} />
                                         <span>精选文章</span>
                                     </span>
-                                    <strong>还没有设置精选文章</strong>
-                                    <p className="muted">后台配置首页精选后，这里会展示 1 篇代表性文章。</p>
+                                    <strong>{loadFailed ? '首页精选读取失败' : '还没有设置精选文章'}</strong>
+                                    <p className="muted">{loadFailed ? '请稍后刷新，或在后台检查首页编排接口。' : '后台配置首页精选后，这里会展示 1 篇代表性文章。'}</p>
                                 </div>
                             )}
 
-                            {featuredProject ? (
-                                <Link to={`/projects/${featuredProject.slug}`} className="issue-feature" data-testid="home-issue-project">
+                            {loading ? (
+                                <IssueSkeleton />
+                            ) : leadProject ? (
+                                <Link to={`/projects/${leadProject.slug}`} className="issue-feature" data-testid="home-issue-project">
                                     <span className="issue-kicker">
                                         <SiteIcon name="briefcase" size={14} />
                                         <span>研究样本</span>
                                     </span>
-                                    <strong>{featuredProject.name}</strong>
-                                    <p>{featuredProject.summary || featuredProject.description}</p>
+                                    <strong>{leadProject.name}</strong>
+                                    <p>{leadProject.summary || leadProject.description}</p>
                                     <div className="meta-inline">
-                                        {featuredProject.status ? (
+                                        {leadProject.status ? (
                                             <span className="meta-pill">
                                                 <SiteIcon name="check" size={13} />
-                                                <span>{featuredProject.status}</span>
+                                                <span>{leadProject.status}</span>
                                             </span>
                                         ) : null}
-                                        {featuredProject.period ? (
+                                        {leadProject.period ? (
                                             <span className="meta-pill">
                                                 <SiteIcon name="calendar" size={13} />
-                                                <span>{featuredProject.period}</span>
+                                                <span>{leadProject.period}</span>
                                             </span>
                                         ) : null}
                                     </div>
@@ -162,8 +192,8 @@ export default function Home() {
                                         <SiteIcon name="briefcase" size={14} />
                                         <span>研究样本</span>
                                     </span>
-                                    <strong>还没有设置代表项目</strong>
-                                    <p className="muted">当有公开项目时，这里会展示 1 个案例作为研究样本。</p>
+                                    <strong>{loadFailed ? '项目精选读取失败' : '还没有设置代表项目'}</strong>
+                                    <p className="muted">{loadFailed ? '请稍后刷新，或在后台检查首页编排与项目公开状态。' : '当有公开项目时，这里会展示 1 个案例作为研究样本。'}</p>
                                 </div>
                             )}
 
@@ -247,13 +277,13 @@ export default function Home() {
                 </div>
             </section>
 
-            {featuredPosts.length ? (
+            {shouldShowEditorialSection ? (
                 <section className="section home-editorial-section">
                     <div className="container section-stack">
                         <div className="section-head editorial-head">
                             <div>
                                 <span className="eyebrow">{featuredPostsSection?.eyebrow || '精选文章'}</span>
-                                <h2 className="section-title">{featuredPostsSection?.title || '先看到最能代表方法与判断力的内容'}</h2>
+                                <h2 className="section-title">{featuredPostsSection?.title || '更多值得继续读下去的文章'}</h2>
                             </div>
                             <Link to="/blog" className="section-link">
                                 <span>查看全部文章</span>
@@ -261,9 +291,7 @@ export default function Home() {
                             </Link>
                         </div>
 
-                        <div className="home-featured-grid">
-                            {leadPost ? <PostCard post={leadPost} featured /> : null}
-
+                        <div className="feature-panel">
                             <div className="supporting-post-list">
                                 {supportingPosts.map((post) => (
                                     <Link key={post.id} to={`/blog/${post.slug}`} className="supporting-post-item">
@@ -293,14 +321,14 @@ export default function Home() {
                 </section>
             ) : null}
 
-            {featuredProjects.length ? (
+            {shouldShowProjectSection ? (
                 <section className="section section-border home-projects-section">
                     <div className="container home-project-shell">
                         <div className="project-intro-card">
                             <span className="eyebrow">{projectsSection?.eyebrow || '代表项目'}</span>
-                            <h2 className="section-title">{projectsSection?.title || '项目页承担方法论与落地能力的第二层证明'}</h2>
+                            <h2 className="section-title">{projectsSection?.title || '更多项目样本'}</h2>
                             <p className="section-copy">
-                                {projectsSection?.description || '文章负责建立判断力，项目负责证明交付能力。这一段不再堆很多卡，只保留最完整的案例。'}
+                                {projectsSection?.description || '文章负责建立判断力，项目负责证明落地能力。这里保留次级案例做横向比较，不重复首页主打项目。'}
                             </p>
 
                             <div className="stack-grid">
@@ -324,7 +352,7 @@ export default function Home() {
                         </div>
 
                         <div className="project-grid homepage-project-grid">
-                            {homepageProjects.map((project) => (
+                            {remainingProjects.map((project) => (
                                 <ProjectCard key={project.id} project={project} />
                             ))}
                         </div>

@@ -25,14 +25,6 @@ export default function Footer() {
                             <span>实现</span>
                         </span>
                     </div>
-                    <div className="list-block footer-focus-list">
-                        {siteConfig.currentFocus.slice(0, 2).map((item) => (
-                            <div key={item} className="list-item">
-                                <SiteIcon name="spark" size={13} />
-                                <span>{item}</span>
-                            </div>
-                        ))}
-                    </div>
                 </section>
 
                 <section className="footer-stack">

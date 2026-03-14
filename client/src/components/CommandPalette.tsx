@@ -16,6 +16,19 @@ interface CommandResult {
     type: string;
 }
 
+const adminWorkbenchEntries = [
+    { id: '/admin/dashboard', label: '后台总览', description: '查看趋势、风险与近期活动' },
+    { id: '/admin/posts', label: '文章管理', description: '管理文章、草稿和编辑入口' },
+    { id: '/admin/projects', label: '项目管理', description: '维护公开项目与草稿状态' },
+    { id: '/admin/comments', label: '评论管理', description: '处理评论审核队列' },
+    { id: '/admin/homepage', label: '首页编排', description: '调整首页精选与 CTA' },
+    { id: '/admin/newsletter', label: 'Newsletter 管理', description: '管理 issue、订阅者与发送队列' },
+    { id: '/admin/series', label: '专栏管理', description: '维护专栏和章节顺序' },
+    { id: '/admin/taxonomy', label: '分类与标签', description: '清理 taxonomy 与脏标签' },
+    { id: '/admin/api-keys', label: 'API Key 管理', description: '维护开放发布凭证' },
+    { id: '/editor', label: '新建文章', description: '直接进入内容编辑器' },
+];
+
 export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
@@ -84,8 +97,10 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
             });
     }, [hasLoadedData, loading, open]);
 
+    const matchesQuery = (value: string) => !deferredQuery || value.toLowerCase().includes(deferredQuery);
+
     const navigationResults = siteConfig.navigation
-        .filter((item) => !deferredQuery || item.label.toLowerCase().includes(deferredQuery))
+        .filter((item) => matchesQuery([item.label, item.description || '', item.to].join(' ')))
         .map<CommandResult>((item) => ({
             id: item.to,
             label: item.label,
@@ -106,57 +121,27 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
             {
                 id: '/account/bookmarks',
                 label: '我的收藏',
-                description: '快速回到收藏过的文章',
+                description: '回到收藏过的文章',
                 onSelect: () => navigate('/account/bookmarks'),
                 type: '账户',
             },
-        ].filter((item) => !deferredQuery || item.label.toLowerCase().includes(deferredQuery))
+        ].filter((item) => matchesQuery([item.label, item.description].join(' ')))
         : [];
 
     const adminResults = isAdmin
-        ? [
-            {
-                id: '/admin/dashboard',
-                label: '管理员控制台',
-                description: '查看数据、审核评论与运营状态',
-                onSelect: () => navigate('/admin/dashboard'),
+        ? adminWorkbenchEntries
+            .filter((item) => matchesQuery([item.label, item.description].join(' ')))
+            .map<CommandResult>((item) => ({
+                ...item,
+                onSelect: () => navigate(item.id),
                 type: '后台',
-            },
-            {
-                id: '/editor',
-                label: '新建文章',
-                description: '进入编辑器开始写作',
-                onSelect: () => navigate('/editor'),
-                type: '后台',
-            },
-            {
-                id: '/admin/homepage',
-                label: '首页编排',
-                description: '调整首页 section 与内容入口',
-                onSelect: () => navigate('/admin/homepage'),
-                type: '后台',
-            },
-            {
-                id: '/admin/newsletter',
-                label: 'Newsletter 管理',
-                description: '管理 issue、订阅者与发送',
-                onSelect: () => navigate('/admin/newsletter'),
-                type: '后台',
-            },
-        ].filter((item) => !deferredQuery || item.label.toLowerCase().includes(deferredQuery))
+            }))
         : [];
 
     const postResults = posts
-        .filter((post) => {
-            if (!deferredQuery) {
-                return true;
-            }
-
-            return [post.title, post.excerpt, post.category?.name || '', ...post.tags.map((tag) => tag.name)]
-                .join(' ')
-                .toLowerCase()
-                .includes(deferredQuery);
-        })
+        .filter((post) =>
+            matchesQuery([post.title, post.excerpt, post.category?.name || '', ...post.tags.map((tag) => tag.name)].join(' ')),
+        )
         .slice(0, 8)
         .map<CommandResult>((post) => ({
             id: `post-${post.slug}`,
@@ -167,16 +152,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
         }));
 
     const seriesResults = series
-        .filter((item) => {
-            if (!deferredQuery) {
-                return true;
-            }
-
-            return [item.title, item.summary || '', item.description || '']
-                .join(' ')
-                .toLowerCase()
-                .includes(deferredQuery);
-        })
+        .filter((item) => matchesQuery([item.title, item.summary || '', item.description || ''].join(' ')))
         .slice(0, 6)
         .map<CommandResult>((item) => ({
             id: `series-${item.slug}`,
@@ -187,16 +163,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
         }));
 
     const projectResults = projects
-        .filter((project) => {
-            if (!deferredQuery) {
-                return true;
-            }
-
-            return [project.name, project.summary, project.headline || '', project.techStack]
-                .join(' ')
-                .toLowerCase()
-                .includes(deferredQuery);
-        })
+        .filter((project) => matchesQuery([project.name, project.summary, project.headline || '', project.techStack].join(' ')))
         .slice(0, 6)
         .map<CommandResult>((project) => ({
             id: `project-${project.slug}`,
@@ -221,7 +188,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
             onSelect: () => navigate('/login'),
             type: '入口',
         },
-    ].filter((item) => !deferredQuery || item.label.toLowerCase().includes(deferredQuery));
+    ].filter((item) => matchesQuery([item.label, item.description].join(' ')));
 
     const sections = [
         { title: '页面', items: navigationResults },
@@ -314,7 +281,7 @@ export default function CommandPalette({ isAdmin }: CommandPaletteProps) {
                         </div>
                     ) : results.length === 0 ? (
                         <div className="command-palette-state muted">
-                            没有匹配结果，试试搜索文章标题、专栏主题或项目名称。
+                            没有匹配结果，试试搜索文章标题、专栏主题或后台页名称。
                         </div>
                     ) : (
                         sections.map((section) => (

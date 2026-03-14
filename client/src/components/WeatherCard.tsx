@@ -289,6 +289,9 @@ export default function WeatherCard() {
     const variant = useMemo(() => (weather ? getVariant(weather.weatherCode) : 'unknown'), [weather]);
     const label = useMemo(() => (weather ? getWeatherLabel(weather.weatherCode) : ''), [weather]);
     const seal = useMemo(() => getSealChar(variant), [variant]);
+    const displayVariant = weather ? variant : loading ? 'loading' : 'unknown';
+    const sealChar = weather ? seal : loading ? '…' : '候';
+    const sealCaption = weather ? variant.toUpperCase() : loading ? 'SYNC' : 'OFFLINE';
     const poeticLine = useMemo(() => {
         if (!weather) return '';
         const seed = Math.round(weather.temperature * 10) + weather.weatherCode * 37 + Math.round(weather.windSpeed);
@@ -302,7 +305,7 @@ export default function WeatherCard() {
     }, [weather?.fetchedAt]);
 
     return (
-        <aside className="feature-panel weather-card" data-weather={variant} data-testid="weather-card">
+        <aside className="feature-panel weather-card" data-weather={displayVariant} data-testid="weather-card">
             <div className="weather-ink" aria-hidden="true" />
 
             <div className="weather-content">
@@ -318,8 +321,8 @@ export default function WeatherCard() {
                     </div>
 
                     <div className="weather-seal" aria-hidden="true">
-                        <div className="weather-seal-char">{seal}</div>
-                        <div className="weather-seal-caption mono">{variant.toUpperCase()}</div>
+                        <div className="weather-seal-char">{sealChar}</div>
+                        <div className="weather-seal-caption mono">{sealCaption}</div>
                     </div>
                 </div>
 

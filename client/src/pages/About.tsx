@@ -19,17 +19,17 @@ export default function About() {
                         <div className="stat-card">
                             <SiteIcon name="compass" size={16} />
                             <strong>{siteConfig.author.location.city}，{siteConfig.author.location.country}</strong>
-                            <span>以{siteConfig.author.location.city}为基准城市进行长期创作与开发。</span>
+                            <span>以常州为工作基准，长期做内容、产品与工程实验。</span>
                         </div>
                         <div className="stat-card">
                             <SiteIcon name="user" size={16} />
                             <strong>{siteConfig.author.role}</strong>
-                            <span>内容、产品与工程放在同一套表达里经营。</span>
+                            <span>把内容表达、产品结构和工程交付放在同一套系统里经营。</span>
                         </div>
                         <div className="stat-card">
                             <SiteIcon name="mail" size={16} />
                             <strong>{siteConfig.email}</strong>
-                            <span>适合聊内容系统、设计系统、AI 工作流与独立项目。</span>
+                            <span>适合交流内容系统、设计系统、AI 工作流与独立项目。</span>
                         </div>
                     </div>
                 </div>
@@ -38,8 +38,8 @@ export default function About() {
             <section className="section section-border">
                 <div className="container two-column-grid">
                     <article className="feature-panel">
-                        <span className="eyebrow">工作方式</span>
-                        <h2 className="section-title compact-title">我的方法</h2>
+                        <span className="eyebrow">工作方法</span>
+                        <h2 className="section-title compact-title">我怎么做判断与输出</h2>
                         <div className="list-block">
                             {siteConfig.principles.map((item) => (
                                 <div key={item} className="list-item">
@@ -52,7 +52,7 @@ export default function About() {
 
                     <article className="feature-panel">
                         <span className="eyebrow">擅长问题</span>
-                        <h2 className="section-title compact-title">我通常解决什么</h2>
+                        <h2 className="section-title compact-title">我更适合解决什么</h2>
                         <div className="list-block">
                             {siteConfig.aboutCapabilities.map((item) => (
                                 <div key={item} className="list-item">
@@ -69,18 +69,11 @@ export default function About() {
                 <div className="container split-feature">
                     <div className="feature-panel">
                         <span className="eyebrow">当前重心</span>
-                        <div className="section-head">
-                            <div>
-                                <h2 className="section-title compact-title">最近持续打磨的方向</h2>
-                                <p className="section-copy">这三条主线，决定了公开站接下来几轮迭代的边界。</p>
-                            </div>
-                        </div>
-
-                        <div className="stat-grid">
+                        <div className="list-block">
                             {siteConfig.currentFocus.map((item, index) => (
-                                <div key={item} className="stat-card">
+                                <div key={item} className="list-item">
                                     <span className="badge">0{index + 1}</span>
-                                    <strong>{item}</strong>
+                                    <span>{item}</span>
                                 </div>
                             ))}
                         </div>
@@ -91,15 +84,15 @@ export default function About() {
                         <div className="list-block">
                             <div className="list-item">
                                 <SiteIcon name="check" size={14} />
-                                <span>适合阶段性咨询、体验整改、内容系统搭建与前后端落地。</span>
+                                <span>适合阶段性咨询、内容系统梳理、前后端落地与体验整顿。</span>
                             </div>
                             <div className="list-item">
                                 <SiteIcon name="check" size={14} />
-                                <span>优先处理结构清晰、目标明确、能被长期经营的项目。</span>
+                                <span>更适合已经有方向和基础资产、正在准备做系统升级的项目。</span>
                             </div>
                             <div className="list-item">
                                 <SiteIcon name="check" size={14} />
-                                <span>如果你已经有产品或内容基础，我更适合做“系统升级”而不是从零陪跑。</span>
+                                <span>优先处理结构清楚、目标明确、可以长期经营的内容与产品。</span>
                             </div>
                         </div>
                         <a href={`mailto:${siteConfig.email}`} className="btn btn-primary">

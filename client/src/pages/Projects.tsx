@@ -17,6 +17,9 @@ export default function Projects() {
             .finally(() => setLoading(false));
     }, []);
 
+    const featuredProject = projects[0];
+    const remainingProjects = projects.slice(1);
+
     return (
         <>
             <SEO title="项目" description="代表项目、案例、方法论与工程落地能力总览。" />
@@ -35,7 +38,7 @@ export default function Projects() {
                         <div className="stat-card">
                             <SiteIcon name="briefcase" size={16} />
                             <strong>{loading ? '--' : projects.length} 个公开项目</strong>
-                            <span>先展示完整且可读的案例。</span>
+                            <span>优先展示能被访问、能被说明白的真实案例。</span>
                         </div>
                         {siteConfig.projectThemes.map((item) => (
                             <div key={item.title} className="stat-card">
@@ -59,42 +62,52 @@ export default function Projects() {
                                     <span className="eyebrow">Case Library</span>
                                     <h2 className="section-title compact-title">案例不是装饰，而是方法与交付能力的证据</h2>
                                     <p className="section-copy">
-                                        这里不是简单堆项目卡片，而是把每个案例当作可公开讲清楚的能力样本，补齐背景、角色、过程、结果与可访问链接。
+                                        项目页和文章页承担不同职责。文章讲结论与判断，项目页讲证据、过程与真实落地。
                                     </p>
                                     <div className="list-block">
                                         <div className="list-item">
                                             <SiteIcon name="check" size={14} />
-                                            <span>优先展示能被说明白、也能被访问到的真实项目。</span>
+                                            <span>精选卡负责解释“为什么值得看”。</span>
                                         </div>
                                         <div className="list-item">
                                             <SiteIcon name="check" size={14} />
-                                            <span>每个项目详情页都承担 SEO、传播与案例沉淀的作用。</span>
+                                            <span>列表卡负责快速比较，不再堆叠过长说明。</span>
                                         </div>
                                         <div className="list-item">
                                             <SiteIcon name="check" size={14} />
-                                            <span>项目页与文章页共同构成“观点 + 证据”的双层表达。</span>
+                                            <span>详情页承担 SEO、传播与案例沉淀的作用。</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {projects[0] ? (
-                                    <Link to={`/projects/${projects[0].slug}`} className="feature-panel project-feature-card">
+                                {featuredProject ? (
+                                    <Link to={`/projects/${featuredProject.slug}`} className="feature-panel project-feature-card">
                                         <span className="eyebrow">Featured Case</span>
-                                        <h2 className="section-title compact-title">{projects[0].name}</h2>
-                                        <p className="section-copy">{projects[0].summary || projects[0].description}</p>
+                                        <h2 className="section-title compact-title">{featuredProject.name}</h2>
+                                        <p className="section-copy">{featuredProject.summary || featuredProject.description}</p>
                                         <div className="meta-inline">
-                                            {projects[0].status ? (
+                                            {featuredProject.status ? (
                                                 <span className="meta-pill">
                                                     <SiteIcon name="check" size={13} />
-                                                    <span>{projects[0].status}</span>
+                                                    <span>{featuredProject.status}</span>
                                                 </span>
                                             ) : null}
-                                            {projects[0].role ? (
+                                            {featuredProject.role ? (
                                                 <span className="meta-pill">
                                                     <SiteIcon name="user" size={13} />
-                                                    <span>{projects[0].role}</span>
+                                                    <span>{featuredProject.role}</span>
                                                 </span>
                                             ) : null}
+                                        </div>
+                                        <div className="list-block">
+                                            <div className="list-item">
+                                                <SiteIcon name="grid" size={14} />
+                                                <span>作为代表案例承担方法论与交付能力的第一层说明。</span>
+                                            </div>
+                                            <div className="list-item">
+                                                <SiteIcon name="spark" size={14} />
+                                                <span>详情页会展开背景、角色、过程、结果与访问链接。</span>
+                                            </div>
                                         </div>
                                         <span className="section-link">
                                             <span>阅读案例详情</span>
@@ -104,11 +117,15 @@ export default function Projects() {
                                 ) : null}
                             </div>
 
-                            <div className="project-grid">
-                                {projects.map((project) => (
-                                    <ProjectCard key={project.id} project={project} />
-                                ))}
-                            </div>
+                            {remainingProjects.length ? (
+                                <div className="project-grid">
+                                    {remainingProjects.map((project) => (
+                                        <ProjectCard key={project.id} project={project} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="empty-state">当前只有一个公开项目，后续案例会继续补充进来。</div>
+                            )}
                         </>
                     ) : (
                         <div className="empty-state">当前还没有满足公开展示条件的项目。</div>

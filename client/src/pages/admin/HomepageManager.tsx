@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAdminHomepage, fetchHomepage, fetchPosts, fetchProjects, saveAdminHomepage, type HomepageSection, type Post, type Project } from '../../api/client';
+import { fetchAdminHomepage, fetchAdminProjects, fetchHomepage, fetchPosts, saveAdminHomepage, type HomepageSection, type Post, type Project } from '../../api/client';
 import SEO from '../../components/SEO';
 import SiteIcon from '../../components/SiteIcon';
 import { useToast } from '../../hooks/useToast';
@@ -56,7 +56,7 @@ export default function HomepageManagerPage() {
             fetchAdminHomepage(),
             fetchHomepage(),
             fetchPosts({ limit: 40 }),
-            fetchProjects(),
+            fetchAdminProjects(),
         ])
             .then(([homepage, preview, postResponse, projectResponse]) => {
                 setSections(
@@ -186,11 +186,9 @@ export default function HomepageManagerPage() {
                                             </label>
                                             <label className="form-field">
                                                 <span className="form-label">数据来源</span>
-                                                <input
-                                                    className="form-input"
-                                                    value={section.sourceType}
-                                                    onChange={(event) => updateSection(section.type, { sourceType: event.target.value })}
-                                                />
+                                                <div className="chip" style={{ width: 'fit-content' }}>
+                                                    {isContentSection(section.type) ? '由 structured config 驱动' : '纯手动文案模块'}
+                                                </div>
                                             </label>
                                         </div>
 
