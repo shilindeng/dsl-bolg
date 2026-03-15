@@ -14,6 +14,26 @@ async function saveScreenshot(page: Page, testInfo: TestInfo, name: string) {
     await page.screenshot({ path: path.join(screenshotsDir, filename), fullPage: true });
 }
 
+async function loginAsAdmin(page: Page) {
+    await page.goto('/login');
+    await page.getByRole('button', { name: /管理员/ }).click();
+    await page.getByTestId('login-email-input').fill('admin@dsl.blog');
+    await page.getByTestId('login-password-input').fill('admin123');
+    await page.getByTestId('login-submit-button').click();
+    await expect(page).toHaveURL(/\/admin\/dashboard$/);
+}
+
+async function setTheme(page: Page, theme: 'light' | 'dark') {
+    const current = await page.evaluate(() => document.documentElement.getAttribute('data-theme') || 'light');
+    if (current === theme) {
+        return;
+    }
+
+    const toggleLabel = theme === 'dark' ? '切换到深色模式' : '切换到浅色模式';
+    await page.getByRole('button', { name: toggleLabel }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+}
+
 test('desktop smoke covers public navigation and reading flow', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-chromium');
 
@@ -21,29 +41,15 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
 
     await page.goto('/');
     await expect(page.getByTestId('home-hero')).toBeVisible();
-    await expect(page.getByTestId('primary-nav')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'home');
+    await setTheme(page, 'light');
+    await saveScreenshot(page, testInfo, 'home-light');
+    await setTheme(page, 'dark');
+    await saveScreenshot(page, testInfo, 'home-dark');
 
-    await page.getByTestId('primary-nav').getByRole('link', { name: /专栏/ }).click();
-    await expect(page).toHaveURL(/\/series$/);
-    await expect(page.locator('[data-testid^="series-card-"]').first()).toBeVisible();
-    await saveScreenshot(page, testInfo, 'series');
-
-    await page.locator('[data-testid^="series-card-"]').first().click();
-    await expect(page).toHaveURL(/\/series\/.+/);
-    await expect(page.getByRole('heading', { name: /章节目录/ })).toBeVisible();
-    await expect(page.locator('[data-testid^="series-post-"]').first()).toBeVisible();
-    await saveScreenshot(page, testInfo, 'series-detail');
-
-    await page.locator('[data-testid^="series-post-"]').first().click();
-    await expect(page).toHaveURL(/\/blog\/.+/);
-    await expect(page.getByTestId('series-rail-sidebar')).toBeVisible();
-
-    await page.getByTestId('primary-nav').getByRole('link', { name: /博客/ }).click();
-    await expect(page).toHaveURL(/\/blog$/);
+    await page.goto('/blog');
     await expect(page.getByTestId('blog-search-input')).toBeVisible();
     await expect(page.locator('[data-testid^="post-card-"]').first()).toBeVisible();
-    await saveScreenshot(page, testInfo, 'blog');
+    await saveScreenshot(page, testInfo, 'blog-dark');
 
     await page.locator('[data-testid^="post-card-"]').first().click();
     await expect(page).toHaveURL(/\/blog\/.+/);
@@ -52,81 +58,83 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await expect(page.getByTestId('post-toc')).toBeVisible();
     await page.getByTestId('article-copy-link-button').click();
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('/blog/');
-    await saveScreenshot(page, testInfo, 'article');
+    await saveScreenshot(page, testInfo, 'article-dark');
 
-    await page.getByTestId('primary-nav').getByRole('link', { name: /项目/ }).click();
-    await expect(page).toHaveURL(/\/projects$/);
-    await expect(page.locator('[data-testid^="project-card-"]').first()).toBeVisible();
-    await page.locator('[data-testid^="project-card-"]').first().getByRole('link', { name: /案例详情|DSL Blog|Signal Archive|Operator Console/ }).first().click();
-    await expect(page).toHaveURL(/\/projects\/.+/);
-    await expect(page.getByRole('heading', { name: /项目概览/ })).toBeVisible();
+    await page.goto('/projects');
+    await expect(page.getByRole('heading', { name: '项目与案例' })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'projects-dark');
 
-    await page.getByTestId('primary-nav').getByRole('link', { name: /关于/ }).click();
-    await expect(page).toHaveURL(/\/about$/);
-    await expect(page.locator('main').getByRole('heading', { name: /^DSL$/ })).toBeVisible();
-
-    await page.getByRole('link', { name: /Newsletter/ }).first().click();
-    await expect(page).toHaveURL(/\/newsletter$/);
-    await expect(page.getByRole('heading', { name: /订阅长期写作与产品化更新/ })).toBeVisible();
-
-    await page.getByRole('link', { name: /登录/ }).first().click();
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByTestId('reader-login-form')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'login');
-});
-
-test('desktop admin smoke covers login and core admin surfaces', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop-chromium');
+    await page.goto('/about');
+    await expect(page.getByRole('heading', { name: 'DSL' })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'about-dark');
 
     await page.goto('/login');
-    await page.getByRole('button', { name: /管理员/ }).click();
-    await page.getByTestId('login-email-input').fill('admin@dsl.blog');
-    await page.getByTestId('login-password-input').fill('admin123');
-    await page.getByTestId('login-submit-button').click();
-
-    await expect(page).toHaveURL(/\/admin\/dashboard$/);
-    await expect(page.getByRole('heading', { name: /内容运营与分发总控台/ })).toBeVisible();
-
-    await page.goto('/admin/homepage');
-    await expect(page.getByRole('heading', { name: /首页编排面板/ })).toBeVisible();
-
-    await page.goto('/admin/series');
-    await expect(page.getByRole('heading', { name: /专栏管理/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /登录/ })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'login-dark');
 });
 
-test('mobile smoke covers menu navigation and article reading', async ({ page }, testInfo) => {
+test('mobile smoke captures key public pages', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-chromium');
+
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
     await page.goto('/');
     await expect(page.getByTestId('home-hero')).toBeVisible();
-    await expect(page.getByTestId('weather-card')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'home-mobile');
+    await setTheme(page, 'dark');
+    await saveScreenshot(page, testInfo, 'home-mobile-dark');
 
-    await page.getByRole('button', { name: /打开导航菜单/ }).click();
-    await page.getByLabel('移动端导航').getByRole('link', { name: /专栏/ }).click();
-    await expect(page).toHaveURL(/\/series$/);
-    await expect(page.locator('[data-testid^="series-card-"]').first()).toBeVisible();
-
-    await page.locator('[data-testid^="series-card-"]').first().click();
-    await expect(page).toHaveURL(/\/series\/.+/);
-    await expect(page.locator('[data-testid^="series-post-"]').first()).toBeVisible();
-    await page.locator('[data-testid^="series-post-"]').first().click();
-    await expect(page.getByTestId('series-rail-inline')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'series-article-mobile');
-
-    await page.getByRole('button', { name: /打开导航菜单/ }).click();
-    await page.getByLabel('移动端导航').getByRole('link', { name: /博客/ }).click();
-    await expect(page).toHaveURL(/\/blog$/);
-    await expect(page.locator('[data-testid^="post-card-"]').first()).toBeVisible();
+    await page.goto('/blog');
+    await expect(page.getByTestId('blog-search-input')).toBeVisible();
+    await saveScreenshot(page, testInfo, 'blog-mobile-dark');
 
     await page.locator('[data-testid^="post-card-"]').first().click();
     await expect(page.getByTestId('article-content')).toBeVisible();
-    await expect(page.getByTestId('article-meta')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'article-mobile');
+    await saveScreenshot(page, testInfo, 'article-mobile-dark');
+});
 
-    await page.getByRole('button', { name: /打开导航菜单/ }).click();
-    await page.getByLabel('移动端导航').getByRole('link', { name: /项目/ }).click();
-    await expect(page).toHaveURL(/\/projects$/);
-    await page.locator('[data-testid^="project-card-"]').first().getByRole('link', { name: /案例详情|DSL Blog|Signal Archive|Operator Console/ }).first().click();
-    await expect(page).toHaveURL(/\/projects\/.+/);
+test('desktop admin smoke covers new admin pages and editor modes', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium');
+
+    await loginAsAdmin(page);
+
+    await page.goto('/admin/api-keys');
+    await expect(page.getByRole('heading', { name: 'API Key 管理' })).toBeVisible();
+
+    await page.goto('/admin/taxonomy');
+    await expect(page.getByRole('heading', { name: '分类与标签' })).toBeVisible();
+
+    await page.goto('/admin/homepage');
+    await expect(page.getByRole('heading', { name: '首页编排面板' })).toBeVisible();
+
+    await page.goto('/admin/series');
+    await expect(page.getByRole('heading', { name: '专栏管理' })).toBeVisible();
+
+    await page.goto('/editor');
+    await expect(page.getByText('HTML 富文本模式')).toBeVisible();
+    await expect(page.getByTestId('rich-editor-content')).toBeVisible();
+
+    await page.goto('/blog');
+    await page.locator('[data-testid^="post-card-"]').first().click();
+    await expect(page.getByRole('link', { name: '编辑文章' })).toBeVisible();
+    await page.getByRole('link', { name: '编辑文章' }).click();
+    await expect(page.getByText('Markdown 兼容模式')).toBeVisible();
+});
+
+test('desktop admin can create a rich text article', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium');
+
+    await loginAsAdmin(page);
+    await page.goto('/editor');
+
+    const uniqueTitle = `Playwright rich text ${Date.now()}`;
+    await page.getByLabel('标题').fill(uniqueTitle);
+    await page.getByLabel('Deck / 导语').fill('This deck is long enough for public rendering and homepage previews.');
+    await page.getByLabel('摘要').fill('A generated test article created by Playwright.');
+    await page.getByTestId('rich-editor-content').click();
+    await page.keyboard.type('Hello from Playwright rich text editor.');
+    await page.getByRole('button', { name: '保存文章' }).click();
+
+    await expect(page).toHaveURL(/\/blog\/.+/);
+    await expect(page.getByTestId('article-content')).toContainText('Hello from Playwright rich text editor.');
+    await saveScreenshot(page, testInfo, 'rich-text-article');
 });

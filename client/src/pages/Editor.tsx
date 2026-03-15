@@ -1,7 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {
     createPost,
     fetchCategories,
@@ -11,14 +9,18 @@ import {
     updatePost,
     uploadImage,
     type Category,
+    type ContentFormat,
     type Series,
     type Tag,
 } from '../api/client';
+import ArticleContent from '../components/ArticleContent';
+import RichTextEditor from '../components/RichTextEditor';
 import SEO from '../components/SEO';
 import { useToast } from '../hooks/useToast';
+import { normalizeContentFormat } from '../lib/content';
 import { validateImageFile } from '../lib/uploads';
 
-const DRAFT_VERSION = 'v3';
+const DRAFT_VERSION = 'v4';
 
 interface DraftState {
     title: string;
@@ -26,6 +28,7 @@ interface DraftState {
     deck: string;
     excerpt: string;
     content: string;
+    contentFormat: ContentFormat;
     coverImage: string;
     coverAlt: string;
     published: boolean;
@@ -41,7 +44,8 @@ const emptyDraft: DraftState = {
     slug: '',
     deck: '',
     excerpt: '',
-    content: '',
+    content: '<p></p>',
+    contentFormat: 'html',
     coverImage: '',
     coverAlt: '',
     published: false,
@@ -51,6 +55,14 @@ const emptyDraft: DraftState = {
     seriesId: '',
     seriesOrder: '',
 };
+
+function getPlainText(content: string, contentFormat: ContentFormat) {
+    if (contentFormat === 'html') {
+        return content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    return content.replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+}
 
 export default function Editor() {
     const { slug: editingSlug } = useParams<{ slug: string }>();
@@ -87,7 +99,13 @@ export default function Editor() {
                 if (localDraft) {
                     try {
                         const parsed = JSON.parse(localDraft) as DraftState;
-                        if (!cancelled) setDraft(parsed);
+                        if (!cancelled) {
+                            setDraft({
+                                ...emptyDraft,
+                                ...parsed,
+                                contentFormat: normalizeContentFormat(parsed.contentFormat, parsed.content),
+                            });
+                        }
                     } catch {
                         localStorage.removeItem(storageKey);
                     }
@@ -105,6 +123,7 @@ export default function Editor() {
                         deck: post.deck || '',
                         excerpt: post.excerpt,
                         content: post.content,
+                        contentFormat: normalizeContentFormat(post.contentFormat, post.content),
                         coverImage: post.coverImage || '',
                         coverAlt: post.coverAlt || '',
                         published: post.published,
@@ -139,19 +158,25 @@ export default function Editor() {
         setDraft((current) => ({ ...current, [key]: value }));
     };
 
+    const uploadInlineImage = async (file: File) => {
+        validateImageFile(file);
+        const result = await uploadImage(file);
+        setUploadHint(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`);
+        showToast(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`, 'success');
+        return result.url;
+    };
+
     const handleInlineImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files?.length) return;
         setUploadingInline(true);
         try {
-            const file = event.target.files[0];
-            validateImageFile(file);
-            const result = await uploadImage(file);
+            const url = await uploadInlineImage(event.target.files[0]);
             setDraft((current) => ({
                 ...current,
-                content: `${current.content}\n\n![图片说明](${result.url})\n`,
+                content: current.contentFormat === 'html'
+                    ? `${current.content}<p><img src="${url}" alt="article image" /></p>`
+                    : `${current.content}\n\n![图片说明](${url})\n`,
             }));
-            setUploadHint(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`);
-            showToast(`正文图片上传成功，已保存到 ${result.storage.toUpperCase()}。`, 'success');
         } catch (error) {
             setUploadHint(error instanceof Error ? error.message : '正文图片上传失败，请重试。');
             showToast(error instanceof Error ? error.message : '正文图片上传失败。', 'error');
@@ -186,7 +211,7 @@ export default function Editor() {
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
 
-        if (!draft.title.trim() || !draft.content.trim()) {
+        if (!draft.title.trim() || !getPlainText(draft.content, draft.contentFormat).trim()) {
             showToast('标题和正文不能为空。', 'error');
             return;
         }
@@ -196,8 +221,9 @@ export default function Editor() {
             title: draft.title.trim(),
             slug: draft.slug.trim() || undefined,
             deck: draft.deck.trim(),
-            excerpt: draft.excerpt.trim(),
             content: draft.content,
+            contentFormat: draft.contentFormat,
+            excerpt: draft.excerpt.trim(),
             coverImage: draft.coverImage.trim() || null,
             coverAlt: draft.coverAlt.trim() || null,
             published: draft.published,
@@ -220,8 +246,9 @@ export default function Editor() {
         }
     };
 
-    const wordCount = draft.content.trim().split(/\s+/).filter(Boolean).length;
+    const wordCount = getPlainText(draft.content, draft.contentFormat).split(/\s+/).filter(Boolean).length;
     const estimatedReadTime = Math.max(1, Math.ceil(wordCount / 220));
+    const isMarkdownCompatibilityMode = draft.contentFormat === 'markdown';
 
     return (
         <>
@@ -233,11 +260,11 @@ export default function Editor() {
                         <div>
                             <div className="eyebrow">写作工位</div>
                             <h1 className="section-title" style={{ marginTop: '1rem' }}>{id ? '编辑文章' : '开始一篇新文章'}</h1>
-                            <p className="lead">把标题、封面、正文、标签和发布节奏收进一个界面里，减少切换成本，专注内容完成度。</p>
+                            <p className="lead">新文章默认使用富文本；旧 Markdown 文章保留兼容编辑模式，避免自动转换带来的格式损失。</p>
                             <div className="hero-metrics">
                                 <div className="metric-card">
-                                    <span className="muted mono">预览状态</span>
-                                    <strong>{previewMode ? '实时预览开启' : '聚焦编辑模式'}</strong>
+                                    <span className="muted mono">内容格式</span>
+                                    <strong>{isMarkdownCompatibilityMode ? 'Markdown 兼容模式' : 'HTML 富文本模式'}</strong>
                                 </div>
                                 <div className="metric-card">
                                     <span className="muted mono">自动保存</span>
@@ -287,7 +314,7 @@ export default function Editor() {
 
                                 <label className="form-field">
                                     <span className="form-label">摘要</span>
-                                    <textarea className="form-textarea" style={{ minHeight: 120 }} value={draft.excerpt} onChange={(event) => handleChange('excerpt', event.target.value)} placeholder="这段内容会用于文章列表和 SEO 描述。" />
+                                    <textarea className="form-textarea" style={{ minHeight: 120 }} value={draft.excerpt} onChange={(event) => handleChange('excerpt', event.target.value)} placeholder="可留空，系统会根据正文自动生成。" />
                                 </label>
                             </div>
 
@@ -338,10 +365,21 @@ export default function Editor() {
                                     </div>
                                 </div>
 
-                                <label className="form-field">
-                                    <span className="form-label">正文内容（Markdown）</span>
-                                    <textarea className="form-textarea mono editor-content-area" value={draft.content} onChange={(event) => handleChange('content', event.target.value)} placeholder="# 开始写作" />
-                                </label>
+                                {isMarkdownCompatibilityMode ? (
+                                    <label className="form-field">
+                                        <span className="form-label">正文内容（Markdown）</span>
+                                        <textarea className="form-textarea mono editor-content-area" value={draft.content} onChange={(event) => handleChange('content', event.target.value)} placeholder="# 开始写作" />
+                                    </label>
+                                ) : (
+                                    <div className="form-field">
+                                        <span className="form-label">正文内容（富文本）</span>
+                                        <RichTextEditor
+                                            value={draft.content}
+                                            onChange={(nextValue) => handleChange('content', nextValue)}
+                                            onUploadImage={uploadInlineImage}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </form>
 
@@ -401,7 +439,7 @@ export default function Editor() {
                                 </div>
 
                                 <div className="editor-side-note">
-                                    <span className="command-hint">草稿自动保存在本地</span>
+                                    <span className="command-hint">{isMarkdownCompatibilityMode ? '这篇旧文章保持 Markdown 兼容编辑。' : '新文章默认使用富文本 HTML 发布。'}</span>
                                 </div>
                             </div>
 
@@ -413,7 +451,7 @@ export default function Editor() {
                                     <div className="markdown-body">
                                         <h1>{draft.title || '文章标题预览'}</h1>
                                         {draft.coverImage ? <img src={draft.coverImage} alt={draft.title || 'cover'} style={{ borderRadius: 24 }} /> : null}
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{draft.content || '正文预览会出现在这里。'}</ReactMarkdown>
+                                        <ArticleContent content={draft.content || (draft.contentFormat === 'html' ? '<p>正文预览会出现在这里。</p>' : '正文预览会出现在这里。')} contentFormat={draft.contentFormat} />
                                     </div>
                                 </div>
                             ) : null}

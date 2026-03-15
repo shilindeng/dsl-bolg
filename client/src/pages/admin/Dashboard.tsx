@@ -170,8 +170,10 @@ export default function Dashboard() {
                     </div>
                     <div className="admin-overview-actions">
                         <Link to="/editor" className="btn btn-primary">新建文章</Link>
-                        <Link to="/admin/posts" className="btn btn-secondary">文章管理</Link>
-                        <Link to="/admin/projects" className="btn btn-secondary">项目管理</Link>
+                        <Link to="/admin/newsletter" className="btn btn-secondary">Newsletter</Link>
+                        <Link to="/admin/homepage" className="btn btn-secondary">首页编排</Link>
+                        <Link to="/admin/taxonomy" className="btn btn-secondary">分类标签</Link>
+                        <Link to="/admin/api-keys" className="btn btn-secondary">API Key</Link>
                         <Link to="/" className="btn btn-ghost">查看首页</Link>
                     </div>
                     <div className="admin-summary-strip">

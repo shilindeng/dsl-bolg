@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { looksLikeHtmlContent, normalizeExcerpt } from './content.js';
+import { normalizeContentFormat, normalizeExcerpt, type ContentFormat } from './content.js';
+import { sanitizeStoredContent } from './contentQuality.js';
 import { isR2Enabled } from './site.js';
 
 function normalizeText(value?: string | null) {
@@ -22,7 +23,7 @@ export function resolvePublicAsset(assetPath?: string | null) {
 }
 
 function shouldDropImage(url: string, alt: string) {
-    if (/^图片说明$/u.test(alt.trim())) {
+    if (/^image$/i.test(alt.trim()) || /^placeholder$/i.test(alt.trim())) {
         return true;
     }
 
@@ -33,15 +34,12 @@ function shouldDropImage(url: string, alt: string) {
     return false;
 }
 
-export function sanitizePostContent(content: string) {
-    if (looksLikeHtmlContent(content)) {
-        const stripped = content
-            .replace(/<script[\s\S]*?<\/script>/gi, '')
-            .replace(/<style[\s\S]*?<\/style>/gi, '')
-            .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*')/gi, '')
-            .replace(/\sstyle\s*=\s*(?:"[^"]*"|'[^']*')/gi, '');
+export function sanitizePostContent(content: string, format?: ContentFormat | string | null) {
+    const contentFormat = normalizeContentFormat(format);
+    const sanitized = sanitizeStoredContent(content, contentFormat);
 
-        return stripped.replace(/<img\b([^>]*)\bsrc=(["'])([^"']+)\2([^>]*)>/gi, (match, before, _quote, url, after) => {
+    if (contentFormat === 'html') {
+        return sanitized.replace(/<img\b([^>]*)\bsrc=(["'])([^"']+)\2([^>]*)>/gi, (match, before, _quote, url, after) => {
             const attrs = `${before} ${after}`;
             const altMatch = /\balt=(["'])(.*?)\1/i.exec(attrs);
             const alt = altMatch?.[2] || '';
@@ -49,26 +47,11 @@ export function sanitizePostContent(content: string) {
         });
     }
 
-    const withoutBrokenImages = content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) =>
+    const withoutBrokenImages = sanitized.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) =>
         shouldDropImage(String(url).trim(), String(alt).trim()) ? '' : match,
     );
 
-    const filteredLines = withoutBrokenImages
-        .split(/\r?\n/)
-        .filter((line) => {
-            const value = line.trim();
-            if (!value) {
-                return true;
-            }
-
-            return ![
-                /^文件已保存[:：]/u,
-                /^你先看[，,]/u,
-                /^没问题后我继续走[:：]/u,
-            ].some((pattern) => pattern.test(value));
-        });
-
-    return filteredLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    return withoutBrokenImages.trim();
 }
 
 export function formatPublicPost<
@@ -76,17 +59,20 @@ export function formatPublicPost<
         title: string;
         excerpt: string;
         content: string;
+        contentFormat?: string | null;
         deck?: string | null;
         coverImage?: string | null;
         tags?: Array<{ tag?: unknown } | unknown>;
     },
 >(post: T) {
-    const content = sanitizePostContent(post.content);
+    const contentFormat = normalizeContentFormat(post.contentFormat);
+    const content = sanitizePostContent(post.content, contentFormat);
 
     return {
         ...post,
         content,
-        excerpt: normalizeExcerpt(post.excerpt, content, post.title),
+        contentFormat,
+        excerpt: normalizeExcerpt(post.excerpt, content, post.title, contentFormat),
         deck: normalizeText(post.deck) || null,
         coverImage: resolvePublicAsset(post.coverImage),
         tags: Array.isArray(post.tags)
@@ -128,11 +114,7 @@ export function isPublicProjectReady<
     const summary = normalizeText(project.summary) || normalizeText(project.description);
     const description = normalizeText(project.description);
 
-    return Boolean(
-        normalizeText(project.name) &&
-            summary.length >= 16 &&
-            description.length >= 32,
-    );
+    return Boolean(normalizeText(project.name) && summary.length >= 16 && description.length >= 32);
 }
 
 export function formatPublicSeries<
@@ -171,11 +153,13 @@ export function isPublicPostReady<
         title: string;
         excerpt: string;
         content: string;
+        contentFormat?: string | null;
         deck?: string | null;
     },
 >(post: T) {
-    const content = sanitizePostContent(post.content);
-    const excerpt = normalizeExcerpt(post.excerpt, content, post.title);
+    const contentFormat = normalizeContentFormat(post.contentFormat);
+    const content = sanitizePostContent(post.content, contentFormat);
+    const excerpt = normalizeExcerpt(post.excerpt, content, post.title, contentFormat);
     const deck = normalizeText(post.deck);
 
     return Boolean(normalizeText(post.title) && (deck.length >= 16 || excerpt.length >= 24));

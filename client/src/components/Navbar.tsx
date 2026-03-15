@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
+import { resolveAvatarUrl } from '../lib/avatars';
 import SiteIcon from './SiteIcon';
 import ThemeToggle from './ThemeToggle';
 
@@ -13,11 +14,84 @@ interface NavbarProps {
 export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
     const location = useLocation();
     const [open, setOpen] = useState(false);
+    const drawerRef = useRef<HTMLDivElement | null>(null);
+    const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
     const { user, logout } = useAuth();
 
     useEffect(() => {
         setOpen(false);
     }, [location.pathname]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const getFocusable = () => {
+            const root = drawerRef.current;
+            if (!root) {
+                return [] as HTMLElement[];
+            }
+
+            const focusableSelector = [
+                'a[href]',
+                'button:not([disabled])',
+                'input:not([disabled])',
+                'select:not([disabled])',
+                'textarea:not([disabled])',
+                '[tabindex]:not([tabindex=\"-1\"])',
+            ].join(',');
+
+            return Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((item) => item.getClientRects().length > 0);
+        };
+
+        getFocusable()[0]?.focus();
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                setOpen(false);
+                return;
+            }
+
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            const items = getFocusable();
+            if (items.length === 0) {
+                return;
+            }
+
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement as HTMLElement | null;
+
+            if (event.shiftKey) {
+                if (!active || active === first) {
+                    event.preventDefault();
+                    last.focus();
+                }
+                return;
+            }
+
+            if (active === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            document.body.style.overflow = previousOverflow;
+            mobileToggleRef.current?.focus();
+        };
+    }, [open]);
 
     const navLinks = useMemo(
         () =>
@@ -75,7 +149,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     {isAdmin ? (
                         <>
                             <Link to="/account" className="action-chip desktop-only">
-                                <SiteIcon name="user" size={14} />
+                                <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                 <span>{accountLabel}</span>
                             </Link>
                             <Link to="/editor" className="action-chip desktop-only">
@@ -94,7 +168,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                     ) : isAuthenticated ? (
                         <>
                             <Link to="/account" className="action-chip desktop-only">
-                                <SiteIcon name="user" size={14} />
+                                <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                 <span>{accountLabel}</span>
                             </Link>
                             <button type="button" className="action-chip desktop-only" onClick={() => void logout()}>
@@ -115,7 +189,9 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                         type="button"
                         className="icon-button mobile-only"
                         aria-label={open ? '关闭导航菜单' : '打开导航菜单'}
+                        aria-controls="mobile-nav-drawer"
                         aria-expanded={open}
+                        ref={mobileToggleRef}
                         onClick={() => setOpen((value) => !value)}
                     >
                         <SiteIcon name={open ? 'close' : 'menu'} size={16} />
@@ -127,7 +203,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
 
             {open ? (
                 <div className="container nav-drawer-shell">
-                    <div className="nav-drawer">
+                    <div className="nav-drawer" id="mobile-nav-drawer" ref={drawerRef}>
                         <div className="drawer-head">
                             <span className="eyebrow">Navigation</span>
                             <p className="muted">从这里进入文章、项目与作者页。</p>
@@ -141,7 +217,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                             {isAdmin ? (
                                 <>
                                     <Link to="/account" className="action-chip">
-                                        <SiteIcon name="user" size={14} />
+                                        <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                         <span>{accountLabel}</span>
                                     </Link>
                                     <Link to="/editor" className="action-chip">
@@ -160,7 +236,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                             ) : isAuthenticated ? (
                                 <>
                                     <Link to="/account" className="action-chip">
-                                        <SiteIcon name="user" size={14} />
+                                        <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                         <span>{accountLabel}</span>
                                     </Link>
                                     <button type="button" className="action-chip" onClick={() => void logout()}>

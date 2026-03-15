@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import SEO from '../../components/SEO';
 import { useAuth } from '../../hooks/useAuth';
+import { resolveAvatarUrl } from '../../lib/avatars';
 
 const accountNav = [
     { to: '/account', label: '账户资料', exact: true },
@@ -20,6 +21,13 @@ export default function AccountLayout() {
                 <div className="container account-layout">
                     <aside className="account-sidebar">
                         <div className="feature-panel">
+                            {user ? (
+                                <div className="profile-avatar-panel account-avatar-panel">
+                                    <div className="profile-avatar-preview">
+                                        <img src={resolveAvatarUrl(user.avatarUrl, user.id)} alt={user.name || '账户头像'} />
+                                    </div>
+                                </div>
+                            ) : null}
                             <div className="eyebrow">Member</div>
                             <h1 className="section-title">{user?.name || '会员中心'}</h1>
                             <p className="muted">{user?.email}</p>

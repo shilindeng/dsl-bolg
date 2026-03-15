@@ -1,4 +1,10 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@playwright/test';
+
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const e2eDatabasePath = path.resolve(configDir, '../server/prisma/e2e.db').replace(/\\/g, '/');
+const e2eDatabaseUrl = `file:${e2eDatabasePath}`;
 
 export default defineConfig({
     testDir: './e2e',
@@ -37,7 +43,7 @@ export default defineConfig({
     ],
     webServer: [
         {
-            command: 'powershell.exe -Command "cd ../server; npm run db:push -- --accept-data-loss; npm run db:seed; npm run start"',
+            command: `powershell.exe -Command "cd ../server; $env:DATABASE_URL='${e2eDatabaseUrl}'; npm run db:push -- --accept-data-loss --force-reset; npm run db:seed; npm run start"`,
             url: 'http://127.0.0.1:3001/api/health',
             reuseExistingServer: true,
             stdout: 'pipe',

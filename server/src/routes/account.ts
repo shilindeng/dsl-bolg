@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, type AuthenticatedRequest } from '../middleware/auth.js';
 import { formatPost, includePostRelations } from '../lib/posts.js';
+import { accountProfileSchema, formatZodError, isZodError, parseBody } from '../lib/schemas.js';
 
 const router = Router();
 
@@ -42,11 +43,7 @@ router.get('/profile', async (req: Request, res: Response) => {
 
 router.patch('/profile', async (req: Request, res: Response) => {
     try {
-        const { name, avatarUrl, bio } = req.body as {
-            name?: string;
-            avatarUrl?: string | null;
-            bio?: string | null;
-        };
+        const { name, avatarUrl, bio } = parseBody(accountProfileSchema, req.body);
 
         const user = await prisma.user.update({
             where: { id: getUserId(req) },
@@ -71,6 +68,10 @@ router.patch('/profile', async (req: Request, res: Response) => {
         res.json(user);
     } catch (error) {
         console.error('Account profile update error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to update account profile' });
     }
 });

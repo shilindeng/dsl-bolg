@@ -1,9 +1,7 @@
-import { Children, isValidElement, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
 import { addBookmark, fetchPost, fetchSeriesDetail, likePost, removeBookmark, type Comment, type Post, type SeriesDetail } from '../api/client';
+import ArticleContent from '../components/ArticleContent';
 import Comments from '../components/Comments';
 import LazyImage from '../components/LazyImage';
 import NewsletterSignup from '../components/NewsletterSignup';
@@ -14,50 +12,8 @@ import SiteIcon from '../components/SiteIcon';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
-import { buildHeadingId, createHeadingIdResolver, looksLikeHtmlContent } from '../lib/content';
 import { formatDate } from '../lib/format';
 import 'highlight.js/styles/github.css';
-
-function enhanceArticleHtml(content: string) {
-    if (typeof window === 'undefined' || !looksLikeHtmlContent(content)) {
-        return content;
-    }
-
-    const documentFragment = new window.DOMParser().parseFromString(content, 'text/html');
-    const counts = new Map<string, number>();
-    let fallbackIndex = 0;
-
-    documentFragment.querySelectorAll('h2, h3, h4').forEach((heading) => {
-        const text = heading.textContent?.trim() || '';
-        const base = buildHeadingId(text) || `section-${++fallbackIndex}`;
-        const currentCount = counts.get(base) || 0;
-        const nextCount = currentCount + 1;
-        counts.set(base, nextCount);
-        heading.id = nextCount === 1 ? base : `${base}-${nextCount}`;
-    });
-
-    documentFragment.querySelectorAll('img').forEach((image) => {
-        image.setAttribute('loading', 'lazy');
-    });
-
-    return documentFragment.body.innerHTML;
-}
-
-function extractNodeText(node: ReactNode): string {
-    if (typeof node === 'string' || typeof node === 'number') {
-        return String(node);
-    }
-
-    if (Array.isArray(node)) {
-        return node.map((item) => extractNodeText(item)).join(' ');
-    }
-
-    if (isValidElement(node)) {
-        return extractNodeText((node.props as { children?: ReactNode }).children);
-    }
-
-    return '';
-}
 
 export default function BlogPost() {
     const { slug } = useParams<{ slug: string }>();
@@ -70,13 +26,7 @@ export default function BlogPost() {
     const [bookmarking, setBookmarking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
     const [seriesDetail, setSeriesDetail] = useState<SeriesDetail | null>(null);
-    const articleContent = post?.content || '';
-    const isHtmlArticle = looksLikeHtmlContent(articleContent);
-    const renderedHtml = useMemo(
-        () => (isHtmlArticle ? enhanceArticleHtml(articleContent) : ''),
-        [articleContent, isHtmlArticle],
-    );
-    const resolveMarkdownHeadingId = createHeadingIdResolver();
+    const [activeHeading, setActiveHeading] = useState<string>('');
 
     useEffect(() => {
         if (!slug) return;
@@ -121,6 +71,44 @@ export default function BlogPost() {
             cancelled = true;
         };
     }, [post?.series?.slug]);
+
+    useEffect(() => {
+        const toc = post?.toc;
+        if (!toc?.length) {
+            setActiveHeading('');
+            return;
+        }
+
+        const ids = toc.map((item) => item.id).filter(Boolean);
+        const elements = ids
+            .map((id) => document.getElementById(id))
+            .filter((item): item is HTMLElement => Boolean(item));
+
+        if (!elements.length) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries
+                    .filter((entry) => entry.isIntersecting)
+                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+                const next = visible[0]?.target as HTMLElement | undefined;
+                if (next?.id) {
+                    setActiveHeading(next.id);
+                }
+            },
+            {
+                root: null,
+                threshold: [0, 0.1],
+                rootMargin: '-18% 0px -72% 0px',
+            },
+        );
+
+        elements.forEach((element) => observer.observe(element));
+        return () => observer.disconnect();
+    }, [post?.slug, post?.toc]);
 
     const handleLike = async () => {
         if (!post || liking) return;
@@ -349,55 +337,7 @@ export default function BlogPost() {
                 <div className="container article-layout">
                     <article className="article-main">
                         <div className="article-prose-shell">
-                            <div className="markdown-body article-rich-body" data-testid="article-content">
-                                {isHtmlArticle ? (
-                                    <div className="article-html-body" dangerouslySetInnerHTML={{ __html: renderedHtml }} />
-                                ) : (
-                                    <Markdown
-                                        remarkPlugins={[remarkGfm]}
-                                        rehypePlugins={[rehypeHighlight]}
-                                        components={{
-                                            h2: ({ children }) => {
-                                                const text = extractNodeText(Children.toArray(children)).trim();
-                                                const id = resolveMarkdownHeadingId(text);
-                                                return (
-                                                    <h2 id={id}>
-                                                        <a href={`#${id}`}>{children}</a>
-                                                    </h2>
-                                                );
-                                            },
-                                            h3: ({ children }) => {
-                                                const text = extractNodeText(Children.toArray(children)).trim();
-                                                const id = resolveMarkdownHeadingId(text);
-                                                return (
-                                                    <h3 id={id}>
-                                                        <a href={`#${id}`}>{children}</a>
-                                                    </h3>
-                                                );
-                                            },
-                                            h4: ({ children }) => {
-                                                const text = extractNodeText(Children.toArray(children)).trim();
-                                                const id = resolveMarkdownHeadingId(text);
-                                                return (
-                                                    <h4 id={id}>
-                                                        <a href={`#${id}`}>{children}</a>
-                                                    </h4>
-                                                );
-                                            },
-                                            img: ({ alt, ...props }) => (
-                                                <figure>
-                                                    <div className="article-inline-media">
-                                                        <LazyImage {...props} src={props.src || ''} alt={alt} />
-                                                    </div>
-                                                    {alt ? <figcaption>{alt}</figcaption> : null}
-                                                </figure>
-                                            ),
-                                        }}
-                                    >
-                                        {post.content}
-                                    </Markdown>
-                                )}
-                            </div>
+                            <ArticleContent content={post.content} contentFormat={post.contentFormat} testId="article-content" />
                         </div>
 
                         <div className="article-actions-shell">
@@ -432,7 +372,7 @@ export default function BlogPost() {
                                         onClick={() => void handleBookmarkToggle()}
                                         disabled={bookmarking}
                                     >
-                                        <SiteIcon name="inbox" size={14} />
+                                        <SiteIcon name={post.viewerState?.bookmarked ? 'lucide:bookmark-check' : 'lucide:bookmark'} size={14} />
                                         <span>{bookmarking ? '处理中' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}</span>
                                     </button>
                                 ) : (
@@ -503,7 +443,13 @@ export default function BlogPost() {
                                 <strong>目录</strong>
                                 <div className="toc-list" data-testid="post-toc">
                                     {post.toc.map((item) => (
-                                        <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
+                                        <a
+                                            key={item.id}
+                                            href={`#${item.id}`}
+                                            className={item.id === activeHeading ? 'is-active' : undefined}
+                                            aria-current={item.id === activeHeading ? 'location' : undefined}
+                                            style={{ paddingLeft: `${(item.level - 2) * 12}px` }}
+                                        >
                                             {item.text}
                                         </a>
                                     ))}

@@ -5,7 +5,17 @@ import { authMiddleware, requireAdmin, type AuthenticatedRequest } from '../midd
 import { createEmailToken, consumeEmailToken } from '../lib/authTokens.js';
 import { buildSiteUrl, sendMail } from '../lib/email.js';
 import { verifyTurnstileToken } from '../lib/turnstile.js';
-import { enqueueNewsletterIssue, isNewsletterIssueQueued } from '../lib/newsletterQueue.js';
+import { enqueueNewsletterIssue } from '../lib/newsletterWorker.js';
+import {
+    formatZodError,
+    isZodError,
+    newsletterConfirmSchema,
+    newsletterIssueCreateSchema,
+    newsletterIssueUpdateSchema,
+    newsletterSubscribeSchema,
+    newsletterUnsubscribeSchema,
+    parseBody,
+} from '../lib/schemas.js';
 
 const router = Router();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -27,16 +37,7 @@ async function resolveIssueSlug(input: string, excludeId?: number) {
 
 router.post('/subscribe', async (req: Request, res: Response) => {
     try {
-        const { email, turnstileToken, source } = req.body as {
-            email?: string;
-            turnstileToken?: string;
-            source?: string;
-        };
-
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
+        const { email, turnstileToken, source } = parseBody(newsletterSubscribeSchema, req.body);
 
         const validTurnstile = await verifyTurnstileToken(turnstileToken, req.ip);
         if (!validTurnstile) {
@@ -83,18 +84,17 @@ router.post('/subscribe', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Newsletter subscribe error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to subscribe to newsletter' });
     }
 });
 
 router.post('/confirm', async (req: Request, res: Response) => {
     try {
-        const { email, token } = req.body as { email?: string; token?: string };
-
-        if (!email || !token) {
-            res.status(400).json({ error: 'Email and token are required' });
-            return;
-        }
+        const { email, token } = parseBody(newsletterConfirmSchema, req.body);
 
         const tokenRecord = await consumeEmailToken({
             email,
@@ -124,17 +124,17 @@ router.post('/confirm', async (req: Request, res: Response) => {
         res.json(subscriber);
     } catch (error) {
         console.error('Newsletter confirm error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to confirm newsletter subscription' });
     }
 });
 
 router.post('/unsubscribe', async (req: Request, res: Response) => {
     try {
-        const { email, token } = req.body as { email?: string; token?: string };
-        if (!email || !token) {
-            res.status(400).json({ error: 'Email and token are required' });
-            return;
-        }
+        const { email, token } = parseBody(newsletterUnsubscribeSchema, req.body);
 
         const tokenRecord = await consumeEmailToken({
             email,
@@ -158,6 +158,10 @@ router.post('/unsubscribe', async (req: Request, res: Response) => {
         res.json(subscriber);
     } catch (error) {
         console.error('Newsletter unsubscribe error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to unsubscribe from newsletter' });
     }
 });
@@ -223,19 +227,7 @@ router.get('/admin/issues', authMiddleware, requireAdmin, async (_req: Request, 
 
 router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { title, slug, subject, previewText, bodyMarkdown, status } = req.body as {
-            title?: string;
-            slug?: string;
-            subject?: string;
-            previewText?: string;
-            bodyMarkdown?: string;
-            status?: string;
-        };
-
-        if (!title || !subject || !bodyMarkdown) {
-            res.status(400).json({ error: 'Title, subject and content are required' });
-            return;
-        }
+        const { title, slug, subject, previewText, bodyMarkdown, status } = parseBody(newsletterIssueCreateSchema, req.body);
 
         const issue = await prisma.newsletterIssue.create({
             data: {
@@ -252,6 +244,10 @@ router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, 
         res.status(201).json(issue);
     } catch (error) {
         console.error('Newsletter issue create error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to create newsletter issue' });
     }
 });
@@ -259,14 +255,7 @@ router.post('/admin/issues', authMiddleware, requireAdmin, async (req: Request, 
 router.put('/admin/issues/:id', authMiddleware, requireAdmin, async (req: Request, res: Response) => {
     try {
         const id = parseInt(String(req.params.id), 10);
-        const { title, slug, subject, previewText, bodyMarkdown, status } = req.body as {
-            title?: string;
-            slug?: string;
-            subject?: string;
-            previewText?: string;
-            bodyMarkdown?: string;
-            status?: string;
-        };
+        const { title, slug, subject, previewText, bodyMarkdown, status } = parseBody(newsletterIssueUpdateSchema, req.body);
 
         const existing = await prisma.newsletterIssue.findUnique({ where: { id } });
         if (!existing) {
@@ -289,6 +278,10 @@ router.put('/admin/issues/:id', authMiddleware, requireAdmin, async (req: Reques
         res.json(issue);
     } catch (error) {
         console.error('Newsletter issue update error:', error);
+        if (isZodError(error)) {
+            res.status(400).json(formatZodError(error));
+            return;
+        }
         res.status(500).json({ error: 'Failed to update newsletter issue' });
     }
 });
@@ -302,22 +295,17 @@ router.post('/admin/issues/:id/send', authMiddleware, requireAdmin, async (req: 
             return;
         }
 
-        if (isNewsletterIssueQueued(issue.id)) {
-            res.status(409).json({ error: 'Newsletter issue is already queued for delivery' });
-            return;
-        }
-
-        const updatedIssue = await prisma.newsletterIssue.update({
+        await enqueueNewsletterIssue(issue.id);
+        const updatedIssue = await prisma.newsletterIssue.findUnique({
             where: { id: issue.id },
-            data: {
-                status: 'queued',
-                sentAt: null,
-            },
+            include: { deliveries: true },
         });
 
-        enqueueNewsletterIssue(issue.id);
-
-        res.json({ issue: updatedIssue, message: 'Newsletter issue queued for delivery' });
+        res.json({
+            issue: updatedIssue,
+            queued: updatedIssue?.deliveries.length || 0,
+            deliveries: updatedIssue?.deliveries || [],
+        });
     } catch (error) {
         console.error('Newsletter send error:', error);
         res.status(500).json({ error: 'Failed to send newsletter issue' });
