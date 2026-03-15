@@ -49,11 +49,14 @@ function PublicLayout() {
 
     return (
         <div className="app-shell">
+            <a className="skip-link" href="#main-content">
+                跳到内容
+            </a>
             <ScrollManager />
             <Navbar isAdmin={isAdmin} isAuthenticated={isAuthenticated} />
             <CommandPalette isAdmin={isAdmin} />
 
-            <main className="page-shell">
+            <main id="main-content" className="page-shell" tabIndex={-1}>
                 <Suspense fallback={<RouteFallback />}>
                     <Outlet />
                 </Suspense>

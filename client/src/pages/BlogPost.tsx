@@ -26,6 +26,7 @@ export default function BlogPost() {
     const [bookmarking, setBookmarking] = useState(false);
     const [queueCount, setQueueCount] = useState(0);
     const [seriesDetail, setSeriesDetail] = useState<SeriesDetail | null>(null);
+    const [activeHeading, setActiveHeading] = useState<string>('');
 
     useEffect(() => {
         if (!slug) return;
@@ -70,6 +71,44 @@ export default function BlogPost() {
             cancelled = true;
         };
     }, [post?.series?.slug]);
+
+    useEffect(() => {
+        const toc = post?.toc;
+        if (!toc?.length) {
+            setActiveHeading('');
+            return;
+        }
+
+        const ids = toc.map((item) => item.id).filter(Boolean);
+        const elements = ids
+            .map((id) => document.getElementById(id))
+            .filter((item): item is HTMLElement => Boolean(item));
+
+        if (!elements.length) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries
+                    .filter((entry) => entry.isIntersecting)
+                    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+                const next = visible[0]?.target as HTMLElement | undefined;
+                if (next?.id) {
+                    setActiveHeading(next.id);
+                }
+            },
+            {
+                root: null,
+                threshold: [0, 0.1],
+                rootMargin: '-18% 0px -72% 0px',
+            },
+        );
+
+        elements.forEach((element) => observer.observe(element));
+        return () => observer.disconnect();
+    }, [post?.slug, post?.toc]);
 
     const handleLike = async () => {
         if (!post || liking) return;
@@ -333,7 +372,7 @@ export default function BlogPost() {
                                         onClick={() => void handleBookmarkToggle()}
                                         disabled={bookmarking}
                                     >
-                                        <SiteIcon name="inbox" size={14} />
+                                        <SiteIcon name={post.viewerState?.bookmarked ? 'lucide:bookmark-check' : 'lucide:bookmark'} size={14} />
                                         <span>{bookmarking ? '处理中' : post.viewerState?.bookmarked ? '取消收藏' : '收藏文章'}</span>
                                     </button>
                                 ) : (
@@ -404,7 +443,13 @@ export default function BlogPost() {
                                 <strong>目录</strong>
                                 <div className="toc-list" data-testid="post-toc">
                                     {post.toc.map((item) => (
-                                        <a key={item.id} href={`#${item.id}`} style={{ paddingLeft: `${(item.level - 2) * 12}px` }}>
+                                        <a
+                                            key={item.id}
+                                            href={`#${item.id}`}
+                                            className={item.id === activeHeading ? 'is-active' : undefined}
+                                            aria-current={item.id === activeHeading ? 'location' : undefined}
+                                            style={{ paddingLeft: `${(item.level - 2) * 12}px` }}
+                                        >
                                             {item.text}
                                         </a>
                                     ))}

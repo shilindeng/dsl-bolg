@@ -1,6 +1,7 @@
 import type { CSSProperties, SVGProps } from 'react';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 
-export type SiteIconName =
+type InlineIconName =
     | 'arrow-right'
     | 'book-open'
     | 'briefcase'
@@ -34,13 +35,23 @@ export type SiteIconName =
     | 'warning'
     | 'x';
 
+const lucideIconRegistry = {
+    bookmark: Bookmark,
+    'bookmark-check': BookmarkCheck,
+} as const;
+
+type LucideRegistryName = keyof typeof lucideIconRegistry;
+type LucideIconName = `lucide:${LucideRegistryName}`;
+
+export type SiteIconName = InlineIconName | LucideIconName;
+
 interface SiteIconProps extends SVGProps<SVGSVGElement> {
     name: SiteIconName;
     size?: number;
     strokeWidth?: number;
 }
 
-function IconPath({ name }: { name: SiteIconName }) {
+function IconPath({ name }: { name: InlineIconName }) {
     switch (name) {
         case 'arrow-right':
             return <path d="M5 12H19M12 5L19 12L12 19" />;
@@ -257,6 +268,26 @@ export default function SiteIcon({
     style,
     ...props
 }: SiteIconProps) {
+    if (name.startsWith('lucide:')) {
+        const key = name.slice('lucide:'.length) as LucideRegistryName;
+        const LucideIcon = lucideIconRegistry[key];
+
+        if (LucideIcon) {
+            return (
+                <LucideIcon
+                    width={size}
+                    height={size}
+                    strokeWidth={strokeWidth}
+                    aria-hidden="true"
+                    style={style as CSSProperties}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    {...(props as unknown as SVGProps<SVGSVGElement>)}
+                />
+            );
+        }
+    }
+
     return (
         <svg
             viewBox="0 0 24 24"
@@ -271,7 +302,7 @@ export default function SiteIcon({
             style={style as CSSProperties}
             {...props}
         >
-            <IconPath name={name} />
+            <IconPath name={name as InlineIconName} />
         </svg>
     );
 }

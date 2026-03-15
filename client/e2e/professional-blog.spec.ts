@@ -23,6 +23,17 @@ async function loginAsAdmin(page: Page) {
     await expect(page).toHaveURL(/\/admin\/dashboard$/);
 }
 
+async function setTheme(page: Page, theme: 'light' | 'dark') {
+    const current = await page.evaluate(() => document.documentElement.getAttribute('data-theme') || 'light');
+    if (current === theme) {
+        return;
+    }
+
+    const toggleLabel = theme === 'dark' ? '切换到深色模式' : '切换到浅色模式';
+    await page.getByRole('button', { name: toggleLabel }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+}
+
 test('desktop smoke covers public navigation and reading flow', async ({ page, context }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop-chromium');
 
@@ -30,12 +41,15 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
 
     await page.goto('/');
     await expect(page.getByTestId('home-hero')).toBeVisible();
-    await saveScreenshot(page, testInfo, 'home');
+    await setTheme(page, 'light');
+    await saveScreenshot(page, testInfo, 'home-light');
+    await setTheme(page, 'dark');
+    await saveScreenshot(page, testInfo, 'home-dark');
 
     await page.goto('/blog');
     await expect(page.getByTestId('blog-search-input')).toBeVisible();
     await expect(page.locator('[data-testid^="post-card-"]').first()).toBeVisible();
-    await saveScreenshot(page, testInfo, 'blog');
+    await saveScreenshot(page, testInfo, 'blog-dark');
 
     await page.locator('[data-testid^="post-card-"]').first().click();
     await expect(page).toHaveURL(/\/blog\/.+/);
@@ -44,7 +58,38 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await expect(page.getByTestId('post-toc')).toBeVisible();
     await page.getByTestId('article-copy-link-button').click();
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('/blog/');
-    await saveScreenshot(page, testInfo, 'article');
+    await saveScreenshot(page, testInfo, 'article-dark');
+
+    await page.goto('/projects');
+    await expect(page.getByRole('heading', { name: '项目与案例' })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'projects-dark');
+
+    await page.goto('/about');
+    await expect(page.getByRole('heading', { name: 'DSL' })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'about-dark');
+
+    await page.goto('/login');
+    await expect(page.getByRole('heading', { name: /登录/ })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'login-dark');
+});
+
+test('mobile smoke captures key public pages', async ({ page, context }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile-chromium');
+
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+    await page.goto('/');
+    await expect(page.getByTestId('home-hero')).toBeVisible();
+    await setTheme(page, 'dark');
+    await saveScreenshot(page, testInfo, 'home-mobile-dark');
+
+    await page.goto('/blog');
+    await expect(page.getByTestId('blog-search-input')).toBeVisible();
+    await saveScreenshot(page, testInfo, 'blog-mobile-dark');
+
+    await page.locator('[data-testid^="post-card-"]').first().click();
+    await expect(page.getByTestId('article-content')).toBeVisible();
+    await saveScreenshot(page, testInfo, 'article-mobile-dark');
 });
 
 test('desktop admin smoke covers new admin pages and editor modes', async ({ page }, testInfo) => {

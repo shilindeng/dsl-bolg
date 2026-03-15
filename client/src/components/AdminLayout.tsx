@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
@@ -36,10 +36,83 @@ export default function AdminLayout() {
     const location = useLocation();
     const { user, logout } = useAuth();
     const [open, setOpen] = useState(false);
+    const sidebarRef = useRef<HTMLElement | null>(null);
+    const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
         setOpen(false);
     }, [location.pathname]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        const getFocusable = () => {
+            const root = sidebarRef.current;
+            if (!root) {
+                return [] as HTMLElement[];
+            }
+
+            const focusableSelector = [
+                'a[href]',
+                'button:not([disabled])',
+                'input:not([disabled])',
+                'select:not([disabled])',
+                'textarea:not([disabled])',
+                '[tabindex]:not([tabindex=\"-1\"])',
+            ].join(',');
+
+            return Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((item) => item.getClientRects().length > 0);
+        };
+
+        getFocusable()[0]?.focus();
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                setOpen(false);
+                return;
+            }
+
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            const items = getFocusable();
+            if (items.length === 0) {
+                return;
+            }
+
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement as HTMLElement | null;
+
+            if (event.shiftKey) {
+                if (!active || active === first) {
+                    event.preventDefault();
+                    last.focus();
+                }
+                return;
+            }
+
+            if (active === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            document.body.style.overflow = previousOverflow;
+            mobileToggleRef.current?.focus();
+        };
+    }, [open]);
 
     const activePath = location.pathname;
     const activeTitle = useMemo(() => {
@@ -90,7 +163,9 @@ export default function AdminLayout() {
                             type="button"
                             className="icon-button admin-mobile-toggle"
                             aria-label={open ? '关闭后台导航' : '打开后台导航'}
+                            aria-controls="admin-nav-drawer"
                             aria-expanded={open}
+                            ref={mobileToggleRef}
                             onClick={() => setOpen((value) => !value)}
                         >
                             <SiteIcon name={open ? 'close' : 'menu'} size={16} />
@@ -102,7 +177,12 @@ export default function AdminLayout() {
             {open ? <div className="admin-backdrop" onClick={() => setOpen(false)} /> : null}
 
             <div className="admin-layout">
-                <aside className={`feature-panel admin-sidebar ${open ? 'is-open' : ''}`} aria-label="后台导航">
+                <aside
+                    className={`feature-panel admin-sidebar ${open ? 'is-open' : ''}`}
+                    id="admin-nav-drawer"
+                    ref={sidebarRef}
+                    aria-label="后台导航"
+                >
                     <div className="admin-nav-head">
                         <span className="eyebrow">Workbench</span>
                         <p className="muted">把总览、首页、内容和分发工具拆开，后台信息结构更清楚。</p>
