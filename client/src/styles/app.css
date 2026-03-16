@@ -4599,7 +4599,9 @@ body::after {
 
 .home-collaboration-band {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
+  align-items: start;
 }
 
 .home-collaboration-item,
@@ -4610,6 +4612,13 @@ body::after {
   align-items: start;
   padding-top: 0.85rem;
   border-top: 1px solid var(--border);
+}
+
+.home-collaboration-band > *,
+.home-collaboration-item > div,
+.about-collaboration-item > div,
+.home-focus-panel > * {
+  min-width: 0;
 }
 
 .home-collaboration-item:first-child,
