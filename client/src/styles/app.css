@@ -4284,3 +4284,221 @@ body::after {
   border: 1px solid var(--border-strong);
 }
 }
+
+.archive-entry-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.archive-ledger-grid,
+.taxonomy-directory-grid,
+.taxonomy-detail-grid,
+.archive-structure-grid,
+.taxonomy-detail-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.archive-ledger-grid,
+.taxonomy-detail-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  align-items: start;
+}
+
+.archive-ledger-copy,
+.archive-ledger-side,
+.taxonomy-detail-main,
+.taxonomy-detail-aside {
+  display: grid;
+  gap: 1rem;
+}
+
+.archive-hero-actions,
+.taxonomy-directory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.archive-ledger-panel,
+.taxonomy-summary-card,
+.taxonomy-detail-panel,
+.archive-aside-card,
+.archive-highlight-card {
+  overflow: hidden;
+}
+
+.archive-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.archive-summary-note {
+  margin: 0;
+}
+
+.archive-highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.archive-structure-grid,
+.taxonomy-detail-shell {
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  align-items: start;
+}
+
+.archive-year-stack,
+.archive-month-stack,
+.archive-ledger-list,
+.taxonomy-directory-shell,
+.taxonomy-card-grid,
+.archive-taxonomy-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.archive-year-heading,
+.archive-month-head,
+.taxonomy-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.archive-year-heading h2 {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+}
+
+.archive-month-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.archive-ledger-row,
+.archive-taxonomy-row,
+.taxonomy-card {
+  display: grid;
+  gap: 0.65rem;
+  transition:
+    transform var(--motion-med) var(--ease-out),
+    border-color var(--motion-med) var(--ease-out),
+    box-shadow var(--motion-med) var(--ease-out);
+}
+
+.archive-ledger-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.archive-ledger-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.archive-ledger-row:hover,
+.archive-taxonomy-row:hover,
+.taxonomy-card:hover {
+  transform: translateY(-2px);
+}
+
+.archive-ledger-row strong,
+.taxonomy-card strong {
+  display: block;
+  color: var(--text-strong);
+}
+
+.archive-ledger-row p,
+.taxonomy-card p,
+.archive-mini-link p {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+}
+
+.archive-ledger-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.archive-taxonomy-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.archive-taxonomy-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.archive-mini-link {
+  gap: 0.4rem;
+}
+
+.archive-tag-cloud {
+  gap: 0.6rem;
+}
+
+.taxonomy-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.taxonomy-card {
+  min-height: 180px;
+  padding: 1.1rem;
+}
+
+.taxonomy-directory-grid {
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr);
+  align-items: start;
+}
+
+.taxonomy-directory-shell {
+  gap: 1.25rem;
+}
+
+.archive-inline-link {
+  white-space: nowrap;
+}
+
+@media (max-width: 1024px) {
+  .archive-ledger-grid,
+  .taxonomy-directory-grid,
+  .taxonomy-detail-grid,
+  .archive-structure-grid,
+  .taxonomy-detail-shell,
+  .taxonomy-card-grid,
+  .archive-highlights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .archive-year-heading,
+  .archive-month-head,
+  .taxonomy-card-head,
+  .archive-ledger-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .archive-ledger-meta {
+    justify-content: flex-start;
+  }
+}

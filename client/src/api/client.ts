@@ -22,6 +22,29 @@ export interface PostMeta {
     readTime: number;
 }
 
+export interface ArchiveMonthGroup {
+    month: string;
+    label: string;
+    totalPosts: number;
+    featuredCount: number;
+    posts: Post[];
+}
+
+export interface ArchiveYearGroup {
+    year: string;
+    totalPosts: number;
+    months: ArchiveMonthGroup[];
+}
+
+export interface ArchiveResponse {
+    summary: {
+        totalPosts: number;
+        totalYears: number;
+        lastPublishedAt: string | null;
+    };
+    years: ArchiveYearGroup[];
+}
+
 export interface PostLink {
     slug: string;
     title: string;
@@ -409,6 +432,10 @@ export async function fetchPosts(params?: {
 
 export async function fetchPost(slug: string): Promise<Post> {
     return fetchJson(`${API_BASE}/posts/${slug}`);
+}
+
+export async function fetchArchive(): Promise<ArchiveResponse> {
+    return fetchJson(`${API_BASE}/posts/archive`);
 }
 
 export async function createPost(post: PostInput): Promise<Post> {

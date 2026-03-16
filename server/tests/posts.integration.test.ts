@@ -91,4 +91,27 @@ describe('posts integration', () => {
         expect(detailResponse.body.toc.map((item: { text: string }) => item.text)).toEqual(['Intro', 'Details']);
         expect(detailResponse.body.content).toContain('<h2');
     });
+
+    it('returns archive groups by year and month', async () => {
+        const token = signAdminToken();
+        await request(app)
+            .post('/api/posts')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'Archive article one',
+                contentFormat: 'markdown',
+                content: '# Archive\n\nBody',
+                deck: 'A long enough deck to appear in the archive safely.',
+                excerpt: '',
+                published: true,
+                featured: true,
+                tags: ['archive'],
+            });
+
+        const archiveResponse = await request(app).get('/api/posts/archive');
+        expect(archiveResponse.status).toBe(200);
+        expect(archiveResponse.body.summary.totalPosts).toBeGreaterThan(0);
+        expect(Array.isArray(archiveResponse.body.years)).toBe(true);
+        expect(archiveResponse.body.years[0].months[0].posts[0].slug).toBeTruthy();
+    });
 });

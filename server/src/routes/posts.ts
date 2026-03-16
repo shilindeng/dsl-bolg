@@ -9,6 +9,91 @@ import { createPostSchema, formatZodError, isZodError, parseBody, updatePostSche
 
 const router = Router();
 
+router.get('/archive', async (_req: Request, res: Response) => {
+    try {
+        const posts = await prisma.post.findMany({
+            where: { published: true },
+            include: includePostRelations,
+            orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+        });
+
+        const publicPosts = posts
+            .map((post: Parameters<typeof formatPost>[0]) => formatPost(post))
+            .filter((post) => isPublicPostReady(post));
+
+        const yearMap = new Map<
+            string,
+            {
+                year: string;
+                totalPosts: number;
+                months: Map<
+                    string,
+                    {
+                        month: string;
+                        label: string;
+                        totalPosts: number;
+                        featuredCount: number;
+                        posts: typeof publicPosts;
+                    }
+                >;
+            }
+        >();
+
+        for (const post of publicPosts) {
+            const date = new Date(post.publishedAt || post.createdAt);
+            const year = String(date.getFullYear());
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const label = new Intl.DateTimeFormat('zh-CN', { year: 'numeric', month: 'long' }).format(date);
+
+            if (!yearMap.has(year)) {
+                yearMap.set(year, {
+                    year,
+                    totalPosts: 0,
+                    months: new Map(),
+                });
+            }
+
+            const yearRecord = yearMap.get(year)!;
+            yearRecord.totalPosts += 1;
+
+            if (!yearRecord.months.has(month)) {
+                yearRecord.months.set(month, {
+                    month,
+                    label,
+                    totalPosts: 0,
+                    featuredCount: 0,
+                    posts: [],
+                });
+            }
+
+            const monthRecord = yearRecord.months.get(month)!;
+            monthRecord.totalPosts += 1;
+            monthRecord.featuredCount += post.featured ? 1 : 0;
+            monthRecord.posts.push(post);
+        }
+
+        const years = Array.from(yearMap.values())
+            .sort((left, right) => Number(right.year) - Number(left.year))
+            .map((year) => ({
+                year: year.year,
+                totalPosts: year.totalPosts,
+                months: Array.from(year.months.values()).sort((left, right) => Number(right.month) - Number(left.month)),
+            }));
+
+        res.json({
+            summary: {
+                totalPosts: publicPosts.length,
+                totalYears: years.length,
+                lastPublishedAt: publicPosts[0]?.publishedAt || publicPosts[0]?.createdAt || null,
+            },
+            years,
+        });
+    } catch (error) {
+        console.error('Error fetching post archive:', error);
+        res.status(500).json({ error: 'Failed to fetch post archive' });
+    }
+});
+
 router.get('/', async (req: Request, res: Response) => {
     try {
         const tag = typeof req.query.tag === 'string' ? req.query.tag : undefined;

@@ -56,6 +56,12 @@ export const siteConfig = {
             description: '方法、判断与长期写作归档',
         },
         {
+            label: '归档',
+            to: '/archive',
+            icon: 'calendar',
+            description: '按年份与月份浏览公开文章索引',
+        },
+        {
             label: '专栏',
             to: '/series',
             icon: 'link',

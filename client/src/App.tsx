@@ -14,8 +14,11 @@ import { useAuth } from './hooks/useAuth';
 
 const Blog = lazy(() => import('./pages/Blog'));
 const BlogPost = lazy(() => import('./pages/BlogPost'));
+const Archive = lazy(() => import('./pages/Archive'));
 const Series = lazy(() => import('./pages/Series'));
 const SeriesDetail = lazy(() => import('./pages/SeriesDetail'));
+const TaxonomyDirectory = lazy(() => import('./pages/TaxonomyDirectory'));
+const TaxonomyCollection = lazy(() => import('./pages/TaxonomyCollection'));
 const Editor = lazy(() => import('./pages/Editor'));
 const Projects = lazy(() => import('./pages/Projects'));
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'));
@@ -96,6 +99,11 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogPost />} />
+                        <Route path="/archive" element={<Archive />} />
+                        <Route path="/tags" element={<TaxonomyDirectory kind="tag" />} />
+                        <Route path="/tags/:slug" element={<TaxonomyCollection kind="tag" />} />
+                        <Route path="/categories" element={<TaxonomyDirectory kind="category" />} />
+                        <Route path="/categories/:slug" element={<TaxonomyCollection kind="category" />} />
                         <Route path="/series" element={<Series />} />
                         <Route path="/series/:slug" element={<SeriesDetail />} />
                         <Route path="/projects" element={<Projects />} />

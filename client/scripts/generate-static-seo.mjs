@@ -79,7 +79,7 @@ async function fetchStaticDataFromPrisma() {
             },
         });
 
-        const [posts, series, projects] = await Promise.all([
+        const [posts, series, projects, tags, categories] = await Promise.all([
             prisma.post.findMany({
                 where: { published: true },
                 select: {
@@ -115,6 +115,22 @@ async function fetchStaticDataFromPrisma() {
                     coverImage: true,
                 },
             }),
+            prisma.tag.findMany({
+                where: { posts: { some: { post: { published: true } } } },
+                select: {
+                    slug: true,
+                    name: true,
+                    _count: { select: { posts: true } },
+                },
+            }),
+            prisma.category.findMany({
+                where: { posts: { some: { published: true } } },
+                select: {
+                    slug: true,
+                    name: true,
+                    _count: { select: { posts: true } },
+                },
+            }),
         ]);
 
         await prisma.$disconnect();
@@ -122,6 +138,8 @@ async function fetchStaticDataFromPrisma() {
         return {
             posts,
             series,
+            tags,
+            categories,
             projects: projects.filter((item) => {
                 const summary = (item.summary || item.description || '').trim();
                 const description = (item.description || '').trim();
@@ -132,6 +150,8 @@ async function fetchStaticDataFromPrisma() {
         return {
             posts: [],
             series: [],
+            tags: [],
+            categories: [],
             projects: [],
         };
     }
@@ -198,9 +218,13 @@ async function writeRouteHtml(template, routePath, meta) {
 const postsResponse = await fetchJsonFromCandidates('/posts?limit=100');
 const seriesResponse = await fetchJsonFromCandidates('/series');
 const projectsResponse = await fetchJsonFromCandidates('/projects');
+const tagsResponse = await fetchJsonFromCandidates('/tags');
+const categoriesResponse = await fetchJsonFromCandidates('/categories');
 const prismaFallback = await fetchStaticDataFromPrisma();
 const posts = Array.isArray(postsResponse?.data) && postsResponse.data.length ? postsResponse.data : prismaFallback.posts;
 const series = Array.isArray(seriesResponse) && seriesResponse.length ? seriesResponse : prismaFallback.series;
+const tags = Array.isArray(tagsResponse) && tagsResponse.length ? tagsResponse : prismaFallback.tags;
+const categories = Array.isArray(categoriesResponse) && categoriesResponse.length ? categoriesResponse : prismaFallback.categories;
 const projects = Array.isArray(projectsResponse) && projectsResponse.length ? projectsResponse : prismaFallback.projects;
 
 const staticPages = [
@@ -213,6 +237,21 @@ const staticPages = [
         path: '/blog',
         title: `博客 | ${siteName}`,
         description: '按主题、分类和关键词浏览长期写作与案例判断。',
+    },
+    {
+        path: '/archive',
+        title: `归档 | ${siteName}`,
+        description: '按年份、月份、分类与标签浏览公开文章归档。',
+    },
+    {
+        path: '/tags',
+        title: `标签目录 | ${siteName}`,
+        description: '用标签作为主题切片，快速进入一类具体问题与方法。',
+    },
+    {
+        path: '/categories',
+        title: `分类目录 | ${siteName}`,
+        description: '按问题域与研究方向浏览公开文章目录。',
     },
     {
         path: '/projects',
@@ -259,6 +298,18 @@ const sitemapEntries = [
         lastmod: item.updatedAt || new Date().toISOString(),
         changefreq: 'weekly',
         priority: '0.7',
+    })),
+    ...tags.map((item) => ({
+        loc: makeAbsoluteUrl(`/tags/${item.slug}`),
+        lastmod: new Date().toISOString(),
+        changefreq: 'weekly',
+        priority: '0.6',
+    })),
+    ...categories.map((item) => ({
+        loc: makeAbsoluteUrl(`/categories/${item.slug}`),
+        lastmod: new Date().toISOString(),
+        changefreq: 'weekly',
+        priority: '0.6',
     })),
     ...projects.map((item) => ({
         loc: makeAbsoluteUrl(`/projects/${item.slug}`),
@@ -354,6 +405,22 @@ await Promise.all(series.map((item) => writeRouteHtml(appTemplate, `/series/${it
     type: 'website',
 })));
 
+await Promise.all(tags.map((item) => writeRouteHtml(appTemplate, `/tags/${item.slug}`, {
+    title: `${item.name} · 标签 | ${siteName}`,
+    description: `浏览与「${item.name}」相关的公开文章与阅读路径。`,
+    url: makeAbsoluteUrl(`/tags/${item.slug}`),
+    image: defaultOgImage,
+    type: 'website',
+})));
+
+await Promise.all(categories.map((item) => writeRouteHtml(appTemplate, `/categories/${item.slug}`, {
+    title: `${item.name} · 分类 | ${siteName}`,
+    description: `浏览「${item.name}」分类下的全部公开文章。`,
+    url: makeAbsoluteUrl(`/categories/${item.slug}`),
+    image: defaultOgImage,
+    type: 'website',
+})));
+
 await Promise.all(projects.map((item) => writeRouteHtml(appTemplate, `/projects/${item.slug}`, {
     title: `${item.name} | ${siteName}`,
     description: item.summary || item.description || defaultDescription,
@@ -382,4 +449,4 @@ await fs.writeFile(path.join(distDir, 'robots.txt'), robotsTxt, 'utf8');
 await fs.writeFile(path.join(distDir, 'sitemap.xml'), sitemapXml, 'utf8');
 await fs.writeFile(path.join(distDir, 'rss.xml'), rssXml, 'utf8');
 
-console.log(`[generate-static-seo] Generated prerendered HTML, robots.txt, sitemap.xml and rss.xml for ${posts.length} posts, ${series.length} series and ${projects.length} projects.`);
+console.log(`[generate-static-seo] Generated prerendered HTML, robots.txt, sitemap.xml and rss.xml for ${posts.length} posts, ${series.length} series, ${tags.length} tags, ${categories.length} categories and ${projects.length} projects.`);

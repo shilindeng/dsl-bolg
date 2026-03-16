@@ -51,6 +51,19 @@ test('desktop smoke covers public navigation and reading flow', async ({ page, c
     await expect(page.locator('[data-testid^="post-card-"]').first()).toBeVisible();
     await saveScreenshot(page, testInfo, 'blog-dark');
 
+    await page.goto('/archive');
+    await expect(page.getByRole('heading', { name: '把博客当作一份长期维护的研究目录' })).toBeVisible();
+    await saveScreenshot(page, testInfo, 'archive-dark');
+
+    await page.goto('/tags');
+    await expect(page.getByRole('heading', { name: '标签目录' })).toBeVisible();
+
+    await page.goto('/categories');
+    await expect(page.getByRole('heading', { name: '分类目录' })).toBeVisible();
+
+    await page.goto('/blog');
+    await expect(page.locator('[data-testid^="post-card-"]').first()).toBeVisible();
+
     await page.locator('[data-testid^="post-card-"]').first().click();
     await expect(page).toHaveURL(/\/blog\/.+/);
     await expect(page.getByTestId('article-meta')).toBeVisible();

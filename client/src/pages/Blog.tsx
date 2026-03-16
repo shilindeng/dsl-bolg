@@ -1,4 +1,5 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchCategories, fetchPosts, fetchTags, type Category, type Post, type Tag } from '../api/client';
 import PostCard from '../components/PostCard';
 import SEO from '../components/SEO';
@@ -99,6 +100,21 @@ export default function Blog() {
                             <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
                             <p>只保留当前公开内容真正用得到的线索。</p>
                         </article>
+                    </div>
+
+                    <div className="archive-entry-links">
+                        <Link to="/archive" className="section-link">
+                            <span>进入时间归档</span>
+                            <SiteIcon name="calendar" size={14} />
+                        </Link>
+                        <Link to="/categories" className="section-link">
+                            <span>分类目录</span>
+                            <SiteIcon name="folder" size={14} />
+                        </Link>
+                        <Link to="/tags" className="section-link">
+                            <span>标签目录</span>
+                            <SiteIcon name="tag" size={14} />
+                        </Link>
                     </div>
                 </div>
             </section>
