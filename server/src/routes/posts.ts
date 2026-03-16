@@ -18,7 +18,7 @@ router.get('/archive', async (_req: Request, res: Response) => {
         });
 
         const publicPosts = posts
-            .map((post: Parameters<typeof formatPost>[0]) => formatPost(post))
+            .map((post) => formatPost(post))
             .filter((post) => isPublicPostReady(post));
 
         const yearMap = new Map<
