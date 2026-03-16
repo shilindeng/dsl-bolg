@@ -391,6 +391,7 @@
   .article-hero-stage {
     position: relative;
     isolation: isolate;
+    min-height: auto;
   }
 
   .home-hero-banner {
