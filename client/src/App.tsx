@@ -68,7 +68,7 @@ function PublicLayout() {
             <CommandPalette isAdmin={isAdmin} />
 
             <main id="main-content" className="page-shell" tabIndex={-1}>
-                <Suspense fallback={<RouteSkeleton variant="route" />}>
+                <Suspense fallback={<RouteSkeleton variant="route" cards={3} />}>
                     <PageTransition routeKey={routeKey}>
                         <Outlet />
                     </PageTransition>

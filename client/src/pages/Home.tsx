@@ -61,7 +61,7 @@ export default function Home() {
 
     const heroStyle: CSSProperties | undefined = heroVisual.heroImage
         ? {
-            backgroundImage: `linear-gradient(135deg, rgba(5, 10, 20, 0.3), rgba(5, 10, 20, 0.88)), url(${heroVisual.heroImage})`,
+            backgroundImage: `url(${heroVisual.heroImage})`,
         }
         : undefined;
 

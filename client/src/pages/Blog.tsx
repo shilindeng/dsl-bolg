@@ -83,7 +83,7 @@ export default function Blog() {
             <SEO title="博客" description="按主题、分类和关键词浏览长期写作与研究归档。" />
 
             <PageScene tone="editorial">
-                <section className="section page-compact-hero archive-hero">
+                <section className="section section-tight page-compact-hero archive-hero blog-hero-compact">
                     <div className="container archive-hero-shell">
                         <Surface tone="hero" className="archive-hero-stage">
                             <div className="archive-hero-copy">
@@ -123,7 +123,7 @@ export default function Blog() {
                     </div>
                 </section>
 
-                <section className="section section-border section-tight">
+                <section className="section section-tight blog-filter-section">
                     <div className="container">
                         <Surface tone="glass" className="filter-shell archive-filter-shell">
                             <div className="archive-filter-topline">
@@ -223,8 +223,18 @@ export default function Blog() {
                     </div>
                 </section>
 
-                <section className="section">
+                <section className="section section-tight blog-results-section">
                     <div className="container section-stack archive-results-shell">
+                        {!loading && posts.length ? (
+                            <div className="section-head compact-head blog-results-head">
+                                <div>
+                                    <span className="eyebrow">Results</span>
+                                    <h2 className="section-title compact-title">公开文章</h2>
+                                </div>
+                                <span className="meta-pill emphasis">{posts.length} 篇</span>
+                            </div>
+                        ) : null}
+
                         {loading ? (
                             <RouteSkeleton variant="grid" cards={9} />
                         ) : posts.length === 0 ? (

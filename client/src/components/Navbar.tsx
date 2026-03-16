@@ -56,7 +56,7 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                 'input:not([disabled])',
                 'select:not([disabled])',
                 'textarea:not([disabled])',
-                '[tabindex]:not([tabindex=\"-1\"])',
+                '[tabindex]:not([tabindex="-1"])',
             ].join(',');
 
             return Array.from(root.querySelectorAll<HTMLElement>(focusableSelector)).filter((item) => item.getClientRects().length > 0);
@@ -128,7 +128,6 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
     );
 
     const accountLabel = user?.name || '账户';
-
     const isHome = location.pathname === '/';
 
     return (
@@ -166,10 +165,12 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                         <kbd>Ctrl K</kbd>
                     </button>
 
-                    <span className="nav-status desktop-only">
-                        <SiteIcon name="spark" size={14} />
-                        <span>研究库在线</span>
-                    </span>
+                    {!isAdmin ? (
+                        <span className="nav-status desktop-only">
+                            <SiteIcon name="spark" size={14} />
+                            <span>研究库在线</span>
+                        </span>
+                    ) : null}
 
                     {isAdmin ? (
                         <>
@@ -177,17 +178,9 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                                 <img className="nav-avatar" src={resolveAvatarUrl(user?.avatarUrl, user?.id)} alt={accountLabel} />
                                 <span>{accountLabel}</span>
                             </Link>
-                            <Link to="/editor" className="action-chip desktop-only">
-                                <SiteIcon name="pen" size={14} />
-                                <span>写文章</span>
-                            </Link>
-                            <Link to="/admin/series" className="action-chip desktop-only">
-                                <SiteIcon name="link" size={14} />
-                                <span>专栏</span>
-                            </Link>
                             <Link to="/admin/dashboard" className="action-chip desktop-only">
                                 <SiteIcon name="grid" size={14} />
-                                <span>控制台</span>
+                                <span>工作台</span>
                             </Link>
                         </>
                     ) : isAuthenticated ? (
@@ -249,13 +242,9 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
                                         <SiteIcon name="pen" size={14} />
                                         <span>写文章</span>
                                     </Link>
-                                    <Link to="/admin/series" className="action-chip">
-                                        <SiteIcon name="link" size={14} />
-                                        <span>专栏</span>
-                                    </Link>
                                     <Link to="/admin/dashboard" className="action-chip">
                                         <SiteIcon name="grid" size={14} />
-                                        <span>控制台</span>
+                                        <span>工作台</span>
                                     </Link>
                                 </>
                             ) : isAuthenticated ? (
