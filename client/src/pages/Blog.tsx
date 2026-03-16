@@ -72,6 +72,7 @@ export default function Blog() {
     }, [activeCategory, activeTag, deferredSearch]);
 
     const visibleTags = showAllTags ? tags : tags.slice(0, DEFAULT_TAG_LIMIT);
+    const isEmptyState = !loading && posts.length === 0;
     const activeFilters = [
         activeCategory ? categories.find((item) => item.slug === activeCategory)?.name : '',
         activeTag ? tags.find((item) => item.slug === activeTag)?.name : '',
@@ -100,7 +101,7 @@ export default function Blog() {
                                     <p>先确定方向，再决定是否投入阅读时间。</p>
                                 </article>
                                 <article className="hero-fact-item">
-                                    <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
+                                    <strong>{categories.length} 个分类 / {tags.length} 个标签</strong>
                                     <p>只保留对公开内容真正有帮助的索引。</p>
                                 </article>
                             </div>
@@ -125,7 +126,7 @@ export default function Blog() {
 
                 <section className="section section-tight blog-filter-section">
                     <div className="container">
-                        <Surface tone="glass" className="filter-shell archive-filter-shell">
+                        <Surface tone="glass" className={`filter-shell archive-filter-shell ${isEmptyState ? 'is-empty' : ''}`}>
                             <div className="archive-filter-topline">
                                 <label className="form-field archive-search-field">
                                     <span className="form-label">搜索文章</span>
@@ -223,7 +224,7 @@ export default function Blog() {
                     </div>
                 </section>
 
-                <section className="section section-tight blog-results-section">
+                <section className={`section section-tight blog-results-section ${isEmptyState ? 'is-empty' : ''}`}>
                     <div className="container section-stack archive-results-shell">
                         {!loading && posts.length ? (
                             <div className="section-head compact-head blog-results-head">
@@ -238,7 +239,7 @@ export default function Blog() {
                         {loading ? (
                             <RouteSkeleton variant="grid" cards={9} />
                         ) : posts.length === 0 ? (
-                            <Surface tone="glass" className="empty-state">
+                            <Surface tone="glass" className="empty-state blog-empty-state">
                                 没有找到符合条件的文章，换一个关键词或筛选条件试试。
                             </Surface>
                         ) : (
