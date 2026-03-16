@@ -1,11 +1,14 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { LazyMotion, domAnimation } from 'framer-motion';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import AdminLayout from './components/AdminLayout';
 import AdminRoute from './components/AdminRoute';
 import AuthenticatedRoute from './components/AuthenticatedRoute';
 import CommandPalette from './components/CommandPalette';
 import Footer from './components/Footer';
 import Navbar from './components/Navbar';
+import PageTransition from './components/PageTransition';
+import RouteSkeleton from './components/RouteSkeleton';
 import ScrollManager from './components/ScrollManager';
 import { ThemeProvider } from './hooks/useTheme';
 import Home from './pages/Home';
@@ -52,6 +55,8 @@ function RouteFallback() {
 
 function PublicLayout() {
     const { isAdmin, isAuthenticated } = useAuth();
+    const location = useLocation();
+    const routeKey = `${location.pathname}${location.search}`;
 
     return (
         <div className="app-shell">
@@ -63,8 +68,10 @@ function PublicLayout() {
             <CommandPalette isAdmin={isAdmin} />
 
             <main id="main-content" className="page-shell" tabIndex={-1}>
-                <Suspense fallback={<RouteFallback />}>
-                    <Outlet />
+                <Suspense fallback={<RouteSkeleton variant="route" />}>
+                    <PageTransition routeKey={routeKey}>
+                        <Outlet />
+                    </PageTransition>
                 </Suspense>
             </main>
 
@@ -77,54 +84,56 @@ function App() {
     return (
         <ThemeProvider>
             <ToastProvider>
-                <Routes>
-                    <Route element={<AdminRoute />}>
-                        <Route element={<AdminLayout />}>
-                            <Route path="/editor" element={<Editor />} />
-                            <Route path="/editor/:slug" element={<Editor />} />
-                            <Route path="/admin/dashboard" element={<Dashboard />} />
-                            <Route path="/admin/posts" element={<PostsManager />} />
-                            <Route path="/admin/projects" element={<ProjectsManager />} />
-                            <Route path="/admin/comments" element={<CommentsManager />} />
-                            <Route path="/admin/newsletter" element={<NewsletterManager />} />
-                            <Route path="/admin/homepage" element={<HomepageManager />} />
-                            <Route path="/admin/series" element={<SeriesManager />} />
-                            <Route path="/admin/api-keys" element={<ApiKeysManager />} />
-                            <Route path="/admin/taxonomy" element={<TaxonomyManager />} />
-                            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-                        </Route>
-                    </Route>
-
-                    <Route element={<PublicLayout />}>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/blog" element={<Blog />} />
-                        <Route path="/blog/:slug" element={<BlogPost />} />
-                        <Route path="/archive" element={<Archive />} />
-                        <Route path="/tags" element={<TaxonomyDirectory kind="tag" />} />
-                        <Route path="/tags/:slug" element={<TaxonomyCollection kind="tag" />} />
-                        <Route path="/categories" element={<TaxonomyDirectory kind="category" />} />
-                        <Route path="/categories/:slug" element={<TaxonomyCollection kind="category" />} />
-                        <Route path="/series" element={<Series />} />
-                        <Route path="/series/:slug" element={<SeriesDetail />} />
-                        <Route path="/projects" element={<Projects />} />
-                        <Route path="/projects/:slug" element={<ProjectDetail />} />
-                        <Route path="/about" element={<About />} />
-                        <Route path="/newsletter" element={<Newsletter />} />
-                        <Route path="/newsletter/:slug" element={<NewsletterIssue />} />
-                        <Route path="/login" element={<Login />} />
-
-                        <Route element={<AuthenticatedRoute />}>
-                            <Route path="/account" element={<AccountLayout />}>
-                                <Route index element={<AccountProfile />} />
-                                <Route path="comments" element={<AccountComments />} />
-                                <Route path="bookmarks" element={<AccountBookmarks />} />
-                                <Route path="history" element={<AccountHistory />} />
+                <LazyMotion features={domAnimation}>
+                    <Routes>
+                        <Route element={<AdminRoute />}>
+                            <Route element={<AdminLayout />}>
+                                <Route path="/editor" element={<Editor />} />
+                                <Route path="/editor/:slug" element={<Editor />} />
+                                <Route path="/admin/dashboard" element={<Dashboard />} />
+                                <Route path="/admin/posts" element={<PostsManager />} />
+                                <Route path="/admin/projects" element={<ProjectsManager />} />
+                                <Route path="/admin/comments" element={<CommentsManager />} />
+                                <Route path="/admin/newsletter" element={<NewsletterManager />} />
+                                <Route path="/admin/homepage" element={<HomepageManager />} />
+                                <Route path="/admin/series" element={<SeriesManager />} />
+                                <Route path="/admin/api-keys" element={<ApiKeysManager />} />
+                                <Route path="/admin/taxonomy" element={<TaxonomyManager />} />
+                                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
                             </Route>
                         </Route>
 
-                        <Route path="*" element={<NotFound />} />
-                    </Route>
-                </Routes>
+                        <Route element={<PublicLayout />}>
+                            <Route path="/" element={<Home />} />
+                            <Route path="/blog" element={<Blog />} />
+                            <Route path="/blog/:slug" element={<BlogPost />} />
+                            <Route path="/archive" element={<Archive />} />
+                            <Route path="/tags" element={<TaxonomyDirectory kind="tag" />} />
+                            <Route path="/tags/:slug" element={<TaxonomyCollection kind="tag" />} />
+                            <Route path="/categories" element={<TaxonomyDirectory kind="category" />} />
+                            <Route path="/categories/:slug" element={<TaxonomyCollection kind="category" />} />
+                            <Route path="/series" element={<Series />} />
+                            <Route path="/series/:slug" element={<SeriesDetail />} />
+                            <Route path="/projects" element={<Projects />} />
+                            <Route path="/projects/:slug" element={<ProjectDetail />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/newsletter" element={<Newsletter />} />
+                            <Route path="/newsletter/:slug" element={<NewsletterIssue />} />
+                            <Route path="/login" element={<Login />} />
+
+                            <Route element={<AuthenticatedRoute />}>
+                                <Route path="/account" element={<AccountLayout />}>
+                                    <Route index element={<AccountProfile />} />
+                                    <Route path="comments" element={<AccountComments />} />
+                                    <Route path="bookmarks" element={<AccountBookmarks />} />
+                                    <Route path="history" element={<AccountHistory />} />
+                                </Route>
+                            </Route>
+
+                            <Route path="*" element={<NotFound />} />
+                        </Route>
+                    </Routes>
+                </LazyMotion>
             </ToastProvider>
         </ThemeProvider>
     );

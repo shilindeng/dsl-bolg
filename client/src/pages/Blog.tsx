@@ -1,9 +1,12 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchCategories, fetchPosts, fetchTags, type Category, type Post, type Tag } from '../api/client';
+import PageScene from '../components/PageScene';
 import PostCard from '../components/PostCard';
+import RouteSkeleton from '../components/RouteSkeleton';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
+import Surface from '../components/Surface';
 
 const DEFAULT_TAG_LIMIT = 10;
 
@@ -51,7 +54,7 @@ export default function Blog() {
             category: activeCategory || undefined,
             search: deferredSearch || undefined,
             page,
-            limit: 7,
+            limit: 9,
         })
             .then((response) => {
                 setPosts(response.data);
@@ -69,8 +72,6 @@ export default function Blog() {
     }, [activeCategory, activeTag, deferredSearch]);
 
     const visibleTags = showAllTags ? tags : tags.slice(0, DEFAULT_TAG_LIMIT);
-    const featuredPost = page === 1 ? posts[0] : null;
-    const restPosts = page === 1 ? posts.slice(1) : posts;
     const activeFilters = [
         activeCategory ? categories.find((item) => item.slug === activeCategory)?.name : '',
         activeTag ? tags.find((item) => item.slug === activeTag)?.name : '',
@@ -81,182 +82,189 @@ export default function Blog() {
         <>
             <SEO title="博客" description="按主题、分类和关键词浏览长期写作与研究归档。" />
 
-            <section className="section page-compact-hero archive-hero">
-                <div className="container archive-hero-shell">
-                    <div>
-                        <span className="eyebrow">文章归档</span>
-                        <h1 className="section-title">给长期阅读者准备的内容档案</h1>
-                        <p className="section-copy">
-                            这里按主题、分类和关键词组织长文、复盘和研究笔记。更像编辑目录，而不是无差别信息流。
-                        </p>
-                    </div>
-
-                    <div className="hero-fact-rail archive-fact-rail">
-                        <article className="hero-fact-item">
-                            <strong>搜索 / 分类 / 标签</strong>
-                            <p>先确定方向，再决定要不要投入阅读时间。</p>
-                        </article>
-                        <article className="hero-fact-item">
-                            <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
-                            <p>只保留当前公开内容真正用得到的线索。</p>
-                        </article>
-                    </div>
-
-                    <div className="archive-entry-links">
-                        <Link to="/archive" className="section-link">
-                            <span>进入时间归档</span>
-                            <SiteIcon name="calendar" size={14} />
-                        </Link>
-                        <Link to="/categories" className="section-link">
-                            <span>分类目录</span>
-                            <SiteIcon name="folder" size={14} />
-                        </Link>
-                        <Link to="/tags" className="section-link">
-                            <span>标签目录</span>
-                            <SiteIcon name="tag" size={14} />
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
-            <section className="section section-border section-tight">
-                <div className="container">
-                    <div className="filter-shell archive-filter-shell">
-                        <div className="archive-filter-topline">
-                            <label className="form-field archive-search-field">
-                                <span className="form-label">搜索文章</span>
-                                <div className="input-with-icon">
-                                    <SiteIcon name="search" size={15} />
-                                    <input
-                                        data-testid="blog-search-input"
-                                        className="form-input"
-                                        value={search}
-                                        onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                                        placeholder="搜索标题、摘要或关键词..."
-                                    />
-                                </div>
-                            </label>
-
-                            {activeFilters.length ? (
-                                <div className="tag-list archive-active-tags">
-                                    {activeFilters.map((item) => (
-                                        <span key={item} className="tag">
-                                            <SiteIcon name="spark" size={12} />
-                                            <span>{item}</span>
-                                        </span>
-                                    ))}
-                                </div>
-                            ) : null}
-                        </div>
-
-                        <div className="filter-group">
-                            <span className="filter-label">
-                                <SiteIcon name="folder" size={13} />
-                                <span>分类</span>
-                            </span>
-                            <div className="filter-row">
-                                <button
-                                    type="button"
-                                    className={`filter-chip ${activeCategory ? '' : 'is-active'}`}
-                                    onClick={() => setActiveCategory('')}
-                                >
-                                    全部分类
-                                </button>
-                                {categories.map((category) => (
-                                    <button
-                                        key={category.id}
-                                        type="button"
-                                        data-testid={`category-filter-${category.slug}`}
-                                        className={`filter-chip ${activeCategory === category.slug ? 'is-active' : ''}`}
-                                        onClick={() => setActiveCategory(category.slug)}
-                                    >
-                                        {category.name}
-                                        <span className="command-hint">{category._count?.posts || 0}</span>
-                                    </button>
-                                ))}
+            <PageScene tone="editorial">
+                <section className="section page-compact-hero archive-hero">
+                    <div className="container archive-hero-shell">
+                        <Surface tone="hero" className="archive-hero-stage">
+                            <div className="archive-hero-copy">
+                                <span className="eyebrow">文章归档</span>
+                                <h1 className="section-title">给长期阅读者准备的内容档案</h1>
+                                <p className="section-copy">
+                                    这里按主题、分类和关键词组织长文、复盘和研究笔记。它更像一个编辑目录，而不是拥挤的信息流。
+                                </p>
                             </div>
-                        </div>
 
-                        <div className="filter-group">
-                            <div className="section-head compact-head">
-                                <span className="filter-label">
-                                    <SiteIcon name="tag" size={13} />
-                                    <span>标签</span>
-                                </span>
-                                {tags.length > DEFAULT_TAG_LIMIT ? (
-                                    <button type="button" className="btn btn-ghost archive-filter-toggle" onClick={() => setShowAllTags((current) => !current)}>
-                                        {showAllTags ? '收起标签' : `展开更多标签 (${tags.length - DEFAULT_TAG_LIMIT})`}
-                                    </button>
+                            <div className="hero-fact-rail archive-fact-rail">
+                                <article className="hero-fact-item">
+                                    <strong>搜索 / 分类 / 标签</strong>
+                                    <p>先确定方向，再决定是否投入阅读时间。</p>
+                                </article>
+                                <article className="hero-fact-item">
+                                    <strong>{categories.length || '--'} 个分类 / {tags.length || '--'} 个标签</strong>
+                                    <p>只保留对公开内容真正有帮助的索引。</p>
+                                </article>
+                            </div>
+
+                            <div className="archive-entry-links">
+                                <Link to="/archive" className="section-link">
+                                    <span>进入时间归档</span>
+                                    <SiteIcon name="calendar" size={14} />
+                                </Link>
+                                <Link to="/categories" className="section-link">
+                                    <span>分类目录</span>
+                                    <SiteIcon name="folder" size={14} />
+                                </Link>
+                                <Link to="/tags" className="section-link">
+                                    <span>标签目录</span>
+                                    <SiteIcon name="tag" size={14} />
+                                </Link>
+                            </div>
+                        </Surface>
+                    </div>
+                </section>
+
+                <section className="section section-border section-tight">
+                    <div className="container">
+                        <Surface tone="glass" className="filter-shell archive-filter-shell">
+                            <div className="archive-filter-topline">
+                                <label className="form-field archive-search-field">
+                                    <span className="form-label">搜索文章</span>
+                                    <div className="input-with-icon">
+                                        <SiteIcon name="search" size={15} />
+                                        <input
+                                            data-testid="blog-search-input"
+                                            className="form-input"
+                                            value={search}
+                                            onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                                            placeholder="搜索标题、摘要或关键词..."
+                                        />
+                                    </div>
+                                </label>
+
+                                {activeFilters.length ? (
+                                    <div className="tag-list archive-active-tags">
+                                        {activeFilters.map((item) => (
+                                            <span key={item} className="tag">
+                                                <SiteIcon name="spark" size={12} />
+                                                <span>{item}</span>
+                                            </span>
+                                        ))}
+                                    </div>
                                 ) : null}
                             </div>
-                            <div className="filter-row">
+
+                            <div className="filter-group">
+                                <span className="filter-label">
+                                    <SiteIcon name="folder" size={13} />
+                                    <span>分类</span>
+                                </span>
+                                <div className="filter-row">
+                                    <button
+                                        type="button"
+                                        className={`filter-chip ${activeCategory ? '' : 'is-active'}`}
+                                        onClick={() => setActiveCategory('')}
+                                    >
+                                        全部分类
+                                    </button>
+                                    {categories.map((category) => (
+                                        <button
+                                            key={category.id}
+                                            type="button"
+                                            data-testid={`category-filter-${category.slug}`}
+                                            className={`filter-chip ${activeCategory === category.slug ? 'is-active' : ''}`}
+                                            onClick={() => setActiveCategory(category.slug)}
+                                        >
+                                            {category.name}
+                                            <span className="command-hint">{category._count?.posts || 0}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="filter-group">
+                                <div className="section-head compact-head">
+                                    <span className="filter-label">
+                                        <SiteIcon name="tag" size={13} />
+                                        <span>标签</span>
+                                    </span>
+                                    {tags.length > DEFAULT_TAG_LIMIT ? (
+                                        <button
+                                            type="button"
+                                            className="btn btn-ghost archive-filter-toggle"
+                                            onClick={() => setShowAllTags((current) => !current)}
+                                        >
+                                            {showAllTags ? '收起标签' : `展开更多标签 (${tags.length - DEFAULT_TAG_LIMIT})`}
+                                        </button>
+                                    ) : null}
+                                </div>
+                                <div className="filter-row">
+                                    <button
+                                        type="button"
+                                        className={`filter-chip ${activeTag ? '' : 'is-active'}`}
+                                        onClick={() => setActiveTag('')}
+                                    >
+                                        全部标签
+                                    </button>
+                                    {visibleTags.map((tag) => (
+                                        <button
+                                            key={tag.id}
+                                            type="button"
+                                            data-testid={`tag-filter-${tag.slug}`}
+                                            className={`filter-chip ${activeTag === tag.slug ? 'is-active' : ''}`}
+                                            onClick={() => setActiveTag(tag.slug)}
+                                        >
+                                            {tag.name}
+                                            <span className="command-hint">{tag._count?.posts || 0}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </Surface>
+                    </div>
+                </section>
+
+                <section className="section">
+                    <div className="container section-stack archive-results-shell">
+                        {loading ? (
+                            <RouteSkeleton variant="grid" cards={9} />
+                        ) : posts.length === 0 ? (
+                            <Surface tone="glass" className="empty-state">
+                                没有找到符合条件的文章，换一个关键词或筛选条件试试。
+                            </Surface>
+                        ) : (
+                            <div className="post-grid post-grid-catalog">
+                                {posts.map((post) => (
+                                    <PostCard key={post.id} post={post} layout="grid" />
+                                ))}
+                            </div>
+                        )}
+
+                        {totalPages > 1 ? (
+                            <div className="pagination-shell">
                                 <button
                                     type="button"
-                                    className={`filter-chip ${activeTag ? '' : 'is-active'}`}
-                                    onClick={() => setActiveTag('')}
+                                    className="btn btn-ghost"
+                                    disabled={page <= 1}
+                                    onClick={() => setPage((current) => Math.max(1, current - 1))}
                                 >
-                                    全部标签
+                                    <SiteIcon name="chevron-right" size={14} style={{ transform: 'rotate(180deg)' }} />
+                                    <span>上一页</span>
                                 </button>
-                                {visibleTags.map((tag) => (
-                                    <button
-                                        key={tag.id}
-                                        type="button"
-                                        data-testid={`tag-filter-${tag.slug}`}
-                                        className={`filter-chip ${activeTag === tag.slug ? 'is-active' : ''}`}
-                                        onClick={() => setActiveTag(tag.slug)}
-                                    >
-                                        {tag.name}
-                                        <span className="command-hint">{tag._count?.posts || 0}</span>
-                                    </button>
-                                ))}
+                                <span className="meta-pill emphasis">{page} / {totalPages}</span>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost"
+                                    disabled={page >= totalPages}
+                                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                                >
+                                    <span>下一页</span>
+                                    <SiteIcon name="chevron-right" size={14} />
+                                </button>
                             </div>
-                        </div>
+                        ) : null}
                     </div>
-                </div>
-            </section>
-
-            <section className="section">
-                <div className="container section-stack archive-results-shell">
-                    {loading ? (
-                        <div className="empty-state">正在同步文章归档...</div>
-                    ) : posts.length === 0 ? (
-                        <div className="empty-state">没有找到符合条件的文章，换一个关键词或筛选条件试试。</div>
-                    ) : (
-                        <>
-                            {featuredPost ? <PostCard post={featuredPost} featured /> : null}
-                            <div className="stack-grid archive-results-list">
-                                {restPosts.map((post) => (
-                                    <PostCard key={post.id} post={post} compact />
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {totalPages > 1 ? (
-                        <div className="pagination-shell">
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                disabled={page <= 1}
-                                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                            >
-                                <SiteIcon name="chevron-right" size={14} style={{ transform: 'rotate(180deg)' }} />
-                                <span>上一页</span>
-                            </button>
-                            <span className="meta-pill emphasis">{page} / {totalPages}</span>
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                disabled={page >= totalPages}
-                                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                            >
-                                <span>下一页</span>
-                                <SiteIcon name="chevron-right" size={14} />
-                            </button>
-                        </div>
-                    ) : null}
-                </div>
-            </section>
+                </section>
+            </PageScene>
         </>
     );
 }

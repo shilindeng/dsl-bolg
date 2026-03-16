@@ -1,13 +1,19 @@
+import type { CSSProperties } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchHomepage, type HomepageSection, type Post, type Project } from '../api/client';
 import NewsletterSignup from '../components/NewsletterSignup';
+import PageScene from '../components/PageScene';
+import ParticleBackground from '../components/ParticleBackground';
+import PostCard from '../components/PostCard';
 import ProjectCard from '../components/ProjectCard';
+import RouteSkeleton from '../components/RouteSkeleton';
 import SEO from '../components/SEO';
 import SiteIcon from '../components/SiteIcon';
+import Surface from '../components/Surface';
 import WeatherCard from '../components/WeatherCard';
-import { formatShortDate } from '../lib/format';
 import { siteConfig } from '../config/site';
+import { resolveHomepageHeroVisual } from '../lib/homepageHero';
 
 function getPosts(section?: HomepageSection) {
     return ((section?.items || []) as Array<Post | Project>).filter((item): item is Post => 'content' in item);
@@ -47,12 +53,27 @@ export default function Home() {
 
     const featuredPosts = getPosts(featuredPostsSection);
     const featuredProjects = getProjects(projectsSection);
+    const heroVisual = resolveHomepageHeroVisual(featuredPosts);
+    const heroPost = heroVisual.featuredPost;
+    const primaryProject = featuredProjects[0] || null;
+    const supportingPosts = featuredPosts.slice(heroPost ? 1 : 0, heroPost ? 4 : 3);
+    const remainingProjects = featuredProjects.slice(primaryProject ? 1 : 0, primaryProject ? 4 : 3);
 
-    const supportingPosts = featuredPosts.slice(1, 4);
-    const remainingProjects = featuredProjects.slice(1, 4);
+    const heroStyle: CSSProperties | undefined = heroVisual.heroImage
+        ? {
+            backgroundImage: `linear-gradient(135deg, rgba(5, 10, 20, 0.3), rgba(5, 10, 20, 0.88)), url(${heroVisual.heroImage})`,
+        }
+        : undefined;
 
-    const shouldShowEditorialSection = supportingPosts.length > 0;
-    const shouldShowProjectSection = remainingProjects.length > 0;
+    if (loading) {
+        return (
+            <PageScene tone="editorial">
+                <section className="section">
+                    <RouteSkeleton variant="hero" />
+                </section>
+            </PageScene>
+        );
+    }
 
     return (
         <>
@@ -78,267 +99,269 @@ export default function Home() {
                 ]}
             />
 
-            <section className="section home-hero">
-                <div className="container home-hero-grid" data-testid="home-hero">
-                    <div className="home-hero-copy">
-                        <span className="eyebrow">{hero?.eyebrow || 'AI 信息差研究与实验笔记'}</span>
-                        <h1 className="display-title home-display-title">
-                            {hero?.title || '把信息差变成可复用的结论库。'}
-                        </h1>
-                        <p className="lead home-hero-lead">{hero?.description || siteConfig.author.bio}</p>
+            <PageScene tone="editorial">
+                <section className="section home-hero home-hero-stage">
+                    <div className="container">
+                        <Surface
+                            tone="hero"
+                            className={`home-hero-banner ${heroVisual.heroImage ? 'has-cover' : 'is-generated'}`}
+                            style={heroStyle}
+                        >
+                            {!heroVisual.heroImage ? <ParticleBackground variant="hero" /> : null}
+                            <div className="home-hero-scrim" />
 
-                        <div className="home-positioning-band">
-                            <span className="meta-pill emphasis">
-                                <SiteIcon name="user" size={13} />
-                                <span>{siteConfig.author.positioning}</span>
-                            </span>
-                            <span className="muted">{siteConfig.author.manifesto}</span>
-                        </div>
+                            <div className="home-hero-grid">
+                                <div className="home-hero-copy">
+                                    <span className="eyebrow">{hero?.eyebrow || 'AI 信息差研究与实验笔记'}</span>
+                                    <h1 className="display-title home-display-title">
+                                        {hero?.title || '把信息差变成可复用的结论库。'}
+                                    </h1>
+                                    <p className="lead home-hero-lead">
+                                        {hero?.description || siteConfig.author.bio}
+                                    </p>
 
-                        <div className="hero-actions">
-                            <Link to={hero?.ctaHref || '/blog'} className="btn btn-primary">
-                                <SiteIcon name="book-open" size={15} />
-                                <span>{hero?.ctaLabel || '进入文章归档'}</span>
-                            </Link>
-                            <Link to="/projects" className="btn btn-secondary">
-                                <SiteIcon name="briefcase" size={15} />
-                                <span>查看代表项目</span>
-                            </Link>
-                        </div>
-
-                        <div className="hero-fact-rail">
-                            {siteConfig.homeHighlights.map((item) => (
-                                <article key={item.title} className="hero-fact-item">
-                                    <strong>{item.title}</strong>
-                                    <p>{item.description}</p>
-                                </article>
-                            ))}
-                        </div>
-
-                        <div className="home-proof-grid">
-                            {siteConfig.brandProofs.map((item) => (
-                                <article key={item.label} className="home-proof-card">
-                                    <span className="meta-pill">
-                                        <SiteIcon name={item.icon} size={13} />
-                                        <span>{item.value}</span>
-                                    </span>
-                                    <strong>{item.label}</strong>
-                                    <p>{item.note}</p>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
-
-                    <aside className="home-hero-side" aria-label="本期精选">
-                        <div className="issue-card home-brand-card">
-                            <div className="issue-card-head">
-                                <div>
-                                    <span className="eyebrow">Professional Profile</span>
-                                    <h2 className="section-title compact-title">我解决的问题，不只是写文章</h2>
-                                </div>
-                                <span className="meta-pill emphasis mono">{new Date().getFullYear()}</span>
-                            </div>
-
-                            <div className="home-capability-list">
-                                {siteConfig.homeCapabilityCards.map((item) => (
-                                    <article key={item.title} className="issue-feature home-capability-card">
-                                        <span className="issue-kicker">
-                                            <SiteIcon name={item.icon} size={14} />
-                                            <span>{siteConfig.author.name}</span>
+                                    <div className="home-positioning-band">
+                                        <span className="meta-pill emphasis">
+                                            <SiteIcon name="user" size={13} />
+                                            <span>{siteConfig.author.positioning}</span>
                                         </span>
-                                        <strong>{item.title}</strong>
-                                        <p>{item.description}</p>
-                                    </article>
-                                ))}
-                            </div>
+                                        <span className="muted">{siteConfig.author.manifesto}</span>
+                                    </div>
 
-                            <div className="home-fit-block">
-                                <div className="section-head compact-head">
-                                    <div>
-                                        <span className="eyebrow">Best Fit</span>
-                                        <h3>适合什么合作</h3>
+                                    <div className="hero-actions">
+                                        <Link to={hero?.ctaHref || '/blog'} className="btn btn-primary btn-glow">
+                                            <SiteIcon name="book-open" size={15} />
+                                            <span>{hero?.ctaLabel || '进入文章归档'}</span>
+                                        </Link>
+                                        <Link to="/projects" className="btn btn-secondary">
+                                            <SiteIcon name="briefcase" size={15} />
+                                            <span>查看代表项目</span>
+                                        </Link>
+                                    </div>
+
+                                    <div className="hero-fact-rail">
+                                        {siteConfig.homeHighlights.map((item) => (
+                                            <article key={item.title} className="hero-fact-item">
+                                                <strong>{item.title}</strong>
+                                                <p>{item.description}</p>
+                                            </article>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="list-block">
-                                    {siteConfig.collaborationFit.slice(0, 3).map((item) => (
-                                        <div key={item} className="list-item">
-                                            <SiteIcon name="check" size={14} />
-                                            <span>{item}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
 
-                            <div className="issue-actions">
-                                <a href={`mailto:${siteConfig.email}`} className="btn btn-primary">
-                                    <SiteIcon name="mail" size={15} />
-                                    <span>联系合作</span>
-                                </a>
-                                <Link to="/about" className="btn btn-secondary">
-                                    <SiteIcon name="user" size={15} />
-                                    <span>查看作者说明</span>
-                                </Link>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
-            </section>
+                                <aside className="home-hero-side" aria-label="Hero Signals">
+                                    {heroPost ? (
+                                        <Surface tone="floating" className="home-hero-feature-card">
+                                            <span className="eyebrow">Featured Essay</span>
+                                            <div className="home-hero-feature-meta">
+                                                {heroPost.category ? (
+                                                    <span className="chip">
+                                                        <SiteIcon name="folder" size={13} />
+                                                        <span>{heroPost.category.name}</span>
+                                                    </span>
+                                                ) : null}
+                                                <span className="meta-pill">
+                                                    <SiteIcon name="clock" size={13} />
+                                                    <span>{heroPost.meta?.readTime || 1} 分钟</span>
+                                                </span>
+                                            </div>
+                                            <strong>{heroPost.title}</strong>
+                                            <p>{heroPost.deck?.trim() || heroPost.excerpt}</p>
+                                            <Link to={`/blog/${heroPost.slug}`} className="section-link">
+                                                <span>进入首篇精选</span>
+                                                <SiteIcon name="arrow-right" size={14} />
+                                            </Link>
+                                        </Surface>
+                                    ) : null}
 
-            <section className="section section-tight section-border home-brand-evidence">
-                <div className="container home-evidence-grid">
-                    <div className="feature-panel home-evidence-panel">
-                        <span className="eyebrow">能力证明</span>
-                        <h2 className="section-title compact-title">公开写作、项目交付与系统实现共同构成可信度</h2>
-                        <p className="section-copy">
-                            对个人品牌站来说，真正的专业感不是一句头衔，而是读者能在几个页面内快速看到你的判断方式、实际作品和合作边界。
-                        </p>
+                                    {primaryProject ? (
+                                        <Surface tone="floating" className="home-hero-feature-card">
+                                            <span className="eyebrow">Project Signal</span>
+                                            <div className="home-hero-feature-meta">
+                                                {primaryProject.status ? (
+                                                    <span className="meta-pill">
+                                                        <SiteIcon name="check" size={13} />
+                                                        <span>{primaryProject.status}</span>
+                                                    </span>
+                                                ) : null}
+                                                {primaryProject.role ? (
+                                                    <span className="chip">
+                                                        <SiteIcon name="briefcase" size={13} />
+                                                        <span>{primaryProject.role}</span>
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                            <strong>{primaryProject.name}</strong>
+                                            <p>{primaryProject.summary}</p>
+                                            <Link to={`/projects/${primaryProject.slug}`} className="section-link">
+                                                <span>查看项目案例</span>
+                                                <SiteIcon name="arrow-right" size={14} />
+                                            </Link>
+                                        </Surface>
+                                    ) : null}
+                                </aside>
+                            </div>
+                        </Surface>
                     </div>
+                </section>
 
-                    <div className="home-evidence-cards">
-                        <article className="feature-panel home-evidence-card">
-                            <span className="eyebrow">Public Thinking</span>
-                            <strong>文章负责展示问题意识与方法论</strong>
-                            <p>不是列资讯，而是把现象拆成结构、证据和判断。</p>
-                        </article>
-                        <article className="feature-panel home-evidence-card">
-                            <span className="eyebrow">Execution</span>
-                            <strong>项目负责证明交付能力</strong>
-                            <p>把内容系统、前后端实现、自动化链路真正落地并上线。</p>
-                        </article>
-                        <article className="feature-panel home-evidence-card">
-                            <span className="eyebrow">Clarity</span>
-                            <strong>About 与入口负责降低沟通成本</strong>
-                            <p>让读者迅速判断是否适合联系，而不是靠猜。</p>
-                        </article>
+                <section className="section section-tight home-proof-section">
+                    <div className="container home-proof-grid">
+                        {siteConfig.brandProofs.map((item) => (
+                            <Surface key={item.label} tone="glass" className="home-proof-card">
+                                <span className="meta-pill emphasis">
+                                    <SiteIcon name={item.icon} size={13} />
+                                    <span>{item.value}</span>
+                                </span>
+                                <strong>{item.label}</strong>
+                                <p>{item.note}</p>
+                            </Surface>
+                        ))}
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <section className="section section-tight section-border">
-                <div className="container home-utility-rail">
-                    <div className="feature-panel home-archive-entry-card">
-                        <div className="section-head compact-head">
-                            <div>
-                                <span className="eyebrow">{archiveEntrySection?.eyebrow || '归档入口'}</span>
-                                <h2 className="section-title compact-title">
-                                    {archiveEntrySection?.title || '按主题、标签与关键词进入研究档案'}
-                                </h2>
-                            </div>
-                        </div>
-
-                        <p className="section-copy">
-                            {archiveEntrySection?.description || '先定位问题，再决定投入时间。把博客当作内容检索库来用，而不是时间线。'}
-                        </p>
-
-                        <div className="list-block">
-                            <div className="list-item">
-                                <SiteIcon name="search" size={14} />
-                                <span>按关键词快速定位主题文章与长期系列。</span>
-                            </div>
-                            <div className="list-item">
-                                <SiteIcon name="folder" size={14} />
-                                <span>按分类判断内容语境，再选择值得深读的文章。</span>
-                            </div>
-                            <div className="list-item">
-                                <SiteIcon name="tag" size={14} />
-                                <span>按标签追踪跨主题的工具、框架与方法线索。</span>
-                            </div>
-                        </div>
-
-                        <Link to={archiveEntrySection?.ctaHref || '/blog'} className="btn btn-secondary">
-                            <SiteIcon name="arrow-right" size={15} />
-                            <span>{archiveEntrySection?.ctaLabel || '浏览内容归档'}</span>
-                        </Link>
-                    </div>
-
-                    <div className="home-weather-stack">
-                        {weatherSection?.enabled !== false ? <WeatherCard /> : null}
-
-                        <div className="feature-panel">
+                <section className="section section-tight">
+                    <div className="container home-utility-rail">
+                        <Surface tone="glass" className="home-archive-entry-card">
                             <div className="section-head compact-head">
                                 <div>
-                                    <span className="eyebrow">{newsletterSection?.eyebrow || 'Newsletter'}</span>
+                                    <span className="eyebrow">{archiveEntrySection?.eyebrow || '归档入口'}</span>
                                     <h2 className="section-title compact-title">
-                                        {newsletterSection?.title || '订阅长期写作与产品化更新'}
+                                        {archiveEntrySection?.title || '按主题、标签与关键词进入研究档案'}
                                     </h2>
                                 </div>
                             </div>
 
                             <p className="section-copy">
-                                {newsletterSection?.description || '当有新长文、项目复盘和工作流迭代时，会优先从这里发出去。'}
+                                {archiveEntrySection?.description || '先定位问题，再决定投入阅读时间。'}
                             </p>
 
-                            <NewsletterSignup source="home_utility" compact />
-
-                            <Link to={newsletterSection?.ctaHref || '/newsletter'} className="section-link">
-                                <span>{newsletterSection?.ctaLabel || '前往订阅页'}</span>
-                                <SiteIcon name="arrow-right" size={14} />
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {shouldShowEditorialSection ? (
-                <section className="section home-editorial-section">
-                    <div className="container section-stack">
-                        <div className="section-head editorial-head">
-                            <div>
-                                <span className="eyebrow">{featuredPostsSection?.eyebrow || '精选文章'}</span>
-                                <h2 className="section-title">{featuredPostsSection?.title || '更多值得继续读下去的文章'}</h2>
+                            <div className="list-block">
+                                <div className="list-item">
+                                    <SiteIcon name="search" size={14} />
+                                    <span>支持按关键词、分类与标签进入内容。</span>
+                                </div>
+                                <div className="list-item">
+                                    <SiteIcon name="folder" size={14} />
+                                    <span>把博客当作可检索的研究库，而不是时间流。</span>
+                                </div>
+                                <div className="list-item">
+                                    <SiteIcon name="tag" size={14} />
+                                    <span>沿着主题线索持续追踪方法、工具和判断。</span>
+                                </div>
                             </div>
-                            <Link to="/blog" className="section-link">
-                                <span>查看全部文章</span>
-                                <SiteIcon name="arrow-right" size={14} />
-                            </Link>
-                        </div>
 
-                        <div className="feature-panel">
-                            <div className="supporting-post-list">
-                                {supportingPosts.map((post) => (
-                                    <Link key={post.id} to={`/blog/${post.slug}`} className="supporting-post-item">
-                                        <div className="supporting-post-meta">
-                                            <span className="meta-pill">
-                                                <SiteIcon name="calendar" size={13} />
-                                                <span>{formatShortDate(post.publishedAt || post.createdAt)}</span>
-                                            </span>
-                                            {post.category ? (
-                                                <span className="meta-pill">
-                                                    <SiteIcon name="folder" size={13} />
-                                                    <span>{post.category.name}</span>
-                                                </span>
-                                            ) : null}
-                                        </div>
-                                        <h3>{post.title}</h3>
-                                        <p>{post.deck?.trim() || post.excerpt}</p>
-                                        <span className="section-link">
-                                            <span>继续阅读</span>
-                                            <SiteIcon name="arrow-right" size={14} />
-                                        </span>
-                                    </Link>
-                                ))}
-                            </div>
+                            <Link to={archiveEntrySection?.ctaHref || '/blog'} className="btn btn-secondary">
+                                <SiteIcon name="arrow-right" size={15} />
+                                <span>{archiveEntrySection?.ctaLabel || '浏览内容归档'}</span>
+                            </Link>
+                        </Surface>
+
+                        <div className="home-weather-stack">
+                            {weatherSection?.enabled !== false ? <WeatherCard /> : null}
+
+                            <Surface tone="glass">
+                                <div className="section-head compact-head">
+                                    <div>
+                                        <span className="eyebrow">{newsletterSection?.eyebrow || 'Newsletter'}</span>
+                                        <h2 className="section-title compact-title">
+                                            {newsletterSection?.title || '订阅长期写作与产品化更新'}
+                                        </h2>
+                                    </div>
+                                </div>
+
+                                <p className="section-copy">
+                                    {newsletterSection?.description || '新的长文、项目复盘与工作流迭代会优先从这里发出。'}
+                                </p>
+
+                                <NewsletterSignup source="home_utility" compact />
+
+                                <Link to={newsletterSection?.ctaHref || '/newsletter'} className="section-link">
+                                    <span>{newsletterSection?.ctaLabel || '前往订阅页'}</span>
+                                    <SiteIcon name="arrow-right" size={14} />
+                                </Link>
+                            </Surface>
                         </div>
                     </div>
                 </section>
-            ) : null}
 
-            {shouldShowProjectSection ? (
-                <section className="section section-border home-projects-section">
-                    <div className="container home-project-shell">
-                        <div className="project-intro-card">
-                            <span className="eyebrow">{projectsSection?.eyebrow || '代表项目'}</span>
-                            <h2 className="section-title">{projectsSection?.title || '更多项目样本'}</h2>
-                            <p className="section-copy">
-                                {projectsSection?.description || '文章负责建立判断力，项目负责证明落地能力。这里保留次级案例做横向比较，不重复首页主打项目。'}
-                            </p>
+                {supportingPosts.length ? (
+                    <section className="section home-editorial-section">
+                        <div className="container section-stack">
+                            <div className="section-head editorial-head">
+                                <div>
+                                    <span className="eyebrow">{featuredPostsSection?.eyebrow || '精选文章'}</span>
+                                    <h2 className="section-title">{featuredPostsSection?.title || '继续阅读这些代表性文章'}</h2>
+                                </div>
+                                <Link to="/blog" className="section-link">
+                                    <span>查看全部文章</span>
+                                    <SiteIcon name="arrow-right" size={14} />
+                                </Link>
+                            </div>
 
-                            <div className="stack-grid">
-                                {siteConfig.projectThemes.map((item) => (
-                                    <article key={item.title} className="mini-feature">
-                                        <span className="mini-feature-icon">
-                                            <SiteIcon name={item.icon} size={15} />
-                                        </span>
+                            <div className="post-grid post-grid-triad">
+                                {supportingPosts.map((post) => (
+                                    <PostCard key={post.id} post={post} layout="grid" />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
+
+                {remainingProjects.length ? (
+                    <section className="section section-border home-projects-section">
+                        <div className="container home-project-shell">
+                            <Surface tone="glass" className="project-intro-card">
+                                <span className="eyebrow">{projectsSection?.eyebrow || '代表项目'}</span>
+                                <h2 className="section-title">{projectsSection?.title || '用项目证明方法可以落地'}</h2>
+                                <p className="section-copy">
+                                    {projectsSection?.description || '文章给判断，项目给证据，把方法真正跑进系统里。'}
+                                </p>
+
+                                <div className="stack-grid">
+                                    {siteConfig.projectThemes.map((item) => (
+                                        <article key={item.title} className="mini-feature">
+                                            <span className="mini-feature-icon">
+                                                <SiteIcon name={item.icon} size={15} />
+                                            </span>
+                                            <div>
+                                                <strong>{item.title}</strong>
+                                                <p>{item.description}</p>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+
+                                <Link to="/projects" className="btn btn-secondary">
+                                    <SiteIcon name="briefcase" size={15} />
+                                    <span>进入项目页</span>
+                                </Link>
+                            </Surface>
+
+                            <div className="project-grid homepage-project-grid">
+                                {remainingProjects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
+
+                <section className="section">
+                    <div className="container split-feature">
+                        <Surface tone="glass" className="compact-cta home-collaboration-band">
+                            <div>
+                                <span className="eyebrow">{authorSection?.eyebrow || '作者与合作'}</span>
+                                <h2 className="section-title compact-title">
+                                    {authorSection?.title || '如果你也在做 AI 工作流、内容系统或独立项目，我们可以聊聊。'}
+                                </h2>
+                                <p className="section-copy">{authorSection?.description || siteConfig.author.summary}</p>
+                            </div>
+
+                            <div className="home-collaboration-list">
+                                {siteConfig.collaborationTracks.map((item, index) => (
+                                    <article key={item.title} className="home-collaboration-item">
+                                        <span className="badge">0{index + 1}</span>
                                         <div>
                                             <strong>{item.title}</strong>
                                             <p>{item.description}</p>
@@ -347,77 +370,41 @@ export default function Home() {
                                 ))}
                             </div>
 
-                            <Link to="/projects" className="btn btn-secondary">
-                                <SiteIcon name="briefcase" size={15} />
-                                <span>进入项目页</span>
-                            </Link>
-                        </div>
+                            <div className="hero-actions">
+                                <a href={authorSection?.ctaHref || `mailto:${siteConfig.email}`} className="btn btn-primary">
+                                    <SiteIcon name="mail" size={15} />
+                                    <span>{authorSection?.ctaLabel || '发送邮件'}</span>
+                                </a>
+                                <Link to="/about" className="btn btn-ghost">
+                                    <SiteIcon name="user" size={15} />
+                                    <span>了解作者</span>
+                                </Link>
+                            </div>
+                        </Surface>
 
-                        <div className="project-grid homepage-project-grid">
-                            {remainingProjects.map((project) => (
-                                <ProjectCard key={project.id} project={project} />
-                            ))}
-                        </div>
+                        <Surface tone="glass" className="home-focus-panel">
+                            <span className="eyebrow">当前重心</span>
+                            <div className="list-block">
+                                {siteConfig.currentFocus.map((item, index) => (
+                                    <div key={item} className="list-item">
+                                        <span className="badge">0{index + 1}</span>
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="list-block home-no-fit-list">
+                                {siteConfig.collaborationNotFit.slice(0, 2).map((item) => (
+                                    <div key={item} className="list-item">
+                                        <SiteIcon name="warning" size={14} />
+                                        <span>{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Surface>
                     </div>
                 </section>
-            ) : null}
-
-            <section className="section">
-                <div className="container split-feature">
-                    <div className="compact-cta home-cta-band home-collaboration-band">
-                        <div>
-                            <span className="eyebrow">{authorSection?.eyebrow || '作者与合作'}</span>
-                            <h2 className="section-title compact-title">
-                                {authorSection?.title || '如果你也在做长期主义内容系统、独立项目或 AI 工作流，我们可以聊聊。'}
-                            </h2>
-                            <p className="section-copy">{authorSection?.description || siteConfig.author.summary}</p>
-                        </div>
-
-                        <div className="home-collaboration-list">
-                            {siteConfig.collaborationTracks.map((item, index) => (
-                                <article key={item.title} className="home-collaboration-item">
-                                    <span className="badge">0{index + 1}</span>
-                                    <div>
-                                        <strong>{item.title}</strong>
-                                        <p>{item.description}</p>
-                                    </div>
-                                </article>
-                            ))}
-                        </div>
-
-                        <div className="hero-actions">
-                            <a href={authorSection?.ctaHref || `mailto:${siteConfig.email}`} className="btn btn-primary">
-                                <SiteIcon name="mail" size={15} />
-                                <span>{authorSection?.ctaLabel || '发送邮件'}</span>
-                            </a>
-                            <Link to="/about" className="btn btn-ghost">
-                                <SiteIcon name="user" size={15} />
-                                <span>了解作者</span>
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="feature-panel home-focus-panel">
-                        <span className="eyebrow">当前重心与合作判断</span>
-                        <div className="list-block">
-                            {siteConfig.currentFocus.map((item, index) => (
-                                <div key={item} className="list-item">
-                                    <span className="badge">0{index + 1}</span>
-                                    <span>{item}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="list-block home-no-fit-list">
-                            {siteConfig.collaborationNotFit.slice(0, 2).map((item) => (
-                                <div key={item} className="list-item">
-                                    <SiteIcon name="warning" size={14} />
-                                    <span>{item}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
+            </PageScene>
         </>
     );
 }

@@ -103,6 +103,7 @@ export default function HomepageManagerPage() {
         () => ((previewMap.get('featured_projects')?.items || []) as Array<Post | Project>).filter(isProject),
         [previewMap],
     );
+    const heroSourcePost = previewFeaturedPosts[0] || null;
 
     const updateSection = (type: string, patch: Partial<HomepageSection>) => {
         setSections((current) =>
@@ -311,6 +312,24 @@ export default function HomepageManagerPage() {
                         </div>
 
                         <div className="section-stack">
+                            <div className="feature-panel">
+                                <div className="section-heading">
+                                    <div>
+                                        <div className="eyebrow">Hero Visual</div>
+                                        <h2 className="section-title">首页 Hero 头图来源</h2>
+                                    </div>
+                                </div>
+                                <div className="list-block">
+                                    <div className="list-item">
+                                        <SiteIcon name={heroSourcePost?.coverImage ? 'check' : 'warning'} size={14} />
+                                        <span>{heroSourcePost ? heroSourcePost.title : '当前没有首篇精选文章'}</span>
+                                    </div>
+                                    <div className="list-item">
+                                        <SiteIcon name="grid" size={14} />
+                                        <span>{heroSourcePost?.coverImage ? 'Hero 将复用这篇精选文章的封面图。' : '首篇精选文章没有封面图，首页会自动回退到程序化背景。'}</span>
+                                    </div>
+                                </div>
+                            </div>
                             <div className="feature-panel">
                                 <div className="section-heading">
                                     <div>

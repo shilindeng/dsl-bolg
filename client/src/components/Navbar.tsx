@@ -14,6 +14,7 @@ interface NavbarProps {
 export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
     const location = useLocation();
     const [open, setOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const drawerRef = useRef<HTMLDivElement | null>(null);
     const mobileToggleRef = useRef<HTMLButtonElement | null>(null);
     const { user, logout } = useAuth();
@@ -21,6 +22,19 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
     useEffect(() => {
         setOpen(false);
     }, [location.pathname]);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 36);
+        };
+
+        handleScroll();
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, []);
 
     useEffect(() => {
         if (!open) {
@@ -115,8 +129,19 @@ export default function Navbar({ isAdmin, isAuthenticated }: NavbarProps) {
 
     const accountLabel = user?.name || '账户';
 
+    const isHome = location.pathname === '/';
+
     return (
-        <header className={`site-nav ${open ? 'is-open' : ''}`}>
+        <header
+            className={[
+                'site-nav',
+                open ? 'is-open' : '',
+                isScrolled ? 'is-scrolled' : '',
+                isHome ? 'is-home' : 'is-subpage',
+            ]
+                .filter(Boolean)
+                .join(' ')}
+        >
             <div className="container site-nav-inner">
                 <Link to="/" className="site-nav-brand" aria-label="返回首页">
                     <span className="brand-mark mono">{siteConfig.shortName}</span>

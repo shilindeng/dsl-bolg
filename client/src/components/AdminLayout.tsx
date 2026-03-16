@@ -3,6 +3,8 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { siteConfig } from '../config/site';
 import { useAuth } from '../hooks/useAuth';
 import CommandPalette from './CommandPalette';
+import PageTransition from './PageTransition';
+import RouteSkeleton from './RouteSkeleton';
 import ScrollManager from './ScrollManager';
 import SiteIcon from './SiteIcon';
 import ThemeToggle from './ThemeToggle';
@@ -118,6 +120,7 @@ export default function AdminLayout() {
     }, [open]);
 
     const activePath = location.pathname;
+    const routeKey = `${location.pathname}${location.search}`;
     const activeTitle = useMemo(() => {
         const match = navItems.find((item) => activePath === item.to || activePath.startsWith(`${item.to}/`));
         return match?.label || '后台';
@@ -230,8 +233,10 @@ export default function AdminLayout() {
                 </aside>
 
                 <main className="admin-main" aria-label="后台内容区">
-                    <Suspense fallback={<AdminLoadingFallback />}>
-                        <Outlet />
+                    <Suspense fallback={<RouteSkeleton variant="admin" />}>
+                        <PageTransition routeKey={routeKey}>
+                            <Outlet />
+                        </PageTransition>
                     </Suspense>
                 </main>
             </div>
@@ -240,4 +245,3 @@ export default function AdminLayout() {
         </div>
     );
 }
-

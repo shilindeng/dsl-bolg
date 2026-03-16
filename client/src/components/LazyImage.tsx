@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import SiteIcon from './SiteIcon';
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     src: string;
@@ -14,6 +13,7 @@ export default function LazyImage({ src, alt, className, style, ...props }: Lazy
     useEffect(() => {
         setLoaded(false);
         setFailed(false);
+        setImageSource('');
 
         const image = new Image();
         image.src = src;
@@ -29,18 +29,13 @@ export default function LazyImage({ src, alt, className, style, ...props }: Lazy
 
     return (
         <div className="lazy-image-shell" style={style}>
-            {!loaded && !failed ? (
-                <div className="lazy-image-loading muted mono">
-                    <SiteIcon name="spark" size={14} />
-                    <span>loading asset</span>
-                </div>
-            ) : null}
+            {!loaded && !failed ? <div className="lazy-image-skeleton" aria-hidden="true" /> : null}
 
             {failed ? (
                 <div className="lazy-image-fallback">
-                    <span className="lazy-image-kicker mono">visual placeholder</span>
-                    <strong>{alt || '素材暂不可用'}</strong>
-                    <p className="muted">当前展示默认占位，不再向阅读流程暴露错误资源。</p>
+                    <span className="lazy-image-kicker mono">visual fallback</span>
+                    <strong>{alt || '素材暂时不可用'}</strong>
+                    <p className="muted">当前使用占位视觉，避免直接暴露异常资源。</p>
                 </div>
             ) : (
                 <img

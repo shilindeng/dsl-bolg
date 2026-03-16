@@ -4,37 +4,43 @@ import { formatShortDate } from '../lib/format';
 import LazyImage from './LazyImage';
 import SiteIcon from './SiteIcon';
 
+type PostCardLayout = 'grid' | 'feature' | 'compact';
+
 interface PostCardProps {
     post: Post;
     featured?: boolean;
     compact?: boolean;
+    layout?: PostCardLayout;
 }
 
 function getSummary(post: Post) {
     return post.deck?.trim() || post.excerpt;
 }
 
-export default function PostCard({ post, featured = false, compact = false }: PostCardProps) {
-    const classes = ['post-card'];
-
-    if (featured) {
-        classes.push('is-featured');
-    }
-
-    if (compact) {
-        classes.push('is-compact');
-    }
+export default function PostCard({
+    post,
+    featured = false,
+    compact = false,
+    layout = 'grid',
+}: PostCardProps) {
+    const resolvedLayout: PostCardLayout = compact ? 'compact' : featured ? 'feature' : layout;
+    const classes = ['post-card', `is-${resolvedLayout}`];
+    const coverAlt = post.coverAlt || post.title;
 
     return (
-        <Link to={`/blog/${post.slug}`} className={classes.join(' ')} data-testid={`post-card-${post.slug}`}>
+        <Link
+            to={`/blog/${post.slug}`}
+            className={classes.join(' ')}
+            data-testid={`post-card-${post.slug}`}
+        >
             <div className="post-card-media">
                 {post.coverImage ? (
-                    <LazyImage src={post.coverImage} alt={post.coverAlt || post.title} />
+                    <LazyImage src={post.coverImage} alt={coverAlt} />
                 ) : (
                     <div className="visual-placeholder">
                         <span className="visual-badge">
                             <SiteIcon name="book-open" size={14} />
-                            <span>article</span>
+                            <span>essay</span>
                         </span>
                         <strong>{post.category?.name || '长期写作'}</strong>
                     </div>
@@ -66,7 +72,7 @@ export default function PostCard({ post, featured = false, compact = false }: Po
 
                 <div className="post-card-bottom">
                     <div className="tag-list">
-                        {post.tags.slice(0, featured ? 4 : 3).map((tag) => (
+                        {post.tags.slice(0, resolvedLayout === 'feature' ? 4 : 3).map((tag) => (
                             <span key={tag.id} className="tag">
                                 <SiteIcon name="tag" size={12} />
                                 <span>{tag.name}</span>
