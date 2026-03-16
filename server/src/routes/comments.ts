@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, getOptionalUser, requireAdmin, type AuthenticatedRequest } from '../middleware/auth.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
+import { isEmptyCommentContent, normalizeCommentContentFormat, sanitizeCommentHtml } from '../lib/commentContent.js';
 
 const router = Router();
 
@@ -56,10 +57,11 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
-        const { content, postId, parentId } = req.body as {
+        const { content, postId, parentId, contentFormat } = req.body as {
             content?: string;
             postId?: string | number;
             parentId?: string | number;
+            contentFormat?: string;
         };
         const user = (req as AuthenticatedRequest).user!;
 
@@ -68,13 +70,64 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
             return;
         }
 
+        const parsedPostId = parseInt(String(postId), 10);
+        if (!Number.isFinite(parsedPostId) || parsedPostId <= 0) {
+            res.status(400).json({ error: 'Invalid postId' });
+            return;
+        }
+
+        const resolvedFormat = normalizeCommentContentFormat(contentFormat);
+
+        const raw = String(content);
+        if (resolvedFormat === 'html') {
+            if (raw.length > 20_000) {
+                res.status(400).json({ error: 'Comment is too long' });
+                return;
+            }
+        } else {
+            if (raw.trim().length > 2_000) {
+                res.status(400).json({ error: 'Comment is too long' });
+                return;
+            }
+        }
+
+        const storedContent =
+            resolvedFormat === 'html'
+                ? sanitizeCommentHtml(raw)
+                : raw.trim();
+
+        if (isEmptyCommentContent(storedContent, resolvedFormat)) {
+            res.status(400).json({ error: 'Missing required fields' });
+            return;
+        }
+
+        const parsedParentId = parentId ? parseInt(String(parentId), 10) : null;
+        if (parsedParentId) {
+            const parent = await prisma.comment.findUnique({
+                where: { id: parsedParentId },
+                select: { id: true, postId: true, parentId: true },
+            });
+
+            if (!parent || parent.postId !== parsedPostId) {
+                res.status(400).json({ error: 'Invalid parentId' });
+                return;
+            }
+
+            // Only allow a single reply level (top-level -> reply).
+            if (parent.parentId !== null) {
+                res.status(400).json({ error: 'Invalid parentId' });
+                return;
+            }
+        }
+
         const comment = await prisma.comment.create({
             data: {
-                content: content.trim(),
+                content: storedContent,
+                contentFormat: resolvedFormat,
                 author: user.name || user.email,
                 email: user.email,
-                postId: parseInt(String(postId), 10),
-                parentId: parentId ? parseInt(String(parentId), 10) : null,
+                postId: parsedPostId,
+                parentId: parsedParentId,
                 userId: user.id,
                 status: 'pending',
             },
@@ -87,7 +140,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
 
         await recordAnalyticsEvent({
             type: analyticsEventTypes.comment,
-            postId: parseInt(String(postId), 10),
+            postId: parsedPostId,
         });
 
         res.status(201).json({

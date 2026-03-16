@@ -138,3 +138,50 @@ test('desktop admin can create a rich text article', async ({ page }, testInfo) 
     await expect(page.getByTestId('article-content')).toContainText('Hello from Playwright rich text editor.');
     await saveScreenshot(page, testInfo, 'rich-text-article');
 });
+
+test('desktop comment supports rich text + emoji and renders after approval', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop-chromium');
+
+    await loginAsAdmin(page);
+
+    await page.goto('/blog');
+    await page.locator('[data-testid^="post-card-"]').first().click();
+    await expect(page).toHaveURL(/\/blog\/.+/);
+    const articleUrl = page.url();
+
+    await page.getByTestId('public-comments-section').scrollIntoViewIfNeeded();
+
+    // Comment editor is lazy-loaded near the comment form viewport.
+    await expect(page.getByTestId('comment-editor')).toBeVisible({ timeout: 20_000 });
+    await page.getByTestId('comment-editor-content').click();
+
+    const unique = `Bold ${Date.now()}`;
+    await page.getByRole('button', { name: '加粗' }).click();
+    await page.keyboard.type(unique);
+    await page.getByRole('button', { name: '加粗' }).click();
+    await page.keyboard.type(' normal ');
+
+    await page.getByRole('button', { name: '引用' }).click();
+    await page.keyboard.type('Quote line');
+    await page.getByRole('button', { name: '引用' }).click();
+
+    await page.getByRole('button', { name: '表情' }).click();
+    await page.getByRole('button', { name: /表情 😀/ }).click();
+
+    await page.getByTestId('comment-submit-button').click();
+    await expect(page.getByText('已进入审核')).toBeVisible();
+
+    // Approve the pending comment as admin.
+    await page.goto('/admin/comments');
+    await expect(page.getByRole('heading', { name: '评论管理' })).toBeVisible();
+    const targetRow = page.locator('.admin-row', { hasText: unique }).first();
+    await expect(targetRow).toBeVisible({ timeout: 20_000 });
+    await targetRow.getByRole('button', { name: '通过' }).click();
+    await expect(page.getByText('评论状态已更新为 approved。')).toBeVisible();
+
+    // Back to article: rich comment should render (not show html tags).
+    await page.goto(articleUrl);
+    await page.getByTestId('public-comments-section').scrollIntoViewIfNeeded();
+    await expect(page.locator('.comment-content strong').filter({ hasText: unique })).toBeVisible();
+    await expect(page.getByText('😀')).toBeVisible();
+});

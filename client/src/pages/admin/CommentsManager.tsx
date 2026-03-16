@@ -7,6 +7,21 @@ import { formatDateTime } from '../../lib/format';
 
 type StatusFilter = 'all' | 'pending' | 'approved' | 'rejected';
 
+function stripHtmlToText(html: string) {
+    return html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export default function CommentsManagerPage() {
     const { showToast } = useToast();
     const [comments, setComments] = useState<Comment[]>([]);
@@ -89,10 +104,11 @@ export default function CommentsManagerPage() {
                                             <strong>{comment.author}</strong>
                                             <div className="admin-row-meta">
                                                 <span className="chip">{comment.status}</span>
+                                                {comment.contentFormat === 'html' ? <span className="chip">HTML</span> : null}
                                                 {comment.post ? <span className="chip">{comment.post.title}</span> : null}
                                                 <span className="chip">{formatDateTime(comment.createdAt)}</span>
                                             </div>
-                                            <p className="muted">{comment.content}</p>
+                                            <p className="muted">{comment.contentFormat === 'html' ? stripHtmlToText(comment.content) : comment.content}</p>
                                             {comment.parent ? <div className="command-hint">回复给：{comment.parent.author}</div> : null}
                                         </div>
                                         <div className="admin-row-actions">

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createComment, type Comment } from '../api/client';
 import { formatDateTime, getInitials } from '../lib/format';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { resolveAvatarUrl } from '../lib/avatars';
+
+const CommentEditor = lazy(() => import('./CommentEditor'));
 
 interface CommentsProps {
     postId: number;
@@ -15,14 +17,43 @@ interface CommentsProps {
 export default function Comments({ postId, comments, onCommentAdded }: CommentsProps) {
     const { user, isAuthenticated } = useAuth();
     const { showToast } = useToast();
-    const [content, setContent] = useState('');
+    const [contentHtml, setContentHtml] = useState('<p></p>');
     const [replyTo, setReplyTo] = useState<number | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [editorEnabled, setEditorEnabled] = useState(false);
+    const formRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!formRef.current) return;
+        if (editorEnabled) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setEditorEnabled(true);
+                }
+            },
+            { root: null, threshold: 0, rootMargin: '240px 0px' },
+        );
+
+        observer.observe(formRef.current);
+        return () => observer.disconnect();
+    }, [editorEnabled]);
+
+    const isHtmlEmpty = useMemo(() => {
+        const plain = contentHtml
+            .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return !plain;
+    }, [contentHtml]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        if (!content.trim()) {
+        if (isHtmlEmpty) {
             showToast('请填写评论内容。', 'error');
             return;
         }
@@ -31,13 +62,14 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
         try {
             const response = await createComment({
                 postId,
-                content: content.trim(),
+                content: contentHtml,
+                contentFormat: 'html',
                 parentId: replyTo || undefined,
             });
 
             onCommentAdded(response.comment);
             setSubmitted(true);
-            setContent('');
+            setContentHtml('<p></p>');
             setReplyTo(null);
             showToast('评论已提交，审核通过后会公开显示。', 'success');
         } catch (error) {
@@ -72,7 +104,11 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
                 ) : null}
             </div>
 
-            <p className="comment-content">{comment.content}</p>
+            {comment.contentFormat === 'html' ? (
+                <div className="comment-content is-html" dangerouslySetInnerHTML={{ __html: comment.content }} />
+            ) : (
+                <div className="comment-content is-text">{comment.content}</div>
+            )}
 
             {comment.replies?.length ? (
                 <div className="comment-replies">
@@ -120,17 +156,25 @@ export default function Comments({ postId, comments, onCommentAdded }: CommentsP
                             <strong>{user?.name || user?.email}</strong>
                         </div>
 
-                        <label className="form-field">
-                            <span className="form-label">评论内容</span>
-                            <textarea
-                                className="form-textarea"
-                                data-testid="comment-content-input"
-                                value={content}
-                                onChange={(event) => setContent(event.target.value)}
-                                placeholder={replyTo ? '写下你的回复...' : '写下你的观点、补充或不同意见...'}
-                                required
-                            />
-                        </label>
+                        <div className="form-field" ref={formRef}>
+                            <span className="form-label">评论内容（支持富文本与表情）</span>
+                            {!editorEnabled ? (
+                                <div className="comment-editor-placeholder">
+                                    <p className="muted">为了不影响阅读性能，评论编辑器会在你滚动到这里后加载。</p>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setEditorEnabled(true)}>
+                                        启用富文本评论
+                                    </button>
+                                </div>
+                            ) : (
+                                <Suspense fallback={<div className="empty-state">正在加载评论编辑器...</div>}>
+                                    <CommentEditor
+                                        value={contentHtml}
+                                        onChange={setContentHtml}
+                                        testId="comment-editor"
+                                    />
+                                </Suspense>
+                            )}
+                        </div>
 
                         <div className="comment-form-actions">
                             <button type="submit" className="btn btn-primary" data-testid="comment-submit-button" disabled={submitting}>

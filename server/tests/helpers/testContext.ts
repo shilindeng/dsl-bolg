@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import jwt from 'jsonwebtoken';
+import { spawnSync } from 'node:child_process';
 
 let initialized = false;
 let tempDir = '';
@@ -44,6 +45,21 @@ export async function ensureTestContext() {
         process.env.JWT_SECRET = 'test-secret-for-suite';
         process.env.DISABLE_NEWSLETTER_WORKER = 'true';
         process.env.NODE_ENV = 'test';
+
+        // Keep the SQLite file schema in sync with Prisma schema.prisma.
+        const prismaPush = spawnSync('npx', ['prisma', 'db', 'push', '--accept-data-loss'], {
+            cwd: serverRoot,
+            env: {
+                ...process.env,
+                DATABASE_URL: process.env.DATABASE_URL,
+            },
+            encoding: 'utf8',
+            shell: process.platform === 'win32',
+        });
+
+        if (prismaPush.status !== 0) {
+            throw new Error(`Failed to prisma db push in test context: ${prismaPush.stderr}${prismaPush.stdout}`);
+        }
 
         prismaModule = await import('../../src/lib/prisma.js');
         appFactory = await import('../../src/app.js');

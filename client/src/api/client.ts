@@ -36,6 +36,7 @@ export interface TocHeading {
 export interface Comment {
     id: number;
     content: string;
+    contentFormat?: 'text' | 'html';
     author: string;
     email: string | null;
     postId: number;
@@ -438,6 +439,7 @@ export async function fetchComments(postId: number): Promise<Comment[]> {
 
 export async function createComment(data: {
     content: string;
+    contentFormat?: 'text' | 'html';
     postId: number;
     parentId?: number;
 }): Promise<{ message: string; comment: Comment }> {
