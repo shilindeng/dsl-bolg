@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import prisma from './prisma.js';
-import { normalizeContentFormat, type ContentFormat } from './content.js';
+import { resolveContentFormat, type ContentFormat } from './content.js';
 import { assessPostQuality } from './contentQuality.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from './analytics.js';
 import { formatPublicPost } from './publicPresentation.js';
@@ -184,7 +184,7 @@ function preparePostPayload(payload: PostPayload, existing?: {
 }) : PreparedPostPayload {
     const title = (payload.title ?? existing?.title ?? '').trim();
     const content = payload.content ?? existing?.content ?? '';
-    const contentFormat = normalizeContentFormat(payload.contentFormat ?? existing?.contentFormat);
+    const contentFormat = resolveContentFormat(content, payload.contentFormat ?? existing?.contentFormat);
     const deck = payload.deck !== undefined ? payload.deck.trim() : existing?.deck || '';
     const published = payload.published ?? existing?.published ?? false;
     const featured = payload.featured ?? existing?.featured ?? false;

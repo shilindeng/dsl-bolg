@@ -55,8 +55,12 @@ export function detectContentFormat(content: string): ContentFormat {
     return looksLikeHtmlContent(content) ? 'html' : 'markdown';
 }
 
-function resolveContentFormat(content: string, format?: ContentFormat | string | null) {
-    return normalizeContentFormat(format || detectContentFormat(content));
+export function resolveContentFormat(content: string, format?: ContentFormat | string | null) {
+    if (format === 'html') {
+        return 'html';
+    }
+
+    return detectContentFormat(content);
 }
 
 function stripHtmlMarkup(value: string) {

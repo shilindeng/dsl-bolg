@@ -65,4 +65,30 @@ describe('posts integration', () => {
         expect(detailResponse.status).toBe(200);
         expect(detailResponse.body.toc.map((item: { text: string }) => item.text)).toEqual(['Intro', 'Details']);
     });
+
+    it('auto-corrects stored markdown format when content is actually html', async () => {
+        const token = signAdminToken();
+        const createResponse = await request(app)
+            .post('/api/posts')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                title: 'Mislabelled HTML article',
+                contentFormat: 'markdown',
+                content: '<div data-blog-html-root=\"1\"><h2>Intro</h2><p>Body</p><h3>Details</h3><p>More text</p></div>',
+                deck: 'A long enough deck for content format recovery.',
+                excerpt: '',
+                published: true,
+                featured: false,
+                tags: ['html'],
+            });
+
+        expect(createResponse.status).toBe(201);
+        expect(createResponse.body.contentFormat).toBe('html');
+
+        const detailResponse = await request(app).get(`/api/posts/${createResponse.body.slug}`);
+        expect(detailResponse.status).toBe(200);
+        expect(detailResponse.body.contentFormat).toBe('html');
+        expect(detailResponse.body.toc.map((item: { text: string }) => item.text)).toEqual(['Intro', 'Details']);
+        expect(detailResponse.body.content).toContain('<h2');
+    });
 });

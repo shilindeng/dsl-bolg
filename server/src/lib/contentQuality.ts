@@ -7,6 +7,7 @@ import {
     normalizeContentFormat,
     normalizeExcerpt,
     estimateReadTime,
+    resolveContentFormat,
 } from './content.js';
 
 const unsafeHtmlPatterns: Array<{ code: string; pattern: RegExp }> = [
@@ -119,7 +120,7 @@ export function sanitizeHtmlContent(content: string) {
 }
 
 export function sanitizeStoredContent(content: string, format?: ContentFormat | null) {
-    const resolved = normalizeContentFormat(format);
+    const resolved = resolveContentFormat(content, format);
     return resolved === 'html' ? sanitizeHtmlContent(content) : sanitizeMarkdownContent(content);
 }
 
@@ -136,7 +137,7 @@ export function assessPostQuality(input: {
     sourceUrl?: string | null;
 }) : QualityAssessment {
     const rawFormat = input.contentFormat;
-    const contentFormat = normalizeContentFormat(rawFormat);
+    const contentFormat = resolveContentFormat(input.content, rawFormat);
     const errors: string[] = [];
     const warnings: string[] = [];
 

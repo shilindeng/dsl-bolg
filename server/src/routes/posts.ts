@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { authMiddleware, getOptionalUser, requireAdmin } from '../middleware/auth.js';
-import { estimateReadTime, extractHeadings } from '../lib/content.js';
+import { estimateReadTime, extractHeadings, resolveContentFormat } from '../lib/content.js';
 import { analyticsEventTypes, recordAnalyticsEvent } from '../lib/analytics.js';
 import { createPostRecord, formatPost, includePostRelations, PostQualityError, updatePostRecord } from '../lib/posts.js';
 import { isPublicPostReady, sanitizePostContent } from '../lib/publicPresentation.js';
@@ -113,8 +113,9 @@ router.get('/:slug', async (req: Request, res: Response) => {
             return;
         }
 
-        const sanitizedContent = sanitizePostContent(post.content, post.contentFormat);
-        const readTime = estimateReadTime(sanitizedContent, post.contentFormat);
+        const resolvedContentFormat = resolveContentFormat(post.content, post.contentFormat);
+        const sanitizedContent = sanitizePostContent(post.content, resolvedContentFormat);
+        const readTime = estimateReadTime(sanitizedContent, resolvedContentFormat);
         const meta = await prisma.postMeta.upsert({
             where: { postId: post.id },
             update: {
@@ -202,7 +203,7 @@ router.get('/:slug', async (req: Request, res: Response) => {
             ...formatPost(post),
             meta,
             comments,
-            toc: extractHeadings(sanitizedContent, post.contentFormat),
+            toc: extractHeadings(sanitizedContent, resolvedContentFormat),
             relatedPosts: related
                 .map((item: Parameters<typeof formatPost>[0]) => formatPost(item))
                 .filter((item) => isPublicPostReady(item)),
@@ -231,7 +232,7 @@ router.post('/:slug/like', async (req: Request, res: Response) => {
         const meta = await prisma.postMeta.upsert({
             where: { postId: post.id },
             update: { likes: { increment: 1 } },
-            create: { postId: post.id, likes: 1, readTime: estimateReadTime(post.content, post.contentFormat) },
+            create: { postId: post.id, likes: 1, readTime: estimateReadTime(post.content, resolveContentFormat(post.content, post.contentFormat)) },
         });
 
         await recordAnalyticsEvent({ type: analyticsEventTypes.like, postId: post.id });

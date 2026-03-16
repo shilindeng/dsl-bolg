@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { normalizeContentFormat, normalizeExcerpt, type ContentFormat } from './content.js';
+import { normalizeExcerpt, resolveContentFormat, type ContentFormat } from './content.js';
 import { sanitizeStoredContent } from './contentQuality.js';
 import { isR2Enabled } from './site.js';
 
@@ -35,7 +35,7 @@ function shouldDropImage(url: string, alt: string) {
 }
 
 export function sanitizePostContent(content: string, format?: ContentFormat | string | null) {
-    const contentFormat = normalizeContentFormat(format);
+    const contentFormat = resolveContentFormat(content, format);
     const sanitized = sanitizeStoredContent(content, contentFormat);
 
     if (contentFormat === 'html') {
@@ -65,7 +65,7 @@ export function formatPublicPost<
         tags?: Array<{ tag?: unknown } | unknown>;
     },
 >(post: T) {
-    const contentFormat = normalizeContentFormat(post.contentFormat);
+    const contentFormat = resolveContentFormat(post.content, post.contentFormat);
     const content = sanitizePostContent(post.content, contentFormat);
 
     return {
@@ -157,7 +157,7 @@ export function isPublicPostReady<
         deck?: string | null;
     },
 >(post: T) {
-    const contentFormat = normalizeContentFormat(post.contentFormat);
+    const contentFormat = resolveContentFormat(post.content, post.contentFormat);
     const content = sanitizePostContent(post.content, contentFormat);
     const excerpt = normalizeExcerpt(post.excerpt, content, post.title, contentFormat);
     const deck = normalizeText(post.deck);
