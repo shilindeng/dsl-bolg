@@ -4,6 +4,8 @@ param(
     [string]$BlogApiKey = $env:BLOG_PUBLISH_API_KEY,
     [string[]]$Roots = @(
         "D:\vibe-coding\codex\my-skill\runs",
+        "D:\vibe-coding\codex\my-skill\wechat-article-studio\workspaces",
+        "D:\vibe-coding\codex\wechat_jobs",
         "D:\vibe-coding\codex\jobs"
     ),
     [switch]$Recursive,
